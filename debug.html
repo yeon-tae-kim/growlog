@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Growlog 연결 진단</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f8fb;color:#1f2b46;margin:0;padding:30px}
+.wrap{max-width:760px;margin:auto}
+.card{background:#fff;border:1px solid #dde5f2;border-radius:20px;padding:22px;margin:14px 0;box-shadow:0 12px 30px rgba(50,70,110,.07)}
+.ok{color:#18864b;font-weight:800}.bad{color:#c24040;font-weight:800}.wait{color:#8a6d20;font-weight:800}
+button{border:0;background:#5577d8;color:white;border-radius:12px;padding:11px 16px;font-weight:700;cursor:pointer}
+input{width:100%;box-sizing:border-box;border:1px solid #d9e2f0;border-radius:10px;padding:11px;margin:6px 0 12px;font-size:16px}
+small{color:#718078}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Growlog Supabase 연결 진단</h1>
+<p>이 페이지는 로그인 문제 위치를 확인하기 위한 임시 테스트 페이지입니다.</p>
+
+<div class="card">
+  <div>1. debug.html 실행: <span class="ok">정상</span></div>
+  <div>2. config.js 로딩: <span id="configState" class="wait">확인 중...</span></div>
+  <div>3. Supabase 라이브러리: <span id="libState" class="wait">확인 중...</span></div>
+  <div>4. Supabase 클라이언트: <span id="clientState" class="wait">확인 중...</span></div>
+  <div>5. 현재 세션: <span id="sessionState" class="wait">확인 중...</span></div>
+</div>
+
+<div class="card">
+  <h2>관리자 로그인 직접 테스트</h2>
+  <label>이메일</label>
+  <input id="email" type="email" placeholder="Supabase에서 만든 관리자 이메일">
+  <label>비밀번호</label>
+  <input id="password" type="password" placeholder="관리자 비밀번호">
+  <button id="loginBtn" type="button">로그인 테스트</button>
+  <p id="loginResult"><small>아직 테스트하지 않았습니다.</small></p>
+</div>
+
+<div class="card">
+  <b>아래 결과를 캡처해서 ChatGPT에 보내주세요.</b>
+  <p><small>Publishable key 전체 값은 화면에 표시하지 않습니다.</small></p>
+</div>
+</div>
+
+<script src="./config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(async function(){
+  const $=id=>document.getElementById(id);
+  const set=(id,ok,msg)=>{
+    const el=$(id);
+    el.className=ok?"ok":"bad";
+    el.textContent=msg;
+  };
+
+  const cfg=window.GROWLOG_CONFIG;
+  const configOk=!!(cfg && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
+  set("configState",configOk,configOk?"정상":"실패 - config.js를 읽지 못함");
+
+  const libOk=!!(window.supabase && window.supabase.createClient);
+  set("libState",libOk,libOk?"정상":"실패 - Supabase JS 로딩 안 됨");
+
+  let client=null;
+  if(configOk && libOk){
+    try{
+      client=window.supabase.createClient(
+        String(cfg.SUPABASE_URL).trim(),
+        String(cfg.SUPABASE_ANON_KEY).trim()
+      );
+      set("clientState",true,"정상");
+      const {data,error}=await client.auth.getSession();
+      if(error) throw error;
+      set("sessionState",true,data.session?"로그인 세션 있음":"세션 없음 - 정상");
+    }catch(e){
+      set("clientState",false,"실패 - "+(e.message||e));
+      set("sessionState",false,"확인 불가");
+    }
+  }else{
+    set("clientState",false,"확인 불가");
+    set("sessionState",false,"확인 불가");
+  }
+
+  $("loginBtn").onclick=async()=>{
+    if(!client){
+      $("loginResult").innerHTML='<span class="bad">Supabase 클라이언트가 연결되지 않았습니다.</span>';
+      return;
+    }
+    const email=$("email").value.trim();
+    const password=$("password").value;
+    if(!email||!password){
+      $("loginResult").innerHTML='<span class="bad">이메일과 비밀번호를 입력해주세요.</span>';
+      return;
+    }
+    $("loginResult").innerHTML='<span class="wait">로그인 시도 중...</span>';
+    try{
+      const {data,error}=await client.auth.signInWithPassword({email,password});
+      if(error) throw error;
+      const {data:p,error:pErr}=await client.from("profiles")
+        .select("role,name,active").eq("id",data.user.id).single();
+      if(pErr) throw pErr;
+      $("loginResult").innerHTML=
+        '<span class="ok">로그인 성공!</span><br>'+
+        'role: <b>'+p.role+'</b> / name: <b>'+(p.name||"")+'</b> / active: <b>'+p.active+'</b>';
+    }catch(e){
+      $("loginResult").innerHTML='<span class="bad">로그인 실패: '+String(e.message||e)+'</span>';
+    }
+  };
+})();
+</script>
+</body>
+</html>
