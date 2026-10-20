@@ -5089,14 +5089,14 @@ body.auth-modal-open .toast.show{
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <style>
 #glPromo[hidden]{display:none!important}#glPromo{position:fixed;inset:0;z-index:100001;background:rgba(23,38,65,.48);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;backdrop-filter:blur(4px)}
-#glPromo *{box-sizing:border-box}#glPromo .gl-card{font-family:inherit;color:#24334a;background:#fff;width:100%;max-width:510px;max-height:calc(100dvh - 32px);max-height:min(920px,calc(100dvh - 32px));overflow:auto;overscroll-behavior:contain;border-radius:25px;padding:23px;box-shadow:0 22px 80px #14284940;position:relative;text-align:left}
+#glPromo *{box-sizing:border-box}#glPromo .gl-card{font-family:inherit;color:#24334a;background:#fff;width:100%;max-width:510px;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);max-height:min(920px,calc(100dvh - 32px));overflow:auto;overscroll-behavior:contain;border-radius:25px;padding:23px;box-shadow:0 22px 80px #14284940;position:relative;text-align:left}
 #glPromo .gl-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}#glPromo .gl-logo{width:145px;height:auto;display:block}#glPromo .gl-close{border:0;background:#f2f5f9;color:#66768d;width:36px;height:36px;border-radius:50%;font-size:26px;cursor:pointer;flex-shrink:0;line-height:1}
 #glPromo h2{font-size:26px;line-height:1.4;letter-spacing:-1px;margin:0 0 13px;font-weight:850}#glPromo h2 span{color:#4167c7}#glPromo .gl-pill{display:inline-block;background:#eaf1ff;color:#4167c7;border-radius:30px;padding:6px 12px;font-size:12px;font-weight:800;margin-bottom:12px}
 #glPromo .gl-photo{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;display:block;border-radius:17px}#glPromo .gl-title{font-size:20px;font-weight:850;margin:17px 0 8px;line-height:1.4}#glPromo .gl-tags{display:flex;gap:6px;margin-bottom:13px}#glPromo .gl-tags span{background:#eaf5e8;color:#517d4c;font-size:12px;padding:4px 11px;border-radius:20px;font-weight:700}#glPromo .gl-tags span+span{background:#edf3ff;color:#4167c7}
 #glPromo .gl-note{padding:15px 17px;border-radius:16px;background:#fff5ec;margin-bottom:10px}#glPromo .gl-note b{display:block;color:#b96b27;font-size:13px;margin-bottom:7px}#glPromo .gl-note p{margin:0;font-size:15px;line-height:1.65;word-break:keep-all}#glPromo .gl-question{background:#eef4ff}#glPromo .gl-question b{color:#4167c7}
 #glPromo .gl-action{display:block;text-align:center;width:100%;font:inherit;font-size:15px;font-weight:800;line-height:1.5;padding:13px;border-radius:13px;cursor:pointer;text-decoration:none;border:1px solid #4167c7;background:#4167c7;color:#fff;margin-top:15px}#glPromo .gl-secondary{margin-top:8px;background:#fff;color:#4167c7}#glPromo .gl-cta-copy{text-align:center;font-size:13px;color:#69768a;margin:19px 0 0}#glPromo .gl-disclosure{font-size:10px;color:#8591a2;line-height:1.6;text-align:center;margin:13px 0 0}#glPromo .gl-dismiss{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:13px;border-top:1px solid #eef1f5;padding-top:12px;font-size:12px;color:#738097}#glPromo .gl-dismiss label{display:flex;align-items:center;gap:7px;cursor:pointer}#glPromo .gl-dismiss button{border:0;background:none;font:inherit;color:inherit;cursor:pointer;padding:5px}
 .gl-preview-launch{border:1px solid #4167c7;border-radius:13px;background:#fff;color:#4167c7;font:inherit;font-weight:800;padding:12px 19px;cursor:pointer;margin:18px 0 10px}#glPromo :focus-visible,.gl-preview-launch:focus-visible{outline:3px solid #e79a58;outline-offset:3px}
-@media(max-width:480px){#glPromo{padding:10px}#glPromo .gl-card{padding:18px;max-height:calc(100dvh - 20px);border-radius:20px}#glPromo h2{font-size:23px}#glPromo .gl-title{font-size:19px}#glPromo .gl-note p{font-size:14px}#glPromo .gl-logo{width:130px}}
+@media(max-width:480px){#glPromo{padding:10px}#glPromo .gl-card{padding:18px;max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px);border-radius:20px}#glPromo h2{font-size:23px}#glPromo .gl-title{font-size:19px}#glPromo .gl-note p{font-size:14px}#glPromo .gl-logo{width:130px}}
 </style>
 </head>
 <body class="prod-auth-pending">
@@ -5106,6 +5106,7 @@ body.auth-modal-open .toast.show{
     <small>아이 성장 한줄 · by ralledu</small>
   </div>
   <div class="top-account-actions">
+    <button class="btn ghost small" type="button" onclick="openGrowlogPromo()">기록 미리보기</button>
     <button id="landingLoginBtn" class="landing-login-btn" type="button" onclick="openGrowlogAuth('login')">로그인</button>
     <button id="prodAccountBtn" class="btn ghost small hide" type="button" onclick="openAccountSettings()">내 계정</button>
     <button id="prodLogoutBtn" class="btn ghost small hide" type="button">로그아웃</button>
@@ -7858,21 +7859,32 @@ renderTeacherUploadPreview();
 (function(){
  'use strict';
  var modal=document.getElementById('glPromo'), card=modal.querySelector('.gl-card'), lastFocus, oldOverflow='', background=[], attempted=false;
+ var forced=/(?:[?&])preview=1(?:&|$)/.test(location.search), manual=false;
  var key='growlog-promo-hide-day-v1';
- function day(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+ function day(){return new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10);}
  function publicPage(){var landing=document.getElementById('growlogLanding');return landing&&!landing.classList.contains('hide')&&!document.body.classList.contains('auth-modal-open')&&!/prod-role-(parent|teacher|admin)/.test(document.body.className);}
- function open(){if(!publicPage())return;lastFocus=document.activeElement;modal.hidden=false;oldOverflow=document.body.style.overflow;document.body.style.overflow='hidden';background=[];Array.prototype.forEach.call(document.body.children,function(el){if(el!==modal&&el.tagName!=='SCRIPT'&&el.tagName!=='STYLE'){background.push([el,el.inert]);el.inert=true;}});card.scrollTop=0;modal.querySelector('.gl-close').focus();}
+ function open(){if(!modal.hidden)return;if(!manual&&!forced&&!publicPage())return;lastFocus=document.activeElement;modal.hidden=false;oldOverflow=document.body.style.overflow;document.body.style.overflow='hidden';background=[];Array.prototype.forEach.call(document.body.children,function(el){if(el!==modal&&el.tagName!=='SCRIPT'&&el.tagName!=='STYLE'){background.push([el,el.inert]);el.inert=true;}});card.scrollTop=0;modal.querySelector('.gl-close').focus();}
  function close(save){if(modal.hidden)return;if(save&&document.getElementById('glHideToday').checked){try{localStorage.setItem(key,day());}catch(e){}}modal.hidden=true;document.body.style.overflow=oldOverflow;background.forEach(function(item){item[0].inert=item[1];});background=[];if(lastFocus&&lastFocus.isConnected)lastFocus.focus();}
- window.openGrowlogPromo=open;
- window.growlogPromoLandingReady=function(){if(attempted)return;attempted=true;setTimeout(function(){var hidden=false;try{hidden=localStorage.getItem(key)===day();}catch(e){}if(!hidden&&publicPage())open();},350);};
+ window.openGrowlogPromo=function(){manual=true;open();};
+ function tryAuto(){
+  if(attempted)return;
+  if(document.body.classList.contains('auth-modal-open'))return;
+  if(!forced&&!publicPage())return;
+  if(!forced){try{if(localStorage.getItem(key)===day())return;}catch(e){}}
+  open();if(!modal.hidden)attempted=true;
+ }
+ window.growlogPromoLandingReady=function(){setTimeout(tryAuto,350);};
  modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('[data-gl-close]'))close(true);});
  document.getElementById('glExplore').addEventListener('click',function(){close(true);var landing=document.getElementById('growlogLanding');if(landing)landing.scrollIntoView({behavior:'smooth'});});
  document.addEventListener('keydown',function(e){if(modal.hidden)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close(true);}if(e.key==='Tab'){var nodes=Array.prototype.filter.call(card.querySelectorAll('button,a[href],input'),function(n){return !n.disabled;});var first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}},true);
- new MutationObserver(function(){if(!modal.hidden&&!publicPage())close(false);}).observe(document.body,{attributes:true,attributeFilter:['class']});
- if(new URLSearchParams(location.search).get('preview')==='1')setTimeout(open,600);
+ new MutationObserver(function(){if(!modal.hidden&&!manual&&!forced&&!publicPage())close(false);tryAuto();}).observe(document.body,{attributes:true,attributeFilter:['class']});
+ var landing=document.getElementById('growlogLanding');if(landing)new MutationObserver(tryAuto).observe(landing,{attributes:true,attributeFilter:['class']});
+ window.addEventListener('pageshow',function(){setTimeout(tryAuto,150);});
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',tryAuto,{once:true});
+ setTimeout(tryAuto,500);setTimeout(tryAuto,1600);setTimeout(tryAuto,4000);
 })();
 </script>
-<script src="./app.js?v=25-56"></script>
+<script src="./app.js?v=25-57"></script>
 
 </body>
 </html>
