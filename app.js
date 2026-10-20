@@ -327,6 +327,7 @@
     closeAccountSettings();
     setRoleClass(null);
     setTimeout(startGrowlogLandingSlides,0);
+    window.growlogPromoLandingReady?.();
   }
 
   let growlogLandingSlideTimer=null;
