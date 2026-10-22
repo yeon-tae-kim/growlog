@@ -5097,6 +5097,38 @@ body.auth-modal-open .toast.show{
 #glPromo .gl-action{display:block;text-align:center;width:100%;font:inherit;font-size:15px;font-weight:800;line-height:1.5;padding:13px;border-radius:13px;cursor:pointer;text-decoration:none;border:1px solid #4167c7;background:#4167c7;color:#fff;margin-top:15px}#glPromo .gl-secondary{margin-top:8px;background:#fff;color:#4167c7}#glPromo .gl-cta-copy{text-align:center;font-size:13px;color:#69768a;margin:19px 0 0}#glPromo .gl-disclosure{font-size:10px;color:#8591a2;line-height:1.6;text-align:center;margin:13px 0 0}#glPromo .gl-dismiss{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:13px;border-top:1px solid #eef1f5;padding-top:12px;font-size:12px;color:#738097}#glPromo .gl-dismiss label{display:flex;align-items:center;gap:7px;cursor:pointer}#glPromo .gl-dismiss button{border:0;background:none;font:inherit;color:inherit;cursor:pointer;padding:5px}
 .gl-preview-launch{border:1px solid #4167c7;border-radius:13px;background:#fff;color:#4167c7;font:inherit;font-weight:800;padding:12px 19px;cursor:pointer;margin:18px 0 10px}#glPromo :focus-visible,.gl-preview-launch:focus-visible{outline:3px solid #e79a58;outline-offset:3px}
 @media(max-width:480px){#glPromo{padding:10px}#glPromo .gl-card{padding:18px;max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px);border-radius:20px}#glPromo h2{font-size:23px}#glPromo .gl-title{font-size:19px}#glPromo .gl-note p{font-size:14px}#glPromo .gl-logo{width:130px}}
+
+/* ===== Growlog v28: popup growth example + GPT report experience ===== */
+#glPromo .gl-growth-preview{margin:15px 0 11px;padding:16px 14px 14px;border:1px solid #e2e9f6;border-radius:18px;background:#fbfdff}
+#glPromo .gl-growth-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:5px}
+#glPromo .gl-growth-head b{font-size:16px;line-height:1.35;color:#293b5c}
+#glPromo .gl-example-badge{flex-shrink:0;background:#eef3ff;color:#5270c8;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:850}
+#glPromo .gl-growth-sub{margin:0 0 5px;color:#748198;font-size:11px;line-height:1.55}
+#glPromo .gl-example-radar{width:min(100%,360px);height:auto;display:block;margin:0 auto;overflow:visible}
+#glPromo .gl-radar-ring{fill:none;stroke:#dce5f4;stroke-width:1}
+#glPromo .gl-radar-axis{stroke:#e4eaf4;stroke-width:1}
+#glPromo .gl-radar-shape{fill:rgba(77,112,209,.18);stroke:#5275d3;stroke-width:2.4;stroke-linejoin:round}
+#glPromo .gl-radar-point{fill:#fff;stroke:#5275d3;stroke-width:2}
+#glPromo .gl-radar-label{font-family:inherit;font-size:9.3px;font-weight:800;fill:#35445d}
+#glPromo .gl-radar-count{font-size:8.5px;font-weight:700;fill:#8190a6}
+#glPromo .gl-insight-chips{display:flex;gap:6px;flex-wrap:wrap;margin:3px 0 1px}
+#glPromo .gl-insight-chips span{font-size:10.5px;font-weight:750;color:#425571;background:#fff;border:1px solid #e0e7f2;border-radius:999px;padding:6px 9px}
+#glPromo .gl-gpt-box{margin-top:12px;padding:15px;border-radius:17px;background:#f6f8ff;border:1px solid #dce5fb}
+#glPromo .gl-gpt-kicker{font-size:10.5px;font-weight:850;color:#5270c8;margin-bottom:6px;letter-spacing:-.01em}
+#glPromo .gl-gpt-box h4{font-size:17px;line-height:1.4;margin:0 0 7px;color:#263a62}
+#glPromo .gl-gpt-box p{font-size:12px;color:#64748b;line-height:1.6;margin:0 0 10px;word-break:keep-all}
+#glPromo .gl-prompt-preview{font-size:10.5px;line-height:1.55;color:#66758b;background:#fff;border:1px solid #e3e8f2;border-radius:12px;padding:10px 11px;margin:0 0 9px;max-height:76px;overflow:hidden;position:relative}
+#glPromo .gl-prompt-preview::after{content:"";position:absolute;left:0;right:0;bottom:0;height:32px;background:linear-gradient(180deg,rgba(255,255,255,0),#fff)}
+#glPromo .gl-copy-prompt{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:45px;border:0;border-radius:12px;background:#5275d3;color:#fff;font:inherit;font-size:13px;font-weight:850;cursor:pointer;box-shadow:0 7px 17px rgba(82,117,211,.18)}
+#glPromo .gl-copy-prompt.copied{background:#4f8a63}
+#glPromo .gl-copy-help{text-align:center;font-size:10.5px;color:#8793a4;margin:7px 0 0}
+@media(max-width:480px){
+ #glPromo .gl-growth-preview{padding:14px 10px 12px}
+ #glPromo .gl-example-radar{width:min(100%,330px)}
+ #glPromo .gl-radar-label{font-size:8.8px}
+ #glPromo .gl-radar-count{font-size:8px}
+ #glPromo .gl-gpt-box{padding:13px}
+}
 </style>
 
 <style id="growlog-v27-mobile-landing-tune">
@@ -7932,6 +7964,53 @@ renderTeacherUploadPreview();
   <div class="gl-tags"><span>탐구</span><span>집중</span></div>
   <div class="gl-note"><b>오늘 발견한 모습</b><p>필요한 부품을 스스로 찾아보며<br>블록을 하나씩 연결해 보았어요.</p></div>
   <div class="gl-note gl-question"><b>집에서도 이야기를 이어가요</b><p>“오늘 만든 작품은 어떻게 움직일까?”</p></div>
+  <section class="gl-growth-preview" aria-label="Growlog 누적 성장기록 예시">
+    <div class="gl-growth-head"><b>🌈 기록이 쌓이면, 성장의 흐름이 보여요</b><span class="gl-example-badge">홍보용 예시</span></div>
+    <p class="gl-growth-sub">한 번의 점수가 아니라 수업에서 반복해서 발견된 행동의 누적 횟수예요.</p>
+    <svg class="gl-example-radar" viewBox="0 0 320 300" role="img" aria-label="홍보용 성장기록 예시 그래프. 집중 8회, 배려 3회, 탐색 7회, 협력 4회, 판단 6회, 표현 4회, 도전 5회, 질서 6회, 끈기 5회">
+<polygon class="gl-radar-ring" points="160.0,122.5 176.4,128.5 185.1,143.6 182.1,160.8 168.7,172.0 151.3,172.0 137.9,160.8 134.9,143.6 143.6,128.5" />
+<polygon class="gl-radar-ring" points="160.0,97.0 192.8,108.9 210.2,139.1 204.2,173.5 177.4,195.9 142.6,195.9 115.8,173.5 109.8,139.1 127.2,108.9" />
+<polygon class="gl-radar-ring" points="160.0,71.5 209.2,89.4 235.3,134.7 226.3,186.2 186.2,219.9 133.8,219.9 93.7,186.2 84.7,134.7 110.8,89.4" />
+<polygon class="gl-radar-ring" points="160.0,46.0 225.6,69.9 260.5,130.3 248.3,199.0 194.9,243.8 125.1,243.8 71.7,199.0 59.5,130.3 94.4,69.9" />
+<line class="gl-radar-axis" x1="160" y1="148" x2="160.0" y2="46.0" />
+<line class="gl-radar-axis" x1="160" y1="148" x2="225.6" y2="69.9" />
+<line class="gl-radar-axis" x1="160" y1="148" x2="260.5" y2="130.3" />
+<line class="gl-radar-axis" x1="160" y1="148" x2="248.3" y2="199.0" />
+<line class="gl-radar-axis" x1="160" y1="148" x2="194.9" y2="243.8" />
+<line class="gl-radar-axis" x1="160" y1="148" x2="125.1" y2="243.8" />
+<line class="gl-radar-axis" x1="160" y1="148" x2="71.7" y2="199.0" />
+<line class="gl-radar-axis" x1="160" y1="148" x2="59.5" y2="130.3" />
+<line class="gl-radar-axis" x1="160" y1="148" x2="94.4" y2="69.9" />
+<polygon class="gl-radar-shape" points="160.0,46.0 184.6,118.7 247.9,132.5 204.2,173.5 186.2,219.9 142.6,195.9 104.8,179.9 84.7,134.7 119.0,99.2" />
+<circle class="gl-radar-point" cx="160.0" cy="46.0" r="3.2" />
+<circle class="gl-radar-point" cx="184.6" cy="118.7" r="3.2" />
+<circle class="gl-radar-point" cx="247.9" cy="132.5" r="3.2" />
+<circle class="gl-radar-point" cx="204.2" cy="173.5" r="3.2" />
+<circle class="gl-radar-point" cx="186.2" cy="219.9" r="3.2" />
+<circle class="gl-radar-point" cx="142.6" cy="195.9" r="3.2" />
+<circle class="gl-radar-point" cx="104.8" cy="179.9" r="3.2" />
+<circle class="gl-radar-point" cx="84.7" cy="134.7" r="3.2" />
+<circle class="gl-radar-point" cx="119.0" cy="99.2" r="3.2" />
+<text class="gl-radar-label" x="160.0" y="18.0" text-anchor="middle"><tspan>🎯 집중</tspan><tspan class="gl-radar-count" x="160.0" dy="13">8회</tspan></text>
+<text class="gl-radar-label" x="243.6" y="48.4" text-anchor="start"><tspan>💗 배려</tspan><tspan class="gl-radar-count" x="243.6" dy="13">3회</tspan></text>
+<text class="gl-radar-label" x="288.0" y="125.4" text-anchor="start"><tspan>🔎 탐색</tspan><tspan class="gl-radar-count" x="288.0" dy="13">7회</tspan></text>
+<text class="gl-radar-label" x="272.6" y="213.0" text-anchor="start"><tspan>🤝 협력</tspan><tspan class="gl-radar-count" x="272.6" dy="13">4회</tspan></text>
+<text class="gl-radar-label" x="204.5" y="270.2" text-anchor="start"><tspan>🧭 판단</tspan><tspan class="gl-radar-count" x="204.5" dy="13">6회</tspan></text>
+<text class="gl-radar-label" x="115.5" y="270.2" text-anchor="end"><tspan>💬 표현</tspan><tspan class="gl-radar-count" x="115.5" dy="13">4회</tspan></text>
+<text class="gl-radar-label" x="47.4" y="213.0" text-anchor="end"><tspan>🚀 도전</tspan><tspan class="gl-radar-count" x="47.4" dy="13">5회</tspan></text>
+<text class="gl-radar-label" x="32.0" y="125.4" text-anchor="end"><tspan>📋 질서</tspan><tspan class="gl-radar-count" x="32.0" dy="13">6회</tspan></text>
+<text class="gl-radar-label" x="76.4" y="48.4" text-anchor="end"><tspan>💪 끈기</tspan><tspan class="gl-radar-count" x="76.4" dy="13">5회</tspan></text>
+</svg>
+    <div class="gl-insight-chips"><span>🎯 집중 8회</span><span>🔎 탐색 7회</span><span>🧭 판단·📋 질서 6회</span></div>
+    <div class="gl-gpt-box">
+      <div class="gl-gpt-kicker">GROWLOG × GPT</div>
+      <h4>이 기록을 한 페이지 성장리포트로 바꿔보세요</h4>
+      <p>예시 데이터를 읽고 아이의 강점, 성장 연결고리, 부모 대화 질문까지 정리하도록 만든 프롬프트예요.</p>
+      <div class="gl-prompt-preview" aria-hidden="true">“아래 Growlog 관찰 데이터만 바탕으로 아이의 강점과 성장 흐름을 한 페이지 리포트로 정리해줘…”</div>
+      <button class="gl-copy-prompt" type="button" id="glCopyPrompt">📋 GPT 성장리포트 프롬프트 복사</button>
+      <p class="gl-copy-help" id="glCopyPromptStatus" aria-live="polite">복사한 뒤 ChatGPT에 그대로 붙여넣으면 됩니다.</p>
+    </div>
+  </section>
   <button class="gl-action" type="button" id="glExplore">Growlog 둘러보기 →</button>
   <p class="gl-cta-copy">롤에듀의 수업 콘텐츠가 궁금하시다면?</p>
   <a class="gl-action gl-secondary" href="https://ralledu.co.kr/" target="_blank" rel="noopener noreferrer">롤에듀 수업 만나보기 ↗<span class="gl-sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)"> (새 창)</span></a>
@@ -7946,6 +8025,55 @@ renderTeacherUploadPreview();
  var modal=document.getElementById('glPromo'), card=modal.querySelector('.gl-card'), lastFocus, oldOverflow='', background=[], attempted=false;
  var forced=/(?:[?&])preview=1(?:&|$)/.test(location.search), manual=false;
  var key='growlog-promo-hide-day-v1';
+ var GROWLOG_EXAMPLE_PROMPT=`너는 유아·초등 아이의 수업 관찰기록을 따뜻하고 구체적으로 해석하는 교육 코치야. 아래 Growlog 데이터만 근거로 부모가 이해하기 쉬운 ‘한 페이지 성장리포트’를 만들어줘.
+
+중요한 해석 원칙
+- 기록 횟수가 많다고 아이의 고정된 성격으로 단정하지 마. ‘수업에서 자주 관찰된 힘’이라고 표현해.
+- 기록 횟수가 적은 영역을 약점이나 부족함으로 표현하지 마. 관찰 기회·수업 맥락의 차이일 수 있으므로 ‘다음에 더 발견해볼 힘’으로 표현해.
+- 진단, 등급, 우열 비교는 하지 마.
+- 모든 해석은 아래의 실제 행동 기록을 근거로 연결해. 데이터에 없는 사실은 만들지 마.
+- 아이가 자신만 잘하는 방향이 아니라 친구와 함께 배우고, 배려·협력하며, 자신의 힘을 공동체에 긍정적으로 쓰도록 돕는 관점으로 정리해.
+- 부모가 읽었을 때 ‘우리 아이를 더 잘 관찰하고 대화해보고 싶다’는 마음이 들도록 따뜻하지만 과장 없이 써줘.
+
+[Growlog 예시 데이터]
+아이 이름: 지호
+프로그램: 블럭동화
+누적 성장언어 기록(총 48회)
+- 집중 8회
+- 배려 3회
+- 탐색 7회
+- 협력 4회
+- 판단 6회
+- 표현 4회
+- 도전 5회
+- 질서 6회
+- 끈기 5회
+
+최근 관찰 행동
+1) 필요한 부품을 스스로 찾아보며 블록을 하나씩 연결했다. (집중·판단)
+2) 여러 블록 조합을 바꿔 끼우며 새로운 방법을 시험했다. (탐색)
+3) 만들 순서를 생각하고 필요한 블록을 직접 골랐다. (판단·질서)
+4) 작품이 잘되지 않을 때 다른 방법으로 다시 시도했다. (탐색·도전·끈기)
+5) 친구가 사용할 공간을 살피며 자리를 조절했다. (배려)
+
+수업에서 이어간 질문 예시
+- 오늘 만든 작품은 어떻게 움직일까?
+- 어떤 블록이 필요하다고 생각해서 직접 골랐어?
+- 처음 방법이 안 됐을 때 어떤 다른 방법을 해봤어?
+
+[출력 형식]
+맨 위 제목은 ‘🌱 지호의 Growlog 성장 한눈에 보기’로 써줘. 한 화면 또는 A4 1페이지 정도 길이로, 카드처럼 읽기 쉽게 정리해줘. 표는 쓰지 말고 제목·굵은 글씨·짧은 불릿을 활용해.
+
+반드시 아래 순서로 작성해줘.
+1. 💬 오늘까지의 성장 한 줄: 아이의 현재 성장 흐름을 2문장 이내로 요약
+2. 🌟 자주 발견된 힘 TOP 3: 영역명 + 횟수 + 실제 행동 근거 + 그 힘이 의미하는 바를 각각 2~3문장
+3. 🔗 성장의 연결고리: 집중·탐색·판단·질서·끈기 등이 서로 어떻게 연결되어 나타나는지 설명
+4. 🌱 다음에 더 발견해볼 힘: 기록이 적은 영역 중 1~2개를 골라 ‘부족함’이 아니라 자연스럽게 확장할 성장 포인트로 제안
+5. 🏠 집에서 이어가는 대화: 부모가 바로 물어볼 수 있는 질문 3개
+6. 🤝 함께 자라는 작은 실천: 친구·가족과 함께 할 수 있는 10분 내외 활동 2개
+7. ❤️ 부모님께: 아이를 평가하기보다 발견하고 기다려주는 관점의 짧은 마무리 2문장
+
+문체는 따뜻하고 명료하게. 부모 상담보고서처럼 딱딱하지 않게 쓰고, ‘잘한다/못한다’보다 ‘자주 보였다/더 발견해볼 수 있다’라는 표현을 사용해줘.`;
  function day(){return new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10);}
  function publicPage(){var landing=document.getElementById('growlogLanding');return landing&&!landing.classList.contains('hide')&&!document.body.classList.contains('auth-modal-open')&&!/prod-role-(parent|teacher|admin)/.test(document.body.className);}
  function open(){if(!modal.hidden)return;if(!manual&&!forced&&!publicPage())return;lastFocus=document.activeElement;modal.hidden=false;oldOverflow=document.body.style.overflow;document.body.style.overflow='hidden';background=[];Array.prototype.forEach.call(document.body.children,function(el){if(el!==modal&&el.tagName!=='SCRIPT'&&el.tagName!=='STYLE'){background.push([el,el.inert]);el.inert=true;}});card.scrollTop=0;modal.querySelector('.gl-close').focus();}
@@ -7961,6 +8089,17 @@ renderTeacherUploadPreview();
  window.growlogPromoLandingReady=function(){setTimeout(tryAuto,350);};
  modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('[data-gl-close]'))close(true);});
  document.getElementById('glExplore').addEventListener('click',function(){close(true);var landing=document.getElementById('growlogLanding');if(landing)landing.scrollIntoView({behavior:'smooth'});});
+ var copyBtn=document.getElementById('glCopyPrompt'), copyStatus=document.getElementById('glCopyPromptStatus');
+ async function copyPrompt(){
+  var copied=false;
+  try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(GROWLOG_EXAMPLE_PROMPT);copied=true;}}catch(e){}
+  if(!copied){
+   try{var ta=document.createElement('textarea');ta.value=GROWLOG_EXAMPLE_PROMPT;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();copied=document.execCommand('copy');ta.remove();}catch(e){}
+  }
+  if(copied){copyBtn.classList.add('copied');copyBtn.textContent='✓ 프롬프트 복사 완료';copyStatus.textContent='이제 ChatGPT에 붙여넣으면 한 페이지 성장리포트가 만들어집니다.';setTimeout(function(){copyBtn.classList.remove('copied');copyBtn.textContent='📋 GPT 성장리포트 프롬프트 복사';},2600);}
+  else{copyStatus.textContent='복사가 막혔어요. 브라우저에서 클립보드 권한을 허용한 뒤 다시 눌러주세요.';}
+ }
+ if(copyBtn)copyBtn.addEventListener('click',copyPrompt);
  document.addEventListener('keydown',function(e){if(modal.hidden)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close(true);}if(e.key==='Tab'){var nodes=Array.prototype.filter.call(card.querySelectorAll('button,a[href],input'),function(n){return !n.disabled;});var first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}},true);
  new MutationObserver(function(){if(!modal.hidden&&!manual&&!forced&&!publicPage())close(false);tryAuto();}).observe(document.body,{attributes:true,attributeFilter:['class']});
  var landing=document.getElementById('growlogLanding');if(landing)new MutationObserver(tryAuto).observe(landing,{attributes:true,attributeFilter:['class']});
@@ -7969,7 +8108,7 @@ renderTeacherUploadPreview();
  setTimeout(tryAuto,500);setTimeout(tryAuto,1600);setTimeout(tryAuto,4000);
 })();
 </script>
-<script src="./app.js?v=25-57"></script>
+<script src="./app.js?v=28"></script>
 
 </body>
 </html>
