@@ -327,53 +327,8 @@
     closeAccountSettings();
     setRoleClass(null);
     setTimeout(startGrowlogLandingSlides,0);
-    setTimeout(maybeShowGrowlogPromo,650);
+    window.growlogPromoLandingReady?.();
   }
-
-
-  const GROWLOG_PROMO_HIDE_KEY="growlogPromoHideDate";
-  const GROWLOG_PROMO_SESSION_KEY="growlogPromoDismissed";
-
-  function promoTodayKey(){
-    return todayISO();
-  }
-
-  function shouldShowGrowlogPromo(){
-    if(sessionStorage.getItem(GROWLOG_PROMO_SESSION_KEY)==="1")return false;
-    if(localStorage.getItem(GROWLOG_PROMO_HIDE_KEY)===promoTodayKey())return false;
-    if(joinCodeFromUrl())return false;
-    return true;
-  }
-
-  function maybeShowGrowlogPromo(){
-    const popup=$("growlogPromoPopup");
-    if(!popup || !shouldShowGrowlogPromo())return;
-    if(!$("growlogLanding") || $("growlogLanding").classList.contains("hide"))return;
-    if(!$("parentAuth")?.classList.contains("hide"))return;
-
-    const check=$("growlogPromoHideToday");
-    if(check)check.checked=false;
-    popup.classList.remove("hide");
-    document.body.classList.add("growlog-promo-open");
-  }
-
-  window.closeGrowlogPromo=function(){
-    const popup=$("growlogPromoPopup");
-    if(!popup)return;
-
-    if($("growlogPromoHideToday")?.checked){
-      localStorage.setItem(GROWLOG_PROMO_HIDE_KEY,promoTodayKey());
-    }
-    sessionStorage.setItem(GROWLOG_PROMO_SESSION_KEY,"1");
-    popup.classList.add("hide");
-    document.body.classList.remove("growlog-promo-open");
-  };
-
-  window.openGrowlogFromPromo=function(){
-    window.closeGrowlogPromo();
-    window.openGrowlogAuth?.("login");
-  };
-
 
   let growlogLandingSlideTimer=null;
   let growlogLandingSlideIndex=0;
@@ -406,7 +361,6 @@
   });
 
   window.openGrowlogAuth = function(mode="login"){
-    if(!$("growlogPromoPopup")?.classList.contains("hide"))window.closeGrowlogPromo?.();
     hideAllRolePages();
     $("growlogLanding")?.classList.remove("hide");
     $("parentAuth")?.classList.remove("hide");
