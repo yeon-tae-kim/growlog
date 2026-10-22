@@ -5320,172 +5320,52 @@ body.auth-modal-open .toast.show{
 }
 </style>
 <style>
-/* ===== Growlog v25.57 restore original promo look ===== */
-/* v25.56의 새로운 팝업 스타일 위에 덮어써서
-   사용자가 보낸 원래 모바일 팝업의 여백/크기/톤으로 되돌립니다.
-   하단 체크박스만 v25.56의 작은 체크형을 유지합니다. */
-
-.growlog-promo-popup{
-  padding:0!important;
-  align-items:center!important;
-  justify-content:center!important;
-  background:transparent!important;
-}
-.growlog-promo-backdrop{
-  background:rgba(31,40,57,.22)!important;
-  backdrop-filter:none!important;
-  -webkit-backdrop-filter:none!important;
-}
-.growlog-promo-card{
-  width:min(481px,calc(100vw - 20px))!important;
-  max-height:calc(100dvh - 16px)!important;
-  border-radius:20px!important;
-  background:#fff!important;
-  box-shadow:0 16px 48px rgba(22,34,53,.18)!important;
-  overflow:auto!important;
-}
-.growlog-promo-photo{
-  width:calc(100% - 20px)!important;
-  margin:0 10px!important;
-  aspect-ratio:450/320!important;
-  object-fit:cover!important;
-  object-position:center!important;
-  border-radius:0 0 20px 20px!important;
-}
-.growlog-promo-content{
-  padding:17px 16px 13px!important;
-}
-.growlog-promo-title{
-  margin:0 0 9px!important;
-  color:#17243c!important;
-  font-size:21px!important;
-  line-height:1.35!important;
-  font-weight:800!important;
-  letter-spacing:-.035em!important;
-}
-.growlog-promo-tags{
-  gap:7px!important;
-  margin-bottom:13px!important;
-}
-.growlog-promo-tag{
-  min-height:23px!important;
-  padding:3px 10px!important;
-  font-size:11.5px!important;
-  border-radius:999px!important;
-}
-.growlog-promo-note{
-  margin-top:10px!important;
-  padding:15px 16px!important;
-  border-radius:17px!important;
-  box-shadow:none!important;
-}
-.growlog-promo-note.warm{background:#fff1e7!important}
-.growlog-promo-note.blue{background:#edf3ff!important}
-.growlog-promo-note b{
-  margin-bottom:7px!important;
-  font-size:11.5px!important;
-}
-.growlog-promo-note p{
-  font-size:14px!important;
-  line-height:1.75!important;
-}
-.growlog-promo-primary,
-.growlog-promo-secondary{
-  min-height:50px!important;
-  border-radius:13px!important;
-  font-size:15px!important;
-}
-.growlog-promo-primary{
-  margin-top:14px!important;
-  background:#456bd0!important;
-}
-.growlog-promo-between{
-  margin:18px 0 7px!important;
-  font-size:11.5px!important;
-  color:#8a93a1!important;
-}
-.growlog-promo-secondary{
-  margin-top:0!important;
-  border:1.5px solid #456bd0!important;
-  color:#456bd0!important;
-}
-.growlog-promo-disclaimer{
-  margin:17px 0 12px!important;
-  font-size:9.5px!important;
-  line-height:1.55!important;
-  color:#a5acb7!important;
-}
+/* ===== v25.58: v25.56 유지 + 오늘 하루 보지 않기 영역만 정리 ===== */
 .growlog-promo-footer{
-  min-height:55px!important;
-  padding:10px 0 0!important;
-  border-top:1px solid #eceff3!important;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
 }
 .growlog-promo-day-label{
-  gap:7px!important;
-  color:#6e7889!important;
-  font-size:12px!important;
-  line-height:1!important;
-  white-space:nowrap!important;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  white-space:nowrap;
+  line-height:1;
 }
 .growlog-promo-check{
-  flex:0 0 15px!important;
-  width:15px!important;
-  height:15px!important;
-  border-radius:4px!important;
+  flex:0 0 14px;
+  width:14px;
+  height:14px;
+  border-radius:3px;
+  border:1.4px solid #c5ccd7;
+  box-sizing:border-box;
 }
-.growlog-promo-close{
-  padding:8px 2px 8px 12px!important;
-  font-size:12px!important;
-  color:#70798a!important;
+.growlog-promo-day-label input:checked + .growlog-promo-check{
+  border-color:#4167c7;
+  background:#4167c7;
 }
-
-/* 휴대폰에서는 사용자가 보내준 원래 팝업처럼
-   화면 전체를 흰 배경으로 쓰고 카드 느낌/어두운 배경을 없앱니다. */
+.growlog-promo-day-label input:checked + .growlog-promo-check::after{
+  left:3px;
+  top:0px;
+  width:4px;
+  height:8px;
+  border-width:0 2px 2px 0;
+}
 @media(max-width:520px){
-  .growlog-promo-popup{
-    display:block!important;
-    overflow-y:auto!important;
-    background:#fff!important;
-  }
-  .growlog-promo-popup.hide{display:none!important}
-  .growlog-promo-backdrop{display:none!important}
-  .growlog-promo-card{
-    width:100%!important;
-    max-width:none!important;
-    min-height:100dvh!important;
-    max-height:none!important;
-    margin:0!important;
-    border-radius:0!important;
-    box-shadow:none!important;
-    overflow:visible!important;
-  }
-  .growlog-promo-photo{
-    display:block!important;
-    width:calc(100% - 32px)!important;
-    margin:0 16px!important;
-    aspect-ratio:449/319!important;
-    border-radius:0 0 20px 20px!important;
-  }
-  .growlog-promo-content{
-    padding:18px 16px 12px!important;
-  }
-  .growlog-promo-title{
-    font-size:20px!important;
-    margin-bottom:9px!important;
-  }
-  .growlog-promo-note{
-    padding:15px 16px!important;
-  }
-  .growlog-promo-primary,
-  .growlog-promo-secondary{
-    min-height:50px!important;
-  }
   .growlog-promo-footer{
-    padding-top:10px!important;
-    padding-bottom:max(8px,env(safe-area-inset-bottom))!important;
+    gap:8px;
   }
   .growlog-promo-day-label{
-    font-size:11.5px!important;
+    font-size:11.5px;
+    letter-spacing:-.02em;
+  }
+  .growlog-promo-check{
+    flex-basis:14px;
+    width:14px;
+    height:14px;
   }
 }
 </style>
@@ -8270,7 +8150,7 @@ renderTeacherUploadPreview();
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
-<script src="./app.js?v=25-57"></script>
+<script src="./app.js?v=25-58"></script>
 
 </body>
 </html>
