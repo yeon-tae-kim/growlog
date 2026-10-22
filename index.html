@@ -5098,6 +5098,58 @@ body.auth-modal-open .toast.show{
 .gl-preview-launch{border:1px solid #4167c7;border-radius:13px;background:#fff;color:#4167c7;font:inherit;font-weight:800;padding:12px 19px;cursor:pointer;margin:18px 0 10px}#glPromo :focus-visible,.gl-preview-launch:focus-visible{outline:3px solid #e79a58;outline-offset:3px}
 @media(max-width:480px){#glPromo{padding:10px}#glPromo .gl-card{padding:18px;max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px);border-radius:20px}#glPromo h2{font-size:23px}#glPromo .gl-title{font-size:19px}#glPromo .gl-note p{font-size:14px}#glPromo .gl-logo{width:130px}}
 </style>
+
+<style>
+/* ===== Growlog v26: 오늘 하루 보지 않기 체크박스만 수정 ===== */
+#glPromo .gl-dismiss label{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  flex-wrap:nowrap!important;
+  white-space:nowrap!important;
+  width:auto!important;
+  min-width:0!important;
+  line-height:1!important;
+}
+
+#glPromo #glHideToday{
+  -webkit-appearance:checkbox!important;
+  appearance:auto!important;
+  width:14px!important;
+  height:14px!important;
+  min-width:14px!important;
+  min-height:14px!important;
+  max-width:14px!important;
+  max-height:14px!important;
+  flex:0 0 14px!important;
+  margin:0!important;
+  padding:0!important;
+  border-radius:3px!important;
+  box-shadow:none!important;
+  accent-color:#4167c7!important;
+  cursor:pointer!important;
+  vertical-align:middle!important;
+}
+
+@media(max-width:480px){
+  #glPromo .gl-dismiss{
+    flex-wrap:nowrap!important;
+    gap:8px!important;
+  }
+  #glPromo .gl-dismiss label{
+    font-size:11.5px!important;
+    white-space:nowrap!important;
+  }
+  #glPromo #glHideToday{
+    width:14px!important;
+    height:14px!important;
+    min-width:14px!important;
+    min-height:14px!important;
+    flex-basis:14px!important;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
