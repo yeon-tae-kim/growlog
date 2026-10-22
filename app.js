@@ -1638,7 +1638,10 @@
     if(!notice||!activeChild) return;
     let feeQuery=db.from("fees")
       .select("id,program,item,amount,visible,paid,class_id,classes(center_id,centers(name))")
-      .eq("child_id",activeChild.id).eq("visible",true).eq("paid",false);
+      .eq("child_id",activeChild.id)
+      .eq("visible",true)
+      .eq("paid",false)
+      .is("deleted_at",null);
     if(activeClass?.id) feeQuery=feeQuery.eq("class_id",activeClass.id);
     const {data,error}=await feeQuery.order("created_at",{ascending:false}).limit(1);
     if(error) throw error;
@@ -4456,6 +4459,7 @@
     const body=q("#adminFeeTable tbody");if(!body)return;
     const {data,error}=await db.from("fees")
       .select("id,child_id,class_id,program,item,amount,visible,paid,children(name),classes(term,program,weekday,class_time,centers(name))")
+      .is("deleted_at",null)
       .order("created_at",{ascending:false});
     if(error) throw error;
 
@@ -4481,18 +4485,40 @@
       tr.innerHTML=`<td>${escape(f.children?.name||"")}</td><td>${escape(f.center)}</td><td>${escape(f.classLabel)}</td><td>${escape(f.schedule)}</td><td>${escape(f.item)}</td>
         <td><div class="fee-amount-editor"><input class="fee-amount-input" inputmode="numeric" value="${Number(f.amount||0).toLocaleString("ko-KR")}"><span>원</span></div></td>
         <td><input class="switch" id="fee-vis-${f.id}" type="checkbox" ${f.visible?"checked":""}><label for="fee-vis-${f.id}" class="toggle"></label></td>
-        <td><button class="btn small ${f.paid?"ghost":""}">${f.paid?"완료":"입금확인"}</button></td>`;
+        <td><button class="btn small fee-paid-btn ${f.paid?"ghost":""}">${f.paid?"완료":"입금확인"}</button></td>
+        <td><button class="btn small danger fee-delete-btn" type="button">삭제</button></td>`;
       q(".fee-amount-input",tr).onchange=async e=>{
         const amount=Number(e.target.value.replace(/\D/g,"")||0);
         e.target.value=amount.toLocaleString("ko-KR");
         await db.from("fees").update({amount}).eq("id",f.id);
       };
       q("input.switch",tr).onchange=async e=>{await db.from("fees").update({visible:e.target.checked}).eq("id",f.id);};
-      q("button",tr).onclick=async e=>{
+      q(".fee-paid-btn",tr).onclick=async e=>{
         f.paid=!f.paid;
         await db.from("fees").update({paid:f.paid}).eq("id",f.id);
         e.target.textContent=f.paid?"완료":"입금확인";
         e.target.classList.toggle("ghost",f.paid);
+      };
+      q(".fee-delete-btn",tr).onclick=async ()=>{
+        const student=f.children?.name||"학생";
+        const label=f.item||"추가비용";
+        if(!window.confirm(`${student} · ${label}\n이 추가비용 항목을 삭제할까요?`))return;
+
+        const {error:deleteError}=await db.from("fees")
+          .update({
+            deleted_at:new Date().toISOString(),
+            visible:false
+          })
+          .eq("id",f.id);
+
+        if(deleteError){
+          console.error("fee delete:",deleteError);
+          return notify("추가비용 항목 삭제에 실패했습니다.");
+        }
+
+        tr.remove();
+        window.filterAdminFees?.();
+        notify("추가비용 항목을 삭제했습니다.");
       };
       body.appendChild(tr);
     });
