@@ -5628,7 +5628,7 @@ body.auth-modal-open .toast.show{
         <div class="card">
           <h2>1. 전체 활동사진 올리기</h2>
           <input id="bulk" type="file" multiple accept="image/*">
-          <p class="muted" style="font-size:12px">수업 사진을 한 번에 올려주세요. 업로드한 사진은 모든 아이 이름 탭에서 동일하게 확인하고 아이별로 선택할 수 있습니다.</p>
+          <p class="muted" style="font-size:12px">수업 사진은 한 번에 최대 30장까지 올릴 수 있어요. 선택하면 미리보기가 먼저 뜨고, 뒤에서 가볍게 최적화해 저장합니다. 업로드한 사진은 모든 아이 이름 탭에서 동일하게 확인하고 아이별로 선택할 수 있습니다.</p>
           <div id="uploadPreview" class="photos">
             <div class="photo-empty">아직 업로드된 사진이 없습니다.<br>위에서 오늘 수업 사진을 여러 장 선택해주세요.</div>
           </div>
@@ -7899,7 +7899,7 @@ document.getElementById("bulk").onchange=e=>{
   if(!files.length)return;
 
   uploadedActivityPhotos.forEach(photo=>URL.revokeObjectURL(photo.url));
-  uploadedActivityPhotos=files.slice(0,12).map(file=>({
+  uploadedActivityPhotos=files.slice(0,30).map(file=>({
     file,
     url:URL.createObjectURL(file)
   }));
@@ -8108,7 +8108,7 @@ renderTeacherUploadPreview();
  setTimeout(tryAuto,500);setTimeout(tryAuto,1600);setTimeout(tryAuto,4000);
 })();
 </script>
-<script src="./app.js?v=28"></script>
+<script src="./app.js?v=29"></script>
 
 </body>
 </html>

@@ -1426,7 +1426,7 @@
     const need=[];
 
     rows.forEach((p,i)=>{
-      const path=p.thumbnail_path||"";
+      const path=p.thumbnail_path||p.storage_path||"";
       if(!path)return;
       const cached=photoSignedUrlCache.get(path);
       if(cached && cached.expiresAt>now+60_000){
@@ -1500,7 +1500,7 @@
         .in("class_id",classIds)
         .eq("lesson_date",today)
         .is("thumbnail_path",null)
-        .limit(16);
+        .limit(40);
       if(error)throw error;
       const rows=data||[];
       if(!rows.length)return;
@@ -1585,9 +1585,9 @@
   async function renderParentPhotos(date){
     const pool=$("parentActivityPhotos");
     if(!pool) return;
-    pool.innerHTML="";
+    pool.innerHTML='<div class="photo-empty">📷 활동사진 불러오는 중...</div>';
     const {data,error}=await db.from("photo_assignments")
-      .select("photo_id,photos(id,storage_path,lesson_date,class_id)")
+      .select("photo_id,photos(id,storage_path,thumbnail_path,lesson_date,class_id)")
       .eq("child_id",activeChild.id);
     if(error) throw error;
     const rows=(data||[]).filter(x=>x.photos?.lesson_date===date && x.photos?.class_id===activeClass.id);
@@ -1595,27 +1595,32 @@
       pool.innerHTML='<div class="photo-empty">오늘 연결된 활동사진이 아직 없습니다.</div>';
       return;
     }
-    const ready=await Promise.all(rows.map(async row=>{
-      try{
-        const url=await signedUrl(row.photos.storage_path,21600);
-        return {row,url};
-      }catch(e){
-        console.warn("parent photo url:",row.photos?.storage_path,e);
-        return null;
-      }
-    }));
-    const visible=ready.filter(Boolean);
-    if(!visible.length){
-      pool.innerHTML='<div class="photo-empty">사진을 다시 불러오지 못했어요. 화면을 새로고침해주세요.</div>';
-      return;
-    }
-    for(const item of visible){
-      const {row,url}=item;
+
+    // 목록에서는 가벼운 썸네일 주소를 한 번에 받아 빠르게 보여주고, 원본은 사진을 눌렀을 때만 불러옵니다.
+    const fastRows=await signedThumbnailListFast(rows.map(x=>x.photos));
+    const fastById=new Map(fastRows.map(x=>[x.id,x]));
+    pool.innerHTML="";
+
+    let visibleCount=0;
+    for(const row of rows){
+      const photo=fastById.get(row.photos.id)||row.photos;
+      const thumbUrl=photo.url||"";
+      if(!thumbUrl)continue;
+      visibleCount++;
       const div=document.createElement("div");
       div.className="photo prod-photo-card";
-      div.innerHTML=`<img src="${url}" alt="활동사진" loading="lazy" decoding="async">`;
-      div.onclick=()=>openParentPhotoViewer(url,`${activeChild.name}_${date}_${row.photos.id}.jpg`,date);
+      div.innerHTML=`<img src="${thumbUrl}" alt="활동사진" loading="lazy" decoding="async">`;
+      div.onclick=async()=>{
+        try{
+          const originalUrl=await signedUrl(row.photos.storage_path,21600);
+          openParentPhotoViewer(originalUrl,`${activeChild.name}_${date}_${row.photos.id}.jpg`,date);
+        }catch(e){notify("원본 사진을 불러오지 못했습니다. 잠시 후 다시 눌러주세요.");}
+      };
       pool.appendChild(div);
+    }
+
+    if(!visibleCount){
+      pool.innerHTML='<div class="photo-empty">사진을 다시 불러오지 못했어요. 화면을 새로고침해주세요.</div>';
     }
   }
 
@@ -2629,7 +2634,10 @@
         ${p.url
           ? `<img src="${p.url}" alt="업로드 사진 ${i+1}" loading="${i<6?"eager":"lazy"}" decoding="async" fetchpriority="${i<4?"high":"auto"}">`
           : '<div class="teacher-photo-skeleton"><span>최적화 중</span></div>'}
-        ${activeClass?.status!=="종료"
+        ${p.uploading
+          ? '<span style="position:absolute;left:7px;bottom:7px;padding:4px 7px;border-radius:999px;background:rgba(35,49,41,.78);color:#fff;font-size:10px;font-weight:800">업로드 중</span>'
+          : ''}
+        ${activeClass?.status!=="종료" && p.id && !p.uploading
           ? '<button class="teacher-photo-delete" type="button" aria-label="사진 삭제" title="사진 삭제">×</button>'
           : ''}
       `;
@@ -2776,7 +2784,7 @@
         img.src=url;
       });
 
-      const maxDim=1800;
+      const maxDim=1600;
       const scale=Math.min(1,maxDim/Math.max(img.naturalWidth||1,img.naturalHeight||1));
       const width=Math.max(1,Math.round(img.naturalWidth*scale));
       const height=Math.max(1,Math.round(img.naturalHeight*scale));
@@ -2788,7 +2796,7 @@
       if(!ctx)return file;
 
       ctx.drawImage(img,0,0,width,height);
-      const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.82));
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.78));
       if(!blob || blob.size>=file.size*0.95)return file;
 
       const base=String(file.name||"photo").replace(/\.[^.]+$/,"");
@@ -2816,7 +2824,7 @@
         img.onerror=()=>reject(new Error("썸네일 디코딩 실패"));
         img.src=url;
       });
-      const maxDim=480;
+      const maxDim=420;
       const scale=Math.min(1,maxDim/Math.max(img.naturalWidth||1,img.naturalHeight||1));
       const width=Math.max(1,Math.round(img.naturalWidth*scale));
       const height=Math.max(1,Math.round(img.naturalHeight*scale));
@@ -2825,7 +2833,7 @@
       const ctx=canvas.getContext("2d",{alpha:false});
       if(!ctx)return null;
       ctx.drawImage(img,0,0,width,height);
-      const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.58));
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.55));
       if(!blob)return null;
       return new File([blob],"thumb.jpg",{type:"image/jpeg",lastModified:Date.now()});
     }catch(e){
@@ -2862,9 +2870,23 @@
 
   function setTeacherUploadProgress(done,total){
     const pool=$("uploadPreview");
-    if(pool){
-      pool.innerHTML=`<div class="photo-empty"><b>📤 사진 업로드 중 ${done}/${total}</b><br>휴대폰 사진은 자동으로 가볍게 최적화해서 올리고 있어요.</div>`;
+    if(!pool)return;
+    let banner=$("teacherUploadProgressBanner");
+    if(!banner){
+      banner=document.createElement("div");
+      banner.id="teacherUploadProgressBanner";
+      banner.className="photo-empty";
+      banner.style.cssText="margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#f6f9ff;border:1px solid #dce6f8;text-align:left";
+      pool.parentElement?.insertBefore(banner,pool);
     }
+    banner.style.display="block";
+    const pct=total?Math.round((done/total)*100):0;
+    banner.innerHTML=`<b>📤 사진 업로드 ${done}/${total}장 · ${pct}%</b><br><span style="font-size:12px">선택한 사진은 먼저 화면에 보여드리고, 뒤에서 가볍게 최적화해 저장하고 있어요.</span>`;
+  }
+
+  function clearTeacherUploadProgress(){
+    const banner=$("teacherUploadProgressBanner");
+    if(banner)banner.remove();
   }
 
   function bindBulkUpload(){
@@ -2877,7 +2899,10 @@
     fresh.dataset.prodBound="1";
 
     fresh.onchange=async e=>{
-      const files=[...e.target.files].slice(0,12);
+      const selected=[...e.target.files];
+      const files=selected.slice(0,30);
+      if(selected.length>30)notify(`한 번에 최대 30장까지 올릴 수 있어요. 선택한 ${selected.length}장 중 앞의 30장을 업로드합니다.`);
+
       if(activeClass?.status==="종료"){
         e.target.value="";
         return notify("종료된 수업은 이전 기록 열람만 가능합니다.");
@@ -2890,88 +2915,142 @@
       }
 
       const classId=activeClass.id;
-      const uploadedPaths=[];
-      const rows=[];
+      const localPreviewUrls=[];
+      const optimisticPhotos=files.map((file,index)=>{
+        const url=URL.createObjectURL(file);
+        localPreviewUrls.push(url);
+        return {
+          id:null,
+          url,
+          uploading:true,
+          local_upload_index:index,
+          storage_path:"",
+          thumbnail_path:null,
+          lesson_date:uploadDate,
+          class_id:classId
+        };
+      });
+
+      // 선택 직후 로컬 미리보기를 먼저 보여줘 30장을 올려도 빈 화면으로 기다리지 않게 합니다.
+      prodPhotos=[...prodPhotos.filter(p=>p?.id),...optimisticPhotos];
+      uploadedActivityPhotos.splice(0,uploadedActivityPhotos.length,...prodPhotos);
+      renderTeacherUploadPreviewProd();
+      renderChildPhotoPickerProd();
+
+      const committedPaths=[];
       let done=0;
+      let reloadSucceeded=false;
       setTeacherUploadProgress(0,files.length);
 
-      try{
-        // 휴대폰 메모리/네트워크를 과하게 쓰지 않도록 3장씩 병렬 업로드합니다.
-        for(let i=0;i<files.length;i+=3){
-          const batch=files.slice(i,i+3);
+      const uploadOne=async original=>{
+        const ownPaths=[];
+        try{
+          const file=await optimizeTeacherPhotoFile(original);
+          const path=teacherPhotoStoragePath(file,uploadDate);
 
-          const results=await Promise.all(batch.map(async original=>{
-            const file=await optimizeTeacherPhotoFile(original);
-            const path=teacherPhotoStoragePath(file,uploadDate);
+          const {error:upErr}=await db.storage.from("activity-photos").upload(
+            path,
+            file,
+            {upsert:false,contentType:file.type||undefined,cacheControl:"31536000"}
+          );
+          if(upErr)throw new Error("사진 파일 저장: "+upErr.message);
+          ownPaths.push(path);
 
-            const {error:upErr}=await db.storage.from("activity-photos").upload(
-              path,
-              file,
-              {upsert:false,contentType:file.type||undefined,cacheControl:"31536000"}
+          let thumbnailPath=null;
+          const thumbnailFile=await createTeacherThumbnailFile(file);
+          if(thumbnailFile){
+            const candidate=teacherThumbnailPath(path);
+            const {error:thumbErr}=await db.storage.from("activity-photos").upload(
+              candidate,
+              thumbnailFile,
+              {upsert:false,contentType:"image/jpeg",cacheControl:"31536000"}
             );
-            if(upErr)throw new Error("사진 파일 저장: "+upErr.message);
+            if(!thumbErr){thumbnailPath=candidate;ownPaths.push(candidate);}
+            else console.warn("thumbnail upload:",thumbErr.message);
+          }
 
-            let thumbnailPath=null;
-            const thumbnailFile=await createTeacherThumbnailFile(file);
-            if(thumbnailFile){
-              const candidate=teacherThumbnailPath(path);
-              const {error:thumbErr}=await db.storage.from("activity-photos").upload(
-                candidate,
-                thumbnailFile,
-                {upsert:false,contentType:"image/jpeg",cacheControl:"31536000"}
-              );
-              if(!thumbErr)thumbnailPath=candidate;
-              else console.warn("thumbnail upload:",thumbErr.message);
+          return {
+            path,
+            thumbnailPath,
+            paths:ownPaths,
+            row:{
+              class_id:classId,
+              lesson_date:uploadDate,
+              storage_path:path,
+              thumbnail_path:thumbnailPath,
+              uploaded_by:session.user.id
             }
+          };
+        }catch(err){
+          if(ownPaths.length){
+            try{await db.storage.from("activity-photos").remove(ownPaths);}catch{}
+          }
+          throw err;
+        }
+      };
 
-            return {
-              path,
-              thumbnailPath,
-              row:{
-                class_id:classId,
-                lesson_date:uploadDate,
-                storage_path:path,
-                thumbnail_path:thumbnailPath,
-                uploaded_by:session.user.id
-              }
-            };
-          }));
+      try{
+        // 모바일 메모리를 지키면서도 30장이 너무 오래 걸리지 않도록 4장씩 병렬 처리합니다.
+        for(let i=0;i<files.length;i+=4){
+          const batch=files.slice(i,i+4);
+          const settled=await Promise.allSettled(batch.map(uploadOne));
+          const batchResults=settled.filter(x=>x.status==="fulfilled").map(x=>x.value);
+          const failed=settled.find(x=>x.status==="rejected");
 
-          results.forEach(result=>{
-            uploadedPaths.push(result.path);
-            if(result.thumbnailPath)uploadedPaths.push(result.thumbnailPath);
-            rows.push(result.row);
+          if(failed){
+            const batchPaths=batchResults.flatMap(x=>x.paths||[]);
+            if(batchPaths.length){
+              try{await db.storage.from("activity-photos").remove(batchPaths);}catch{}
+            }
+            throw failed.reason;
+          }
+
+          const batchRows=batchResults.map(x=>x.row);
+          const {data:inserted,error:dbErr}=await db.from("photos").insert(batchRows).select("*");
+          if(dbErr){
+            const batchPaths=batchResults.flatMap(x=>x.paths||[]);
+            if(batchPaths.length){
+              try{await db.storage.from("activity-photos").remove(batchPaths);}catch{}
+            }
+            throw new Error("사진 기록 저장: "+dbErr.message);
+          }
+
+          batchResults.forEach((result,j)=>{
+            committedPaths.push(...(result.paths||[]));
+            const preview=optimisticPhotos[i+j];
+            const row=(inserted||[])[j];
+            if(preview){
+              if(row)Object.assign(preview,row);
+              preview.uploading=false;
+            }
           });
-          done+=results.length;
+
+          done+=batchResults.length;
+          uploadedActivityPhotos.splice(0,uploadedActivityPhotos.length,...prodPhotos);
+          renderTeacherUploadPreviewProd();
+          renderChildPhotoPickerProd();
           setTeacherUploadProgress(done,files.length);
         }
 
-        // 사진마다 DB insert를 반복하지 않고 한 번에 저장합니다.
-        const {error:dbErr}=await db.from("photos").insert(rows);
-        if(dbErr){
-          if(uploadedPaths.length){
-            await db.storage.from("activity-photos").remove(uploadedPaths).catch(()=>{});
-          }
-          throw new Error("사진 기록 저장: "+dbErr.message);
-        }
-
         e.target.value="";
-
-        // 방금 업로드한 경로의 오래된 URL 캐시가 있을 가능성을 제거합니다.
-        uploadedPaths.forEach(path=>photoSignedUrlCache.delete(path));
+        committedPaths.forEach(path=>photoSignedUrlCache.delete(path));
 
         await loadTeacherPhotos();
-        notify(`${files.length}장의 사진을 빠르게 업로드했습니다.`);
+        reloadSucceeded=true;
+        clearTeacherUploadProgress();
+        notify(`${files.length}장의 사진 업로드가 완료되었습니다.`);
       }catch(err){
         e.target.value="";
-
-        // DB 저장 전 실패했다면 성공했던 Storage 파일도 정리합니다.
-        if(uploadedPaths.length){
-          try{await db.storage.from("activity-photos").remove(uploadedPaths);}catch{}
-        }
-
-        await loadTeacherPhotos().catch(()=>{});
-        notify("사진 업로드 실패 · "+(err?.message||err));
+        clearTeacherUploadProgress();
+        try{
+          await loadTeacherPhotos();
+          reloadSucceeded=true;
+        }catch{}
+        if(done>0)notify(`${done}장은 저장되었고, 나머지 사진 업로드 중 오류가 생겼어요 · `+(err?.message||err));
+        else notify("사진 업로드 실패 · "+(err?.message||err));
+      }finally{
+        // 서버 사진으로 정상 교체된 뒤에만 로컬 미리보기 메모리를 해제합니다.
+        if(reloadSucceeded)localPreviewUrls.forEach(url=>URL.revokeObjectURL(url));
       }
     };
   }
