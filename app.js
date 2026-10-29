@@ -53,6 +53,10 @@
   let adminTodayDetailClassId = null;
   let parentCompletedEnrollment = null;
   let parentPhotoViewerState = {url:"",filename:"",date:"",blob:null,mime:"image/jpeg"};
+  let parentPhotoBulkItems = [];
+  let parentPhotoSelectedIds = new Set();
+  let parentPreparedShareFiles = [];
+  let parentPreparedShareLabel = "";
   let accountEditableChildren = [];
   const AUTO_ABSENCE_START_DATE = "2026-10-29";
   const photoSignedUrlCache = new Map();
@@ -1667,9 +1671,253 @@
     }
   };
 
+  function parentPhotoMobileLike(){
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||"") ||
+      (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1) ||
+      (window.matchMedia && window.matchMedia("(pointer: coarse)").matches && window.innerWidth<1100);
+  }
+
+  function sanitizePhotoFilenamePart(value){
+    return String(value||"Growlog").trim().replace(/[\\/:*?"<>|]/g,"_").replace(/\s+/g,"_").slice(0,50)||"Growlog";
+  }
+
+  function parentPhotoExtension(mime,path){
+    const m=String(mime||"").toLowerCase();
+    if(m.includes("png"))return "png";
+    if(m.includes("webp"))return "webp";
+    if(m.includes("gif"))return "gif";
+    if(m.includes("heic")||m.includes("heif"))return "heic";
+    const hit=String(path||"").match(/\.([a-z0-9]{2,5})(?:\?|$)/i);
+    return hit?hit[1].toLowerCase():"jpg";
+  }
+
+  function resetParentPhotoBulkState(){
+    parentPhotoBulkItems=[];
+    parentPhotoSelectedIds.clear();
+    syncParentPhotoBulkToolbar();
+  }
+
+  function syncParentPhotoBulkToolbar(){
+    const toolbar=$("parentPhotoBulkToolbar");
+    if(!toolbar)return;
+    const total=parentPhotoBulkItems.length;
+    const selected=parentPhotoSelectedIds.size;
+    toolbar.classList.toggle("hide",!total);
+    const all=$("parentPhotoSelectAll");
+    if(all){
+      all.checked=total>0 && selected===total;
+      all.indeterminate=selected>0 && selected<total;
+    }
+    if($("parentPhotoSelectionCount")) $("parentPhotoSelectionCount").textContent=`${selected}장 선택`;
+    if($("parentPhotoSaveSelectedBtn")) $("parentPhotoSaveSelectedBtn").disabled=selected===0;
+    qAll("#parentActivityPhotos .prod-photo-card[data-photo-id]").forEach(card=>{
+      const id=card.dataset.photoId;
+      const checked=parentPhotoSelectedIds.has(id);
+      card.classList.toggle("parent-photo-selected",checked);
+      const input=q(".parent-photo-select input",card);
+      if(input)input.checked=checked;
+    });
+  }
+
+  window.toggleAllParentPhotos=function(checked){
+    parentPhotoSelectedIds.clear();
+    if(checked) parentPhotoBulkItems.forEach(x=>parentPhotoSelectedIds.add(x.id));
+    syncParentPhotoBulkToolbar();
+  };
+
+  function setPhotoBatchBusy(button,busy,text){
+    const buttons=[$("parentPhotoSaveSelectedBtn"),$("parentPhotoSaveAllBtn")].filter(Boolean);
+    buttons.forEach(b=>b.disabled=busy || (b.id==="parentPhotoSaveSelectedBtn" && parentPhotoSelectedIds.size===0));
+    if(button){
+      if(!button.dataset.defaultText)button.dataset.defaultText=button.textContent;
+      if(!buttons.includes(button))button.disabled=busy;
+      button.textContent=busy?(text||"사진 준비 중..."):button.dataset.defaultText;
+    }
+  }
+
+  async function fetchParentPhotoFiles(items,onProgress){
+    const ordered=(items||[]).slice();
+    const files=new Array(ordered.length);
+    let cursor=0,done=0;
+    const workers=Array.from({length:Math.min(3,ordered.length)},async()=>{
+      while(true){
+        const i=cursor++;
+        if(i>=ordered.length)break;
+        const item=ordered[i];
+        const url=await signedUrl(item.storagePath,21600);
+        const res=await fetch(url);
+        if(!res.ok)throw new Error("사진 원본을 불러오지 못했습니다.");
+        const blob=await res.blob();
+        const ext=parentPhotoExtension(blob.type,item.storagePath);
+        const child=sanitizePhotoFilenamePart(activeChild?.name||"아이");
+        const date=sanitizePhotoFilenamePart(item.date||todayISO());
+        const filename=`${child}_${date}_${String(i+1).padStart(2,"0")}.${ext}`;
+        files[i]=new File([blob],filename,{type:blob.type||"image/jpeg"});
+        done++;
+        if(onProgress)onProgress(done,ordered.length);
+      }
+    });
+    await Promise.all(workers);
+    return files.filter(Boolean);
+  }
+
+  function crc32Bytes(bytes){
+    let crc=0xffffffff;
+    for(let i=0;i<bytes.length;i++){
+      crc^=bytes[i];
+      for(let j=0;j<8;j++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);
+    }
+    return (crc^0xffffffff)>>>0;
+  }
+
+  function zipDosDateTime(date){
+    const d=date||new Date();
+    const year=Math.max(1980,d.getFullYear());
+    return {
+      time:(d.getHours()<<11)|(d.getMinutes()<<5)|(Math.floor(d.getSeconds()/2)),
+      date:((year-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate()
+    };
+  }
+
+  function zipHeader(length){return new Uint8Array(length);}
+  function setU16(view,off,val){view.setUint16(off,val,true);}
+  function setU32(view,off,val){view.setUint32(off,val>>>0,true);}
+
+  async function makeStoredZip(files){
+    const enc=new TextEncoder();
+    const localParts=[],centralParts=[];
+    let offset=0,centralSize=0;
+    for(const file of files){
+      const nameBytes=enc.encode(file.name);
+      const bytes=new Uint8Array(await file.arrayBuffer());
+      const crc=crc32Bytes(bytes);
+      const dt=zipDosDateTime(new Date(file.lastModified||Date.now()));
+
+      const local=zipHeader(30); const lv=new DataView(local.buffer);
+      setU32(lv,0,0x04034b50); setU16(lv,4,20); setU16(lv,6,0x0800); setU16(lv,8,0);
+      setU16(lv,10,dt.time); setU16(lv,12,dt.date); setU32(lv,14,crc);
+      setU32(lv,18,bytes.length); setU32(lv,22,bytes.length); setU16(lv,26,nameBytes.length); setU16(lv,28,0);
+      localParts.push(local,nameBytes,file);
+
+      const central=zipHeader(46); const cv=new DataView(central.buffer);
+      setU32(cv,0,0x02014b50); setU16(cv,4,20); setU16(cv,6,20); setU16(cv,8,0x0800); setU16(cv,10,0);
+      setU16(cv,12,dt.time); setU16(cv,14,dt.date); setU32(cv,16,crc);
+      setU32(cv,20,bytes.length); setU32(cv,24,bytes.length); setU16(cv,28,nameBytes.length);
+      setU16(cv,30,0); setU16(cv,32,0); setU16(cv,34,0); setU16(cv,36,0); setU32(cv,38,0); setU32(cv,42,offset);
+      centralParts.push(central,nameBytes);
+      offset+=30+nameBytes.length+bytes.length;
+      centralSize+=46+nameBytes.length;
+    }
+    const end=zipHeader(22); const ev=new DataView(end.buffer);
+    setU32(ev,0,0x06054b50); setU16(ev,4,0); setU16(ev,6,0); setU16(ev,8,files.length); setU16(ev,10,files.length);
+    setU32(ev,12,centralSize); setU32(ev,16,offset); setU16(ev,20,0);
+    return new Blob([...localParts,...centralParts,end],{type:"application/zip"});
+  }
+
+  function downloadBlob(blob,filename){
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download=filename;a.rel="noopener";a.style.display="none";
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
+  }
+
+  function openParentPhotoBatchDialog(files,label){
+    parentPreparedShareFiles=files;
+    parentPreparedShareLabel=label||"Growlog 활동사진";
+    const dialog=$("parentPhotoBatchSaveDialog");
+    const title=$("parentPhotoBatchTitle"),text=$("parentPhotoBatchText"),shareBtn=$("parentPhotoBatchShareBtn");
+    if(title)title.textContent=`사진 ${files.length}장 준비 완료`;
+    const canFileShare=!!(navigator.share&&navigator.canShare&&navigator.canShare({files}));
+    if(text)text.textContent=canFileShare
+      ? "아래 버튼을 누르면 휴대폰의 저장/공유 메뉴가 열립니다."
+      : "이 브라우저는 여러 사진 공유를 지원하지 않아 일반 다운로드로 저장합니다.";
+    if(shareBtn)shareBtn.textContent=canFileShare?"갤러리에 저장하기":"사진 다운로드하기";
+    dialog?.classList.remove("hide");
+  }
+
+  window.closeParentPhotoBatchSaveDialog=function(){
+    $("parentPhotoBatchSaveDialog")?.classList.add("hide");
+    parentPreparedShareFiles=[];
+    parentPreparedShareLabel="";
+  };
+
+  async function fallbackDownloadPhotoFiles(files){
+    for(let i=0;i<files.length;i++){
+      downloadBlob(files[i],files[i].name);
+      if(i<files.length-1)await new Promise(r=>setTimeout(r,180));
+    }
+  }
+
+  window.openParentPhotoBatchShare=async function(){
+    const files=parentPreparedShareFiles.slice();
+    if(!files.length)return;
+    const btn=$("parentPhotoBatchShareBtn");
+    if(btn)btn.disabled=true;
+    try{
+      if(navigator.share&&navigator.canShare&&navigator.canShare({files})){
+        await navigator.share({files,title:parentPreparedShareLabel||"Growlog 활동사진"});
+        notify("휴대폰 메뉴에서 ‘사진에 저장’ 또는 갤러리/사진 앱 저장을 선택해주세요.");
+        closeParentPhotoBatchSaveDialog();
+        return;
+      }
+      await fallbackDownloadPhotoFiles(files);
+      notify("사진 다운로드를 시작했습니다. Android에서는 다운로드된 이미지가 갤러리의 다운로드 앨범에 표시될 수 있어요.");
+      closeParentPhotoBatchSaveDialog();
+    }catch(e){
+      if(e?.name!=="AbortError")notify("저장 메뉴를 열지 못했습니다. 다시 시도해주세요.");
+    }finally{
+      if(btn)btn.disabled=false;
+    }
+  };
+
+  async function saveParentPhotoItems(items,button,label){
+    if(!items?.length)return notify("저장할 사진을 선택해주세요.");
+    setPhotoBatchBusy(button,true,"준비 0/"+items.length);
+    try{
+      const files=await fetchParentPhotoFiles(items,(done,total)=>{
+        if(button)button.textContent=`준비 ${done}/${total}`;
+      });
+      if(!files.length)throw new Error("저장할 사진을 불러오지 못했습니다.");
+
+      if(parentPhotoMobileLike()){
+        // 모바일의 네이티브 공유 API는 실제 버튼 클릭에서 호출되어야 가장 안정적이므로
+        // 원본을 준비한 뒤 한 번 더 누르는 저장 전용 창을 띄웁니다.
+        openParentPhotoBatchDialog(files,label);
+      }else{
+        if(files.length===1){
+          downloadBlob(files[0],files[0].name);
+        }else{
+          if(button)button.textContent="ZIP 만드는 중...";
+          const zip=await makeStoredZip(files);
+          const child=sanitizePhotoFilenamePart(activeChild?.name||"아이");
+          const date=sanitizePhotoFilenamePart(items[0]?.date||todayISO());
+          downloadBlob(zip,`${child}_${date}_활동사진_${files.length}장.zip`);
+        }
+        notify(`${files.length}장 다운로드를 시작했습니다.`);
+      }
+    }catch(e){
+      console.warn("parent photo batch save",e);
+      notify(e?.message||"사진을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.");
+    }finally{
+      setPhotoBatchBusy(button,false);
+      syncParentPhotoBulkToolbar();
+    }
+  }
+
+  window.saveSelectedParentPhotos=function(){
+    const items=parentPhotoBulkItems.filter(x=>parentPhotoSelectedIds.has(x.id));
+    return saveParentPhotoItems(items,$("parentPhotoSaveSelectedBtn"),"Growlog 선택 활동사진");
+  };
+
+  window.saveAllParentPhotos=function(){
+    return saveParentPhotoItems(parentPhotoBulkItems,$("parentPhotoSaveAllBtn"),"Growlog 전체 활동사진");
+  };
+
   async function renderParentPhotos(date){
     const pool=$("parentActivityPhotos");
     if(!pool) return;
+    resetParentPhotoBulkState();
     pool.innerHTML='<div class="photo-empty">📷 활동사진 불러오는 중...</div>';
     const {data,error}=await db.from("photo_assignments")
       .select("photo_id,photos(id,storage_path,thumbnail_path,lesson_date,class_id)")
@@ -1678,10 +1926,11 @@
     const rows=(data||[]).filter(x=>x.photos?.lesson_date===date && x.photos?.class_id===activeClass.id);
     if(!rows.length){
       pool.innerHTML='<div class="photo-empty">오늘 연결된 활동사진이 아직 없습니다.</div>';
+      syncParentPhotoBulkToolbar();
       return;
     }
 
-    // 목록에서는 가벼운 썸네일 주소를 한 번에 받아 빠르게 보여주고, 원본은 사진을 눌렀을 때만 불러옵니다.
+    // 목록에서는 가벼운 썸네일 주소를 한 번에 받아 빠르게 보여주고, 원본은 보기/저장할 때만 불러옵니다.
     const fastRows=await signedThumbnailListFast(rows.map(x=>x.photos));
     const fastById=new Map(fastRows.map(x=>[x.id,x]));
     pool.innerHTML="";
@@ -1692,10 +1941,37 @@
       const thumbUrl=photo.url||"";
       if(!thumbUrl)continue;
       visibleCount++;
+      const item={
+        id:String(row.photos.id),
+        storagePath:row.photos.storage_path,
+        date:row.photos.lesson_date||date
+      };
+      parentPhotoBulkItems.push(item);
+
       const div=document.createElement("div");
       div.className="photo prod-photo-card";
-      div.innerHTML=`<img src="${thumbUrl}" alt="활동사진" loading="lazy" decoding="async">`;
-      div.onclick=async()=>{
+      div.dataset.photoId=item.id;
+      div.innerHTML=`<img src="${thumbUrl}" alt="활동사진 ${visibleCount}" loading="lazy" decoding="async">`;
+
+      const select=document.createElement("label");
+      select.className="parent-photo-select";
+      select.title="이 사진 선택";
+      const check=document.createElement("input");
+      check.type="checkbox";
+      check.setAttribute("aria-label",`활동사진 ${visibleCount} 선택`);
+      check.addEventListener("click",e=>e.stopPropagation());
+      check.addEventListener("change",e=>{
+        e.stopPropagation();
+        if(check.checked)parentPhotoSelectedIds.add(item.id);
+        else parentPhotoSelectedIds.delete(item.id);
+        syncParentPhotoBulkToolbar();
+      });
+      select.addEventListener("click",e=>e.stopPropagation());
+      select.appendChild(check);
+      div.appendChild(select);
+
+      div.onclick=async e=>{
+        if(e.target.closest(".parent-photo-select"))return;
         try{
           const originalUrl=await signedUrl(row.photos.storage_path,21600);
           openParentPhotoViewer(originalUrl,`${activeChild.name}_${date}_${row.photos.id}.jpg`,date);
@@ -1707,6 +1983,7 @@
     if(!visibleCount){
       pool.innerHTML='<div class="photo-empty">사진을 다시 불러오지 못했어요. 화면을 새로고침해주세요.</div>';
     }
+    syncParentPhotoBulkToolbar();
   }
 
   async function downloadUrl(url,filename){
@@ -1799,15 +2076,53 @@
         <div class="muted" style="margin-top:4px">${escape(rec.observation_text||"")}</div>`;
       const photos=(assignments||[]).filter(a=>a.photos?.class_id===enrollment.class_id && a.photos?.lesson_date===rec.lesson_date);
       if(photos.length){
+        const items=photos.map(p=>({
+          id:String(p.photos.id),storagePath:p.photos.storage_path,date:rec.lesson_date
+        }));
+        const selected=new Set();
+        const tools=document.createElement("div"); tools.className="parent-history-photo-tools";
+        const selectAllLabel=document.createElement("label"); selectAllLabel.className="parent-photo-select-all";
+        const selectAll=document.createElement("input"); selectAll.type="checkbox";
+        const selectAllText=document.createElement("span"); selectAllText.textContent="전체 선택";
+        selectAllLabel.append(selectAll,selectAllText);
+        const count=document.createElement("span"); count.className="parent-photo-selection-count"; count.textContent="0장 선택";
+        const selectedBtn=document.createElement("button"); selectedBtn.type="button"; selectedBtn.className="btn small sec"; selectedBtn.textContent="선택 저장"; selectedBtn.disabled=true;
+        const allBtn=document.createElement("button"); allBtn.type="button"; allBtn.className="btn small"; allBtn.textContent="전체 저장";
+        tools.append(selectAllLabel,selectedBtn,allBtn,count);
+
         const pbox=document.createElement("div"); pbox.className="prod-history-photos";
-        for(const p of photos){
+        const syncHistory=()=>{
+          count.textContent=`${selected.size}장 선택`;
+          selectedBtn.disabled=selected.size===0;
+          selectAll.checked=selected.size===items.length;
+          selectAll.indeterminate=selected.size>0&&selected.size<items.length;
+          qAll(".prod-photo-card[data-history-photo-id]",pbox).forEach(card=>{
+            const checked=selected.has(card.dataset.historyPhotoId);
+            card.classList.toggle("parent-photo-selected",checked);
+            const c=q(".parent-photo-select input",card);if(c)c.checked=checked;
+          });
+        };
+        selectAll.onchange=()=>{
+          selected.clear(); if(selectAll.checked)items.forEach(x=>selected.add(x.id)); syncHistory();
+        };
+        selectedBtn.onclick=()=>saveParentPhotoItems(items.filter(x=>selected.has(x.id)),selectedBtn,`Growlog ${rec.lesson_date} 선택 활동사진`);
+        allBtn.onclick=()=>saveParentPhotoItems(items,allBtn,`Growlog ${rec.lesson_date} 전체 활동사진`);
+
+        for(let photoIndex=0;photoIndex<photos.length;photoIndex++){
+          const p=photos[photoIndex];
           const url=await signedUrl(p.photos.storage_path,3600);
-          const wrap=document.createElement("div"); wrap.className="prod-photo-card";
-          wrap.innerHTML=`<img src="${url}" alt="지난 활동사진" loading="lazy">`;
-          wrap.onclick=()=>openParentPhotoViewer(url,`${activeChild.name}_${rec.lesson_date}_${p.photos.id}.jpg`,rec.lesson_date);
+          const wrap=document.createElement("div"); wrap.className="prod-photo-card"; wrap.dataset.historyPhotoId=String(p.photos.id);
+          wrap.innerHTML=`<img src="${url}" alt="지난 활동사진 ${photoIndex+1}" loading="lazy">`;
+          const pick=document.createElement("label"); pick.className="parent-photo-select";
+          const check=document.createElement("input"); check.type="checkbox"; check.setAttribute("aria-label",`지난 활동사진 ${photoIndex+1} 선택`);
+          check.onclick=e=>e.stopPropagation();
+          check.onchange=e=>{e.stopPropagation();if(check.checked)selected.add(String(p.photos.id));else selected.delete(String(p.photos.id));syncHistory();};
+          pick.onclick=e=>e.stopPropagation(); pick.appendChild(check); wrap.appendChild(pick);
+          wrap.onclick=e=>{if(e.target.closest(".parent-photo-select"))return;openParentPhotoViewer(url,`${activeChild.name}_${rec.lesson_date}_${p.photos.id}.jpg`,rec.lesson_date);};
           pbox.appendChild(wrap);
         }
-        row.appendChild(pbox);
+        row.append(tools,pbox);
+        syncHistory();
       }
       box.appendChild(row);
     }
