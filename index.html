@@ -5215,6 +5215,33 @@ body.auth-modal-open .toast.show{
 }
 </style>
 
+
+<style id="growlog-v30-targeted-fixes">
+/* ===== Growlog v30: requested fixes only ===== */
+.account-child-name-fields{display:grid;gap:10px;margin-top:10px}
+.account-name-loading{padding:8px 0}
+
+/* 관리자 표의 한글 단어/이름이 글자 중간에서 쪼개지지 않도록 유지 */
+#admin table th,
+#admin table td{
+  word-break:keep-all!important;
+  overflow-wrap:break-word!important;
+}
+#parentMemberTable td:nth-child(1),
+#parentMemberTable td:nth-child(3),
+#teacherMemberTable td:nth-child(1),
+#adminFeeTable td:nth-child(1){
+  white-space:nowrap!important;
+  word-break:keep-all!important;
+  overflow-wrap:normal!important;
+}
+@media(max-width:760px){
+  #admin table.responsive-table td{
+    word-break:keep-all!important;
+    overflow-wrap:break-word!important;
+  }
+}
+</style>
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -5251,6 +5278,17 @@ body.auth-modal-open .toast.show{
       <div><span>이름</span><b id="accountCurrentName">-</b></div>
       <div><span>권한</span><b id="accountCurrentRole">-</b></div>
       <div><span>현재 로그인 이메일</span><b id="accountCurrentEmail">-</b></div>
+    </div>
+
+    <div id="accountParentNamesSection" class="account-section hide">
+      <h3>부모님 · 아이 이름 수정</h3>
+      <p class="muted">가입할 때 이름을 잘못 입력했다면 여기에서 바로 수정할 수 있습니다.</p>
+      <div class="auth-field">
+        <label for="accountParentName">부모님 이름</label>
+        <input id="accountParentName" maxlength="30" autocomplete="name" placeholder="부모님 이름">
+      </div>
+      <div id="accountChildNameFields" class="account-child-name-fields"></div>
+      <button id="accountNamesSaveBtn" class="btn" type="button" onclick="saveAccountNames()">이름 저장</button>
     </div>
 
     <div class="account-section">
@@ -8108,7 +8146,7 @@ renderTeacherUploadPreview();
  setTimeout(tryAuto,500);setTimeout(tryAuto,1600);setTimeout(tryAuto,4000);
 })();
 </script>
-<script src="./app.js?v=29"></script>
+<script src="./app.js?v=30"></script>
 
 </body>
 </html>

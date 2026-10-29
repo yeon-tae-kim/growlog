@@ -53,6 +53,8 @@
   let adminTodayDetailClassId = null;
   let parentCompletedEnrollment = null;
   let parentPhotoViewerState = {url:"",filename:"",date:"",blob:null,mime:"image/jpeg"};
+  let accountEditableChildren = [];
+  const AUTO_ABSENCE_START_DATE = "2026-10-29";
   const photoSignedUrlCache = new Map();
   const teacherThumbnailBackfillKeys = new Set();
   const teacherRosterCache = new Map();
@@ -742,6 +744,42 @@
     box.classList.toggle("warn",!!warning);
   }
 
+  async function loadAccountParentNames(){
+    const section=$("accountParentNamesSection");
+    if(!section)return;
+
+    if(profile?.role!=="parent"){
+      section.classList.add("hide");
+      accountEditableChildren=[];
+      return;
+    }
+
+    section.classList.remove("hide");
+    if($("accountParentName")) $("accountParentName").value=profile?.name||"";
+
+    const box=$("accountChildNameFields");
+    if(box) box.innerHTML='<div class="muted account-name-loading">아이 정보를 불러오는 중...</div>';
+
+    const {data,error}=await db.from("children")
+      .select("id,name,birth_date,parent_id")
+      .eq("parent_id",profile.id)
+      .order("created_at");
+    if(error)throw error;
+
+    accountEditableChildren=data||[];
+    if(!box)return;
+    if(!accountEditableChildren.length){
+      box.innerHTML='<div class="muted">연결된 아이가 없습니다.</div>';
+      return;
+    }
+
+    box.innerHTML=accountEditableChildren.map((child,i)=>`
+      <div class="auth-field account-child-name-field">
+        <label for="accountChildName${i}">아이 이름${accountEditableChildren.length>1?` ${i+1}`:""}</label>
+        <input id="accountChildName${i}" data-account-child-id="${escape(child.id)}" value="${escape(child.name||"")}" maxlength="30" autocomplete="off">
+      </div>`).join("");
+  }
+
   function refreshAccountSettingsView(){
     const u=session?.user;
     if(!u)return;
@@ -758,11 +796,58 @@
     setEmailChangeStatus("");
   }
 
-  window.openAccountSettings=function(){
+  window.openAccountSettings=async function(){
     if(!session?.user)return;
     refreshAccountSettingsView();
     $("accountSettingsModal")?.classList.remove("hide");
     document.body.style.overflow="hidden";
+    try{
+      await loadAccountParentNames();
+    }catch(e){
+      console.warn("account parent names:",e);
+      notify("이름 정보를 불러오지 못했습니다: "+(e?.message||e));
+    }
+  };
+
+  window.saveAccountNames=async function(){
+    if(profile?.role!=="parent" || !session?.user)return notify("학부모 계정에서만 이름을 수정할 수 있습니다.");
+
+    const parentName=($("accountParentName")?.value||"").trim();
+    const childInputs=qAll("[data-account-child-id]",$("accountChildNameFields")||document);
+    const childNames=childInputs.map(input=>({
+      id:input.dataset.accountChildId,
+      name:String(input.value||"").trim()
+    }));
+
+    if(!parentName)return notify("부모님 이름을 입력해주세요.");
+    if(childNames.some(x=>!x.name))return notify("아이 이름을 입력해주세요.");
+
+    const btn=$("accountNamesSaveBtn");
+    if(btn){btn.disabled=true;btn.textContent="저장 중...";}
+    try{
+      const {data,error}=await db.rpc("update_my_parent_names",{
+        p_parent_name:parentName,
+        p_children:childNames
+      });
+      if(error)throw error;
+      if(data?.ok===false)throw new Error("이름을 저장하지 못했습니다.");
+
+      profile.name=parentName;
+      childNames.forEach(ch=>{
+        const cached=accountEditableChildren.find(x=>x.id===ch.id);
+        if(cached)cached.name=ch.name;
+        if(activeChild?.id===ch.id)activeChild.name=ch.name;
+      });
+      if($("accountCurrentName")) $("accountCurrentName").textContent=parentName;
+
+      await loadParentDashboard(false);
+      await loadAccountParentNames();
+      notify("부모님 이름과 아이 이름을 수정했습니다.");
+    }catch(e){
+      notify("이름 수정 실패: "+(e?.message||e));
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent="이름 저장";}
+    }
   };
 
   window.closeAccountSettings=function(){
@@ -2202,6 +2287,84 @@
     summary.appendChild(chips);
   }
 
+  async function autoClosePastUnrecordedAttendance(classIds=null){
+    const yesterday=seoulISODate(-1);
+    if(yesterday<AUTO_ABSENCE_START_DATE)return 0;
+
+    let sessionQuery=db.from("class_sessions")
+      .select("class_id,session_date")
+      .eq("status","scheduled")
+      .gte("session_date",AUTO_ABSENCE_START_DATE)
+      .lte("session_date",yesterday)
+      .order("session_date");
+    if(Array.isArray(classIds) && classIds.length) sessionQuery=sessionQuery.in("class_id",classIds);
+
+    const {data:sessions,error:sessionError}=await sessionQuery;
+    if(sessionError)throw sessionError;
+    if(!(sessions||[]).length)return 0;
+
+    const targetClassIds=[...new Set(sessions.map(s=>s.class_id))];
+    const enrollmentRows=await fetchAllAdminRows((from,to)=>db.from("enrollments")
+      .select("class_id,child_id,active,created_at")
+      .in("class_id",targetClassIds)
+      .eq("active",true)
+      .range(from,to));
+
+    if(!enrollmentRows.length)return 0;
+
+    const [attendanceRows,growthRows]=await Promise.all([
+      fetchAllAdminRows((from,to)=>db.from("attendance")
+        .select("class_id,child_id,lesson_date,status")
+        .in("class_id",targetClassIds)
+        .gte("lesson_date",AUTO_ABSENCE_START_DATE)
+        .lte("lesson_date",yesterday)
+        .range(from,to)),
+      fetchAllAdminRows((from,to)=>db.from("growth_records")
+        .select("class_id,child_id,lesson_date")
+        .in("class_id",targetClassIds)
+        .gte("lesson_date",AUTO_ABSENCE_START_DATE)
+        .lte("lesson_date",yesterday)
+        .range(from,to))
+    ]);
+
+    const recorded=new Set();
+    attendanceRows.forEach(r=>recorded.add(`${r.class_id}|${r.child_id}|${r.lesson_date}`));
+    growthRows.forEach(r=>recorded.add(`${r.class_id}|${r.child_id}|${r.lesson_date}`));
+
+    const enrollmentsByClass=new Map();
+    enrollmentRows.forEach(e=>{
+      if(!enrollmentsByClass.has(e.class_id))enrollmentsByClass.set(e.class_id,[]);
+      enrollmentsByClass.get(e.class_id).push(e);
+    });
+
+    const missing=[];
+    sessions.forEach(session=>{
+      const classEnrollments=enrollmentsByClass.get(session.class_id)||[];
+      classEnrollments.forEach(enr=>{
+        const joinedDate=String(enr.created_at||"").slice(0,10);
+        if(joinedDate && joinedDate>session.session_date)return;
+        const key=`${session.class_id}|${enr.child_id}|${session.session_date}`;
+        if(recorded.has(key))return;
+        recorded.add(key);
+        missing.push({
+          class_id:session.class_id,
+          child_id:enr.child_id,
+          lesson_date:session.session_date,
+          status:"absent"
+        });
+      });
+    });
+
+    if(!missing.length)return 0;
+    for(let i=0;i<missing.length;i+=300){
+      const batch=missing.slice(i,i+300);
+      const {error}=await db.from("attendance")
+        .upsert(batch,{onConflict:"class_id,child_id,lesson_date",ignoreDuplicates:true});
+      if(error)throw error;
+    }
+    return missing.length;
+  }
+
   function populateTeacherRecordDateSelect(preferDate=null){
     const select=$("teacherLessonDateSelect");
     if(!select)return null;
@@ -2248,6 +2411,12 @@
       return;
     }
     teacherSessionCache=data||[];
+
+    try{
+      await autoClosePastUnrecordedAttendance([activeClass.id]);
+    }catch(e){
+      console.warn("auto absence teacher:",e?.message||e);
+    }
 
     const makeup=$("teacherMakeupDate");
     if(makeup && (!makeup.value || makeup.value.slice(0,7)!==month)) makeup.value=start;
@@ -3534,6 +3703,11 @@
 
   // ---------- Admin ----------
   async function loadAdminDashboard(){
+    try{
+      await autoClosePastUnrecordedAttendance();
+    }catch(e){
+      console.warn("auto absence admin:",e?.message||e);
+    }
     await Promise.all([
       renderAdminClasses(),
       loadAdminChildClassOptions(),
