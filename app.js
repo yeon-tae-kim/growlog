@@ -2057,27 +2057,54 @@
     box.classList.toggle("open");
     if(!box.classList.contains("open") || box.dataset.loaded==="1") return;
     box.innerHTML='<div class="prod-loading-card">기록을 불러오는 중...</div>';
-    const {data:records,error}=await db.from("growth_records")
-      .select("*").eq("child_id",activeChild.id).eq("class_id",enrollment.class_id)
-      .order("lesson_date",{ascending:false});
-    if(error){ box.innerHTML='<div class="prod-empty">기록을 불러오지 못했습니다.</div>'; return; }
 
-    const {data:assignments}=await db.from("photo_assignments")
-      .select("photo_id,photos(id,storage_path,lesson_date,class_id)")
-      .eq("child_id",activeChild.id);
+    const [{data:records,error},{data:assignments,error:photoError}]=await Promise.all([
+      db.from("growth_records")
+        .select("*").eq("child_id",activeChild.id).eq("class_id",enrollment.class_id)
+        .order("lesson_date",{ascending:false}),
+      db.from("photo_assignments")
+        .select("photo_id,photos(id,storage_path,lesson_date,class_id)")
+        .eq("child_id",activeChild.id)
+    ]);
+
+    if(error){ box.innerHTML='<div class="prod-empty">기록을 불러오지 못했습니다.</div>'; return; }
+    if(photoError) console.warn("parent history photos:",photoError.message);
+
+    const classAssignments=(assignments||[]).filter(a=>a.photos?.class_id===enrollment.class_id && a.photos?.lesson_date);
+    const recordByDate=new Map((records||[]).map(rec=>[rec.lesson_date,rec]));
+    const photosByDate=new Map();
+    for(const a of classAssignments){
+      const d=a.photos.lesson_date;
+      if(!photosByDate.has(d)) photosByDate.set(d,[]);
+      photosByDate.get(d).push(a);
+    }
+
+    // 성장기록이 없더라도 사진이 있는 지난 수업 날짜는 수강 기록에 반드시 노출합니다.
+    const dates=[...new Set([
+      ...(records||[]).map(rec=>rec.lesson_date),
+      ...classAssignments.map(a=>a.photos.lesson_date)
+    ])].filter(Boolean).sort((a,b)=>String(b).localeCompare(String(a)));
 
     box.innerHTML="";
-    for(const rec of records||[]){
+    for(const lessonDate of dates){
+      const rec=recordByDate.get(lessonDate)||null;
+      const photos=photosByDate.get(lessonDate)||[];
       const row=document.createElement("div");
       row.className="prod-history-row";
-      const canonicalArea=canonicalGrowthArea(rec.area,rec.behavior);
-      row.innerHTML=`<b>${escape(rec.lesson_date)} · ${parentGrowthIcon(canonicalArea)} ${escape(canonicalArea)}</b>
-        <div style="margin-top:4px">${escape(rec.behavior||"")}</div>
-        <div class="muted" style="margin-top:4px">${escape(rec.observation_text||"")}</div>`;
-      const photos=(assignments||[]).filter(a=>a.photos?.class_id===enrollment.class_id && a.photos?.lesson_date===rec.lesson_date);
+
+      if(rec){
+        const canonicalArea=canonicalGrowthArea(rec.area,rec.behavior);
+        row.innerHTML=`<b>${escape(lessonDate)} · ${parentGrowthIcon(canonicalArea)} ${escape(canonicalArea)}</b>
+          <div style="margin-top:4px">${escape(rec.behavior||"")}</div>
+          <div class="muted" style="margin-top:4px">${escape(rec.observation_text||"")}</div>`;
+      }else{
+        row.innerHTML=`<b>${escape(lessonDate)} · 📷 활동사진</b>
+          <div class="muted" style="margin-top:4px">이 수업은 연결된 활동사진이 있습니다.</div>`;
+      }
+
       if(photos.length){
         const items=photos.map(p=>({
-          id:String(p.photos.id),storagePath:p.photos.storage_path,date:rec.lesson_date
+          id:String(p.photos.id),storagePath:p.photos.storage_path,date:lessonDate
         }));
         const selected=new Set();
         const tools=document.createElement("div"); tools.className="parent-history-photo-tools";
@@ -2086,8 +2113,8 @@
         const selectAllText=document.createElement("span"); selectAllText.textContent="전체 선택";
         selectAllLabel.append(selectAll,selectAllText);
         const count=document.createElement("span"); count.className="parent-photo-selection-count"; count.textContent="0장 선택";
-        const selectedBtn=document.createElement("button"); selectedBtn.type="button"; selectedBtn.className="btn small sec"; selectedBtn.textContent="선택 저장"; selectedBtn.disabled=true;
-        const allBtn=document.createElement("button"); allBtn.type="button"; allBtn.className="btn small"; allBtn.textContent="전체 저장";
+        const selectedBtn=document.createElement("button"); selectedBtn.type="button"; selectedBtn.className="btn small sec"; selectedBtn.textContent="선택한 사진 저장"; selectedBtn.disabled=true;
+        const allBtn=document.createElement("button"); allBtn.type="button"; allBtn.className="btn small"; allBtn.textContent="전체 사진 저장";
         tools.append(selectAllLabel,selectedBtn,allBtn,count);
 
         const pbox=document.createElement("div"); pbox.className="prod-history-photos";
@@ -2099,26 +2126,41 @@
           qAll(".prod-photo-card[data-history-photo-id]",pbox).forEach(card=>{
             const checked=selected.has(card.dataset.historyPhotoId);
             card.classList.toggle("parent-photo-selected",checked);
-            const c=q(".parent-photo-select input",card);if(c)c.checked=checked;
+            const c=q(".parent-photo-select input",card); if(c)c.checked=checked;
           });
         };
         selectAll.onchange=()=>{
-          selected.clear(); if(selectAll.checked)items.forEach(x=>selected.add(x.id)); syncHistory();
+          selected.clear();
+          if(selectAll.checked) items.forEach(x=>selected.add(x.id));
+          syncHistory();
         };
-        selectedBtn.onclick=()=>saveParentPhotoItems(items.filter(x=>selected.has(x.id)),selectedBtn,`Growlog ${rec.lesson_date} 선택 활동사진`);
-        allBtn.onclick=()=>saveParentPhotoItems(items,allBtn,`Growlog ${rec.lesson_date} 전체 활동사진`);
+        selectedBtn.onclick=()=>saveParentPhotoItems(
+          items.filter(x=>selected.has(x.id)),selectedBtn,`Growlog ${lessonDate} 선택 활동사진`
+        );
+        allBtn.onclick=()=>saveParentPhotoItems(items,allBtn,`Growlog ${lessonDate} 전체 활동사진`);
 
         for(let photoIndex=0;photoIndex<photos.length;photoIndex++){
           const p=photos[photoIndex];
           const url=await signedUrl(p.photos.storage_path,3600);
-          const wrap=document.createElement("div"); wrap.className="prod-photo-card"; wrap.dataset.historyPhotoId=String(p.photos.id);
+          const wrap=document.createElement("div");
+          wrap.className="prod-photo-card";
+          wrap.dataset.historyPhotoId=String(p.photos.id);
           wrap.innerHTML=`<img src="${url}" alt="지난 활동사진 ${photoIndex+1}" loading="lazy">`;
           const pick=document.createElement("label"); pick.className="parent-photo-select";
           const check=document.createElement("input"); check.type="checkbox"; check.setAttribute("aria-label",`지난 활동사진 ${photoIndex+1} 선택`);
           check.onclick=e=>e.stopPropagation();
-          check.onchange=e=>{e.stopPropagation();if(check.checked)selected.add(String(p.photos.id));else selected.delete(String(p.photos.id));syncHistory();};
-          pick.onclick=e=>e.stopPropagation(); pick.appendChild(check); wrap.appendChild(pick);
-          wrap.onclick=e=>{if(e.target.closest(".parent-photo-select"))return;openParentPhotoViewer(url,`${activeChild.name}_${rec.lesson_date}_${p.photos.id}.jpg`,rec.lesson_date);};
+          check.onchange=e=>{
+            e.stopPropagation();
+            if(check.checked) selected.add(String(p.photos.id)); else selected.delete(String(p.photos.id));
+            syncHistory();
+          };
+          pick.onclick=e=>e.stopPropagation();
+          pick.appendChild(check);
+          wrap.appendChild(pick);
+          wrap.onclick=e=>{
+            if(e.target.closest(".parent-photo-select")) return;
+            openParentPhotoViewer(url,`${activeChild.name}_${lessonDate}_${p.photos.id}.jpg`,lessonDate);
+          };
           pbox.appendChild(wrap);
         }
         row.append(tools,pbox);
@@ -2126,7 +2168,8 @@
       }
       box.appendChild(row);
     }
-    if(!(records||[]).length) box.innerHTML='<div class="prod-empty">저장된 성장기록이 없습니다.</div>';
+
+    if(!dates.length) box.innerHTML='<div class="prod-empty">저장된 성장기록이나 활동사진이 없습니다.</div>';
     box.dataset.loaded="1";
   }
 
