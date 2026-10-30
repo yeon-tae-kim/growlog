@@ -3434,7 +3434,7 @@
     const video=document.createElement("video");
     video.muted=true;
     video.playsInline=true;
-    video.preload="metadata";
+    video.preload="auto";
     video.src=url;
     try{
       await new Promise((resolve,reject)=>{
@@ -3442,22 +3442,24 @@
         video.onloadedmetadata=()=>{clearTimeout(timer);resolve();};
         video.onerror=()=>{clearTimeout(timer);reject(new Error("동영상 미리보기 불러오기 실패"));};
       });
+
+      await new Promise(resolve=>{
+        if(video.readyState>=2)return resolve();
+        const timer=setTimeout(resolve,5000);
+        video.onloadeddata=()=>{clearTimeout(timer);resolve();};
+      });
+
       const duration=Number.isFinite(video.duration)?video.duration:0;
-      const seek=Math.max(0,Math.min(duration>1?0.5:0,duration||0));
-      if(seek>0){
+      const firstFrameTime=Math.min(duration>0?duration:0,0.05);
+      if(firstFrameTime>0){
         await new Promise((resolve,reject)=>{
           const timer=setTimeout(()=>{clearTimeout(timer);resolve();},5000);
           video.onseeked=()=>{clearTimeout(timer);resolve();};
-          video.onerror=()=>{clearTimeout(timer);reject(new Error("동영상 썸네일 탐색 실패"));};
-          video.currentTime=seek;
-        });
-      }else{
-        await new Promise(resolve=>{
-          if(video.readyState>=2)return resolve();
-          const timer=setTimeout(resolve,4000);
-          video.onloadeddata=()=>{clearTimeout(timer);resolve();};
+          video.onerror=()=>{clearTimeout(timer);reject(new Error("동영상 첫 장면 탐색 실패"));};
+          video.currentTime=firstFrameTime;
         });
       }
+
       const vw=video.videoWidth||640, vh=video.videoHeight||360;
       const maxDim=420;
       const scale=Math.min(1,maxDim/Math.max(vw,vh));
@@ -3467,7 +3469,7 @@
       const ctx=canvas.getContext("2d",{alpha:false});
       if(!ctx)return null;
       ctx.drawImage(video,0,0,canvas.width,canvas.height);
-      const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.58));
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.62));
       if(!blob)return null;
       return new File([blob],"video-thumb.jpg",{type:"image/jpeg",lastModified:Date.now()});
     }catch(e){
