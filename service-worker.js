@@ -1,13 +1,13 @@
-const GROWLOG_CACHE = "growlog-pwa-v38";
+const GROWLOG_CACHE = "growlog-pwa-v39";
 const PRECACHE = [
   "./",
   "./index.html",
   "./app.js",
   "./manifest.webmanifest",
-  "./growlog-icon-192-v33.png",
-  "./growlog-icon-512-v33.png",
-  "./growlog-icon-maskable-512-v33.png",
-  "./apple-touch-icon-v33.png"
+  "./growlog-icon-192-v39.png",
+  "./growlog-icon-512-v39.png",
+  "./growlog-icon-maskable-512-v39.png",
+  "./apple-touch-icon-v39.png"
 ];
 
 self.addEventListener("install", (event) => {

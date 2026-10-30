@@ -1,34 +1,27 @@
 {
-  "id": "./",
   "name": "Growlog | 아이 성장 한줄",
   "short_name": "Growlog",
-  "description": "수업에서 발견한 아이의 작은 변화를 부모님과 함께 이어가는 성장기록 Growlog",
-  "lang": "ko-KR",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": [
-    "standalone",
-    "minimal-ui"
-  ],
-  "orientation": "any",
   "background_color": "#f7f7f3",
   "theme_color": "#f7f7f3",
   "icons": [
     {
-      "src": "./growlog-icon-192-v33.png",
+      "src": "./growlog-icon-192-v39.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./growlog-icon-512-v33.png",
+      "src": "./growlog-icon-512-v39.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./growlog-icon-maskable-512-v33.png",
+      "src": "./growlog-icon-maskable-512-v39.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
