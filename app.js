@@ -39,6 +39,7 @@
   let activeEnrollment = null;
   let activeTeacherProfile = null;
   let adminEditingClassId = null;
+  let adminClassRows = [];
   let prodPhotos = [];
   let realtimeChannel = null;
   let activeLessonDate = null;
@@ -52,7 +53,7 @@
   let adminParentPreviewClassId = null;
   let adminTodayDetailClassId = null;
   let parentCompletedEnrollment = null;
-  let parentPhotoViewerState = {url:"",filename:"",date:"",blob:null,mime:"image/jpeg"};
+  let parentPhotoViewerState = {url:"",filename:"",date:"",blob:null,mime:"image/jpeg",mediaKind:"image"};
   let parentPhotoBulkItems = [];
   let parentPhotoSelectedIds = new Set();
   let parentPreparedShareFiles = [];
@@ -1490,6 +1491,38 @@
     await renderParentPhotos(date);
   }
 
+  function isVideoMedia(value){
+    if(!value)return false;
+    if(typeof value==="object" && String(value.type||"").toLowerCase().startsWith("video/"))return true;
+    const s=String(typeof value==="object" ? (value.storage_path||value.name||"") : value).toLowerCase().split("?")[0];
+    return /\.(mp4|mov|m4v|webm|3gp|3gpp|ogv|ogg)$/i.test(s);
+  }
+
+  function mediaFileExtension(mime,path){
+    const m=String(mime||"").toLowerCase();
+    const videoMap={
+      "video/mp4":"mp4",
+      "video/quicktime":"mov",
+      "video/x-m4v":"m4v",
+      "video/webm":"webm",
+      "video/3gpp":"3gp",
+      "video/ogg":"ogv"
+    };
+    if(videoMap[m])return videoMap[m];
+    const hit=String(path||"").match(/\.([a-z0-9]{2,6})(?:\?|$)/i);
+    return hit?hit[1].toLowerCase():(m.startsWith("video/")?"mp4":"jpg");
+  }
+
+  function mediaPreviewHtml(item,url,alt,kindClass=""){
+    const video=isVideoMedia(item);
+    const safeUrl=String(url||"").replace(/"/g,"&quot;");
+    const base=url
+      ? `<img src="${safeUrl}" alt="${escape(alt||"활동자료")}" loading="lazy" decoding="async">`
+      : '<div class="teacher-photo-skeleton"><span>최적화 중</span></div>';
+    if(!video)return base;
+    return `${base}<span class="${kindClass||"teacher-media-play"}">▶</span><span class="${kindClass==="parent-media-play"?"parent-media-kind":"teacher-media-kind"}">동영상</span>`;
+  }
+
   async function signedUrl(path,expires=21600){
     const now=Date.now();
     const cached=photoSignedUrlCache.get(path);
@@ -1557,7 +1590,7 @@
   }
 
   async function backfillTeacherThumbnails(photoRows,classId,lessonDate){
-    const missing=(photoRows||[]).filter(p=>!p.thumbnail_path).map(p=>p.id);
+    const missing=(photoRows||[]).filter(p=>!p.thumbnail_path && !isVideoMedia(p)).map(p=>p.id);
     if(!missing.length)return;
     const key=`${classId}|${lessonDate}`;
     if(teacherThumbnailBackfillKeys.has(key))return;
@@ -1585,13 +1618,13 @@
         .map(s=>s.class_id))];
       if(!classIds.length)return;
       const {data,error}=await db.from("photos")
-        .select("id,class_id,lesson_date,thumbnail_path")
+        .select("id,class_id,lesson_date,thumbnail_path,storage_path")
         .in("class_id",classIds)
         .eq("lesson_date",today)
         .is("thumbnail_path",null)
         .limit(40);
       if(error)throw error;
-      const rows=data||[];
+      const rows=(data||[]).filter(p=>!isVideoMedia(p));
       if(!rows.length)return;
       // 로그인 직후 백그라운드에서 미리 썸네일을 만들어 둡니다. 화면 로딩은 기다리지 않습니다.
       for(let i=0;i<rows.length;i+=4){
@@ -1602,12 +1635,20 @@
     }
   }
 
-  window.openParentPhotoViewer=async function(url,filename,date){
-    parentPhotoViewerState={url,filename,date,blob:null,mime:"image/jpeg"};
-    const viewer=$("parentPhotoViewer"),img=$("parentPhotoViewerImage");
-    if(!viewer||!img)return;
-    img.src=url;
+  window.openParentPhotoViewer=async function(url,filename,date,mediaKind="image"){
+    const videoKind=mediaKind==="video" || isVideoMedia(filename);
+    parentPhotoViewerState={url,filename,date,blob:null,mime:videoKind?"video/mp4":"image/jpeg",mediaKind:videoKind?"video":"image"};
+    const viewer=$("parentPhotoViewer"),img=$("parentPhotoViewerImage"),video=$("parentPhotoViewerVideo");
+    if(!viewer||!img||!video)return;
+    if(videoKind){
+      img.classList.add("hide");img.src="";
+      video.classList.remove("hide");video.src=url;video.load();
+    }else{
+      video.pause();video.removeAttribute("src");video.load();video.classList.add("hide");
+      img.classList.remove("hide");img.src=url;
+    }
     if($("parentPhotoViewerDate")) $("parentPhotoViewerDate").textContent=date||"";
+    if($("parentPhotoSaveBtn")) $("parentPhotoSaveBtn").textContent=videoKind?"동영상 저장":"사진 저장";
     viewer.classList.remove("hide");
     document.body.style.overflow="hidden";
 
@@ -1616,16 +1657,18 @@
       if(res.ok){
         const blob=await res.blob();
         parentPhotoViewerState.blob=blob;
-        parentPhotoViewerState.mime=blob.type||"image/jpeg";
+        parentPhotoViewerState.mime=blob.type||(videoKind?"video/mp4":"image/jpeg");
       }
-    }catch(e){console.warn("photo preload",e);}
+    }catch(e){console.warn("media preload",e);}
   };
 
   window.closeParentPhotoViewer=function(){
     $("parentPhotoViewer")?.classList.add("hide");
-    if($("parentPhotoViewerImage")) $("parentPhotoViewerImage").src="";
+    if($("parentPhotoViewerImage")){$("parentPhotoViewerImage").src="";$("parentPhotoViewerImage").classList.remove("hide");}
+    const video=$("parentPhotoViewerVideo");
+    if(video){try{video.pause();}catch{} video.removeAttribute("src");try{video.load();}catch{} video.classList.add("hide");}
     document.body.style.overflow="";
-    parentPhotoViewerState={url:"",filename:"",date:"",blob:null,mime:"image/jpeg"};
+    parentPhotoViewerState={url:"",filename:"",date:"",blob:null,mime:"image/jpeg",mediaKind:"image"};
   };
 
   window.openParentPhotoInNewWindow=function(){
@@ -1635,24 +1678,27 @@
   window.saveParentPhotoFromViewer=async function(){
     const state=parentPhotoViewerState;
     if(!state.url)return;
+    const isVideo=state.mediaKind==="video" || String(state.mime||"").startsWith("video/") || isVideoMedia(state.filename);
     const btn=$("parentPhotoSaveBtn");
     if(btn){btn.disabled=true;btn.textContent="준비 중...";}
     try{
       let blob=state.blob;
       if(!blob){
         const res=await fetch(state.url);
-        if(!res.ok)throw new Error("사진을 불러오지 못했습니다.");
+        if(!res.ok)throw new Error("원본 자료를 불러오지 못했습니다.");
         blob=await res.blob();
       }
 
-      const ext=(blob.type||"").includes("png")?".png":(blob.type||"").includes("webp")?".webp":".jpg";
-      let filename=state.filename||"growlog_photo";
-      if(!/\.(jpg|jpeg|png|webp)$/i.test(filename))filename+=ext;
-      const file=new File([blob],filename,{type:blob.type||"image/jpeg"});
+      const ext=mediaFileExtension(blob.type,state.filename);
+      let filename=state.filename||`growlog_${isVideo?"video":"photo"}`;
+      if(!new RegExp(`\\.${ext}$`,"i").test(filename))filename+=`.`+ext;
+      const file=new File([blob],filename,{type:blob.type||(isVideo?"video/mp4":"image/jpeg")});
 
       if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
-        await navigator.share({files:[file],title:"Growlog 활동사진"});
-        notify("공유 메뉴에서 ‘사진에 저장’ 또는 사진 앱을 선택해주세요.");
+        await navigator.share({files:[file],title:isVideo?"Growlog 활동동영상":"Growlog 활동사진"});
+        notify(isVideo
+          ? "공유 메뉴에서 ‘비디오 저장’ 또는 사진 앱을 선택해주세요."
+          : "공유 메뉴에서 ‘사진에 저장’ 또는 사진 앱을 선택해주세요.");
         return;
       }
 
@@ -1661,13 +1707,13 @@
       a.href=objectUrl;a.download=filename;a.rel="noopener";
       document.body.appendChild(a);a.click();a.remove();
       setTimeout(()=>URL.revokeObjectURL(objectUrl),1500);
-      notify("사진 저장을 시작했습니다.");
+      notify(`${isVideo?"동영상":"사진"} 저장을 시작했습니다.`);
     }catch(e){
       if(e?.name==="AbortError")return;
       window.open(state.url,"_blank","noopener");
-      notify("사진을 새 창으로 열었습니다. 휴대폰에서는 사진을 길게 눌러 저장할 수 있어요.");
+      notify("원본 자료를 새 창으로 열었습니다. 휴대폰의 공유/저장 메뉴를 이용해주세요.");
     }finally{
-      if(btn){btn.disabled=false;btn.textContent="사진 저장";}
+      if(btn){btn.disabled=false;btn.textContent=isVideo?"동영상 저장":"사진 저장";}
     }
   };
 
@@ -1682,13 +1728,7 @@
   }
 
   function parentPhotoExtension(mime,path){
-    const m=String(mime||"").toLowerCase();
-    if(m.includes("png"))return "png";
-    if(m.includes("webp"))return "webp";
-    if(m.includes("gif"))return "gif";
-    if(m.includes("heic")||m.includes("heif"))return "heic";
-    const hit=String(path||"").match(/\.([a-z0-9]{2,5})(?:\?|$)/i);
-    return hit?hit[1].toLowerCase():"jpg";
+    return mediaFileExtension(mime,path);
   }
 
   function resetParentPhotoBulkState(){
@@ -1708,7 +1748,7 @@
       all.checked=total>0 && selected===total;
       all.indeterminate=selected>0 && selected<total;
     }
-    if($("parentPhotoSelectionCount")) $("parentPhotoSelectionCount").textContent=`${selected}장 선택`;
+    if($("parentPhotoSelectionCount")) $("parentPhotoSelectionCount").textContent=`${selected}개 선택`;
     if($("parentPhotoSaveSelectedBtn")) $("parentPhotoSaveSelectedBtn").disabled=selected===0;
     qAll("#parentActivityPhotos .prod-photo-card[data-photo-id]").forEach(card=>{
       const id=card.dataset.photoId;
@@ -1731,7 +1771,7 @@
     if(button){
       if(!button.dataset.defaultText)button.dataset.defaultText=button.textContent;
       if(!buttons.includes(button))button.disabled=busy;
-      button.textContent=busy?(text||"사진 준비 중..."):button.dataset.defaultText;
+      button.textContent=busy?(text||"자료 준비 중..."):button.dataset.defaultText;
     }
   }
 
@@ -1746,7 +1786,7 @@
         const item=ordered[i];
         const url=await signedUrl(item.storagePath,21600);
         const res=await fetch(url);
-        if(!res.ok)throw new Error("사진 원본을 불러오지 못했습니다.");
+        if(!res.ok)throw new Error("원본 자료를 불러오지 못했습니다.");
         const blob=await res.blob();
         const ext=parentPhotoExtension(blob.type,item.storagePath);
         const child=sanitizePhotoFilenamePart(activeChild?.name||"아이");
@@ -1824,15 +1864,15 @@
 
   function openParentPhotoBatchDialog(files,label){
     parentPreparedShareFiles=files;
-    parentPreparedShareLabel=label||"Growlog 활동사진";
+    parentPreparedShareLabel=label||"Growlog 활동자료";
     const dialog=$("parentPhotoBatchSaveDialog");
     const title=$("parentPhotoBatchTitle"),text=$("parentPhotoBatchText"),shareBtn=$("parentPhotoBatchShareBtn");
-    if(title)title.textContent=`사진 ${files.length}장 준비 완료`;
+    if(title)title.textContent=`자료 ${files.length}개 준비 완료`;
     const canFileShare=!!(navigator.share&&navigator.canShare&&navigator.canShare({files}));
     if(text)text.textContent=canFileShare
       ? "아래 버튼을 누르면 휴대폰의 저장/공유 메뉴가 열립니다."
-      : "이 브라우저는 여러 사진 공유를 지원하지 않아 일반 다운로드로 저장합니다.";
-    if(shareBtn)shareBtn.textContent=canFileShare?"갤러리에 저장하기":"사진 다운로드하기";
+      : "이 브라우저는 여러 파일 공유를 지원하지 않아 일반 다운로드로 저장합니다.";
+    if(shareBtn)shareBtn.textContent=canFileShare?"갤러리/기기에 저장하기":"파일 다운로드하기";
     dialog?.classList.remove("hide");
   }
 
@@ -1856,13 +1896,13 @@
     if(btn)btn.disabled=true;
     try{
       if(navigator.share&&navigator.canShare&&navigator.canShare({files})){
-        await navigator.share({files,title:parentPreparedShareLabel||"Growlog 활동사진"});
-        notify("휴대폰 메뉴에서 ‘사진에 저장’ 또는 갤러리/사진 앱 저장을 선택해주세요.");
+        await navigator.share({files,title:parentPreparedShareLabel||"Growlog 활동자료"});
+        notify("휴대폰 메뉴에서 ‘사진에 저장’·‘비디오 저장’ 또는 갤러리/사진 앱을 선택해주세요.");
         closeParentPhotoBatchSaveDialog();
         return;
       }
       await fallbackDownloadPhotoFiles(files);
-      notify("사진 다운로드를 시작했습니다. Android에서는 다운로드된 이미지가 갤러리의 다운로드 앨범에 표시될 수 있어요.");
+      notify("파일 다운로드를 시작했습니다. 휴대폰에서는 다운로드/사진 앱에서 확인할 수 있어요.");
       closeParentPhotoBatchSaveDialog();
     }catch(e){
       if(e?.name!=="AbortError")notify("저장 메뉴를 열지 못했습니다. 다시 시도해주세요.");
@@ -1872,13 +1912,13 @@
   };
 
   async function saveParentPhotoItems(items,button,label){
-    if(!items?.length)return notify("저장할 사진을 선택해주세요.");
+    if(!items?.length)return notify("저장할 자료를 선택해주세요.");
     setPhotoBatchBusy(button,true,"준비 0/"+items.length);
     try{
       const files=await fetchParentPhotoFiles(items,(done,total)=>{
         if(button)button.textContent=`준비 ${done}/${total}`;
       });
-      if(!files.length)throw new Error("저장할 사진을 불러오지 못했습니다.");
+      if(!files.length)throw new Error("저장할 자료를 불러오지 못했습니다.");
 
       if(parentPhotoMobileLike()){
         // 모바일의 네이티브 공유 API는 실제 버튼 클릭에서 호출되어야 가장 안정적이므로
@@ -1892,13 +1932,13 @@
           const zip=await makeStoredZip(files);
           const child=sanitizePhotoFilenamePart(activeChild?.name||"아이");
           const date=sanitizePhotoFilenamePart(items[0]?.date||todayISO());
-          downloadBlob(zip,`${child}_${date}_활동사진_${files.length}장.zip`);
+          downloadBlob(zip,`${child}_${date}_활동자료_${files.length}개.zip`);
         }
-        notify(`${files.length}장 다운로드를 시작했습니다.`);
+        notify(`${files.length}개 다운로드를 시작했습니다.`);
       }
     }catch(e){
       console.warn("parent photo batch save",e);
-      notify(e?.message||"사진을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.");
+      notify(e?.message||"자료를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.");
     }finally{
       setPhotoBatchBusy(button,false);
       syncParentPhotoBulkToolbar();
@@ -1907,11 +1947,11 @@
 
   window.saveSelectedParentPhotos=function(){
     const items=parentPhotoBulkItems.filter(x=>parentPhotoSelectedIds.has(x.id));
-    return saveParentPhotoItems(items,$("parentPhotoSaveSelectedBtn"),"Growlog 선택 활동사진");
+    return saveParentPhotoItems(items,$("parentPhotoSaveSelectedBtn"),"Growlog 선택 활동자료");
   };
 
   window.saveAllParentPhotos=function(){
-    return saveParentPhotoItems(parentPhotoBulkItems,$("parentPhotoSaveAllBtn"),"Growlog 전체 활동사진");
+    return saveParentPhotoItems(parentPhotoBulkItems,$("parentPhotoSaveAllBtn"),"Growlog 전체 활동자료");
   };
 
   async function renderParentPhotos(date){
@@ -1925,7 +1965,7 @@
     if(error) throw error;
     const rows=(data||[]).filter(x=>x.photos?.lesson_date===date && x.photos?.class_id===activeClass.id);
     if(!rows.length){
-      pool.innerHTML='<div class="photo-empty">오늘 연결된 활동사진이 아직 없습니다.</div>';
+      pool.innerHTML='<div class="photo-empty">오늘 연결된 활동사진·동영상이 아직 없습니다.</div>';
       syncParentPhotoBulkToolbar();
       return;
     }
@@ -1951,14 +1991,18 @@
       const div=document.createElement("div");
       div.className="photo prod-photo-card";
       div.dataset.photoId=item.id;
-      div.innerHTML=`<img src="${thumbUrl}" alt="활동사진 ${visibleCount}" loading="lazy" decoding="async">`;
+      const isVideo=isVideoMedia(row.photos.storage_path);
+      const mediaPreview=isVideo && !row.photos.thumbnail_path
+        ? `<video src="${thumbUrl}" muted playsinline preload="metadata" aria-label="활동동영상 ${visibleCount}"></video>`
+        : `<img src="${thumbUrl}" alt="활동${isVideo?"동영상":"사진"} ${visibleCount}" loading="lazy" decoding="async">`;
+      div.innerHTML=`${mediaPreview}${isVideo?'<span class="parent-media-play">▶</span><span class="parent-media-kind">동영상</span>':""}`;
 
       const select=document.createElement("label");
       select.className="parent-photo-select";
-      select.title="이 사진 선택";
+      select.title="이 자료 선택";
       const check=document.createElement("input");
       check.type="checkbox";
-      check.setAttribute("aria-label",`활동사진 ${visibleCount} 선택`);
+      check.setAttribute("aria-label",`활동자료 ${visibleCount} 선택`);
       check.addEventListener("click",e=>e.stopPropagation());
       check.addEventListener("change",e=>{
         e.stopPropagation();
@@ -1974,14 +2018,15 @@
         if(e.target.closest(".parent-photo-select"))return;
         try{
           const originalUrl=await signedUrl(row.photos.storage_path,21600);
-          openParentPhotoViewer(originalUrl,`${activeChild.name}_${date}_${row.photos.id}.jpg`,date);
-        }catch(e){notify("원본 사진을 불러오지 못했습니다. 잠시 후 다시 눌러주세요.");}
+          const ext=mediaFileExtension("",row.photos.storage_path);
+          openParentPhotoViewer(originalUrl,`${activeChild.name}_${date}_${row.photos.id}.${ext}`,date,isVideo?"video":"image");
+        }catch(e){notify("원본 자료를 불러오지 못했습니다. 잠시 후 다시 눌러주세요.");}
       };
       pool.appendChild(div);
     }
 
     if(!visibleCount){
-      pool.innerHTML='<div class="photo-empty">사진을 다시 불러오지 못했어요. 화면을 새로고침해주세요.</div>';
+      pool.innerHTML='<div class="photo-empty">사진·동영상을 다시 불러오지 못했어요. 화면을 새로고침해주세요.</div>';
     }
     syncParentPhotoBulkToolbar();
   }
@@ -2063,7 +2108,7 @@
         .select("*").eq("child_id",activeChild.id).eq("class_id",enrollment.class_id)
         .order("lesson_date",{ascending:false}),
       db.from("photo_assignments")
-        .select("photo_id,photos(id,storage_path,lesson_date,class_id)")
+        .select("photo_id,photos(id,storage_path,thumbnail_path,lesson_date,class_id)")
         .eq("child_id",activeChild.id)
     ]);
 
@@ -2098,8 +2143,8 @@
           <div style="margin-top:4px">${escape(rec.behavior||"")}</div>
           <div class="muted" style="margin-top:4px">${escape(rec.observation_text||"")}</div>`;
       }else{
-        row.innerHTML=`<b>${escape(lessonDate)} · 📷 활동사진</b>
-          <div class="muted" style="margin-top:4px">이 수업은 연결된 활동사진이 있습니다.</div>`;
+        row.innerHTML=`<b>${escape(lessonDate)} · 📷 활동사진·동영상</b>
+          <div class="muted" style="margin-top:4px">이 수업은 연결된 활동사진·동영상이 있습니다.</div>`;
       }
 
       if(photos.length){
@@ -2112,9 +2157,9 @@
         const selectAll=document.createElement("input"); selectAll.type="checkbox";
         const selectAllText=document.createElement("span"); selectAllText.textContent="전체 선택";
         selectAllLabel.append(selectAll,selectAllText);
-        const count=document.createElement("span"); count.className="parent-photo-selection-count"; count.textContent="0장 선택";
-        const selectedBtn=document.createElement("button"); selectedBtn.type="button"; selectedBtn.className="btn small sec"; selectedBtn.textContent="선택한 사진 저장"; selectedBtn.disabled=true;
-        const allBtn=document.createElement("button"); allBtn.type="button"; allBtn.className="btn small"; allBtn.textContent="전체 사진 저장";
+        const count=document.createElement("span"); count.className="parent-photo-selection-count"; count.textContent="0개 선택";
+        const selectedBtn=document.createElement("button"); selectedBtn.type="button"; selectedBtn.className="btn small sec"; selectedBtn.textContent="선택한 자료 저장"; selectedBtn.disabled=true;
+        const allBtn=document.createElement("button"); allBtn.type="button"; allBtn.className="btn small"; allBtn.textContent="전체 자료 저장";
         tools.append(selectAllLabel,selectedBtn,allBtn,count);
 
         const pbox=document.createElement("div"); pbox.className="prod-history-photos";
@@ -2135,19 +2180,25 @@
           syncHistory();
         };
         selectedBtn.onclick=()=>saveParentPhotoItems(
-          items.filter(x=>selected.has(x.id)),selectedBtn,`Growlog ${lessonDate} 선택 활동사진`
+          items.filter(x=>selected.has(x.id)),selectedBtn,`Growlog ${lessonDate} 선택 활동자료`
         );
-        allBtn.onclick=()=>saveParentPhotoItems(items,allBtn,`Growlog ${lessonDate} 전체 활동사진`);
+        allBtn.onclick=()=>saveParentPhotoItems(items,allBtn,`Growlog ${lessonDate} 전체 활동자료`);
 
         for(let photoIndex=0;photoIndex<photos.length;photoIndex++){
           const p=photos[photoIndex];
-          const url=await signedUrl(p.photos.storage_path,3600);
+          const isVideo=isVideoMedia(p.photos.storage_path);
+          const previewPath=p.photos.thumbnail_path||p.photos.storage_path;
+          const previewUrl=await signedUrl(previewPath,3600);
+          const originalUrl=previewPath===p.photos.storage_path?previewUrl:await signedUrl(p.photos.storage_path,3600);
           const wrap=document.createElement("div");
           wrap.className="prod-photo-card";
           wrap.dataset.historyPhotoId=String(p.photos.id);
-          wrap.innerHTML=`<img src="${url}" alt="지난 활동사진 ${photoIndex+1}" loading="lazy">`;
+          const historyPreview=isVideo && !p.photos.thumbnail_path
+            ? `<video src="${previewUrl}" muted playsinline preload="metadata" aria-label="지난 활동동영상 ${photoIndex+1}"></video>`
+            : `<img src="${previewUrl}" alt="지난 활동${isVideo?"동영상":"사진"} ${photoIndex+1}" loading="lazy">`;
+          wrap.innerHTML=`${historyPreview}${isVideo?'<span class="parent-media-play">▶</span><span class="parent-media-kind">동영상</span>':""}`;
           const pick=document.createElement("label"); pick.className="parent-photo-select";
-          const check=document.createElement("input"); check.type="checkbox"; check.setAttribute("aria-label",`지난 활동사진 ${photoIndex+1} 선택`);
+          const check=document.createElement("input"); check.type="checkbox"; check.setAttribute("aria-label",`지난 활동자료 ${photoIndex+1} 선택`);
           check.onclick=e=>e.stopPropagation();
           check.onchange=e=>{
             e.stopPropagation();
@@ -2159,7 +2210,8 @@
           wrap.appendChild(pick);
           wrap.onclick=e=>{
             if(e.target.closest(".parent-photo-select")) return;
-            openParentPhotoViewer(url,`${activeChild.name}_${lessonDate}_${p.photos.id}.jpg`,lessonDate);
+            const ext=mediaFileExtension("",p.photos.storage_path);
+            openParentPhotoViewer(originalUrl,`${activeChild.name}_${lessonDate}_${p.photos.id}.${ext}`,lessonDate,isVideo?"video":"image");
           };
           pbox.appendChild(wrap);
         }
@@ -2169,7 +2221,7 @@
       box.appendChild(row);
     }
 
-    if(!dates.length) box.innerHTML='<div class="prod-empty">저장된 성장기록이나 활동사진이 없습니다.</div>';
+    if(!dates.length) box.innerHTML='<div class="prod-empty">저장된 성장기록이나 활동사진·동영상이 없습니다.</div>';
     box.dataset.loaded="1";
   }
 
@@ -3099,9 +3151,9 @@
     prodPhotos=[];
     uploadedActivityPhotos.splice(0,uploadedActivityPhotos.length);
     const pool=$("uploadPreview");
-    if(pool)pool.innerHTML='<div class="photo-empty">📷 사진 목록 불러오는 중...</div>';
+    if(pool)pool.innerHTML='<div class="photo-empty">📷 사진·동영상 목록 불러오는 중...</div>';
     const childPool=$("childPhotoPicker");
-    if(childPool)childPool.innerHTML='<div class="photo-empty">사진 목록 불러오는 중...</div>';
+    if(childPool)childPool.innerHTML='<div class="photo-empty">사진·동영상 목록 불러오는 중...</div>';
 
     const {data,error}=await db.from("photos")
       .select("*")
@@ -3142,7 +3194,7 @@
     renderTeacherUploadPreviewProd();
     renderChildPhotoPickerProd();
 
-    if(!skipBackfill && photoRows.some(p=>!p.thumbnail_path)){
+    if(!skipBackfill && photoRows.some(p=>!p.thumbnail_path && !isVideoMedia(p))){
       backfillTeacherThumbnails(photoRows,requestedClassId,requestedDate);
     }
   }
@@ -3157,15 +3209,19 @@
     prodPhotos.forEach((p,i)=>{
       const div=document.createElement("div");
       div.className="photo teacher-photo-manage";
+      const isVideo=isVideoMedia(p) || p.media_type==="video";
       div.innerHTML=`
         ${p.url
-          ? `<img src="${p.url}" alt="업로드 사진 ${i+1}" loading="${i<6?"eager":"lazy"}" decoding="async" fetchpriority="${i<4?"high":"auto"}">`
+          ? (isVideo && !p.thumbnail_path
+              ? `<video src="${p.url}" muted playsinline preload="metadata" aria-label="업로드 동영상 ${i+1}"></video>`
+              : `<img src="${p.url}" alt="업로드 ${isVideo?"동영상":"사진"} ${i+1}" loading="${i<6?"eager":"lazy"}" decoding="async" fetchpriority="${i<4?"high":"auto"}">`)
           : '<div class="teacher-photo-skeleton"><span>최적화 중</span></div>'}
+        ${isVideo ? '<span class="teacher-media-play">▶</span><span class="teacher-media-kind">동영상</span>' : ''}
         ${p.uploading
           ? '<span style="position:absolute;left:7px;bottom:7px;padding:4px 7px;border-radius:999px;background:rgba(35,49,41,.78);color:#fff;font-size:10px;font-weight:800">업로드 중</span>'
           : ''}
         ${activeClass?.status!=="종료" && p.id && !p.uploading
-          ? '<button class="teacher-photo-delete" type="button" aria-label="사진 삭제" title="사진 삭제">×</button>'
+          ? '<button class="teacher-photo-delete" type="button" aria-label="자료 삭제" title="자료 삭제">×</button>'
           : ''}
       `;
       const del=q(".teacher-photo-delete",div);
@@ -3179,7 +3235,7 @@
     if(!photo)return;
     if(activeClass?.status==="종료") return notify("종료된 수업의 사진은 삭제할 수 없습니다.");
     if(!activeClass?.id)return notify("선택한 수업을 확인해주세요.");
-    if(!confirm("이 사진을 삭제할까요?\n아이에게 연결된 사진에서도 함께 삭제됩니다."))return;
+    if(!confirm("이 자료를 삭제할까요?\n아이에게 연결된 자료에서도 함께 삭제됩니다."))return;
 
     const storagePath=photo.storage_path||"";
     try{
@@ -3226,10 +3282,10 @@
       }
 
       await loadTeacherPhotos();
-      notify("사진을 삭제했습니다.");
+      notify("자료를 삭제했습니다.");
     }catch(e){
       await loadTeacherPhotos().catch(()=>{});
-      notify("사진 삭제 실패 · "+(e?.message||e));
+      notify("자료 삭제 실패 · "+(e?.message||e));
     }
   };
 
@@ -3241,11 +3297,14 @@
     prodPhotos.forEach((p,i)=>{
       const div=document.createElement("div");
       div.className="photo"+(st.photos.has(i)?" sel":"");
+      const isVideo=isVideoMedia(p) || p.media_type==="video";
       div.innerHTML=p.url
-        ? `<img src="${p.url}" alt="${escape(currentTeacherStudent)} 사진" loading="${i<6?"eager":"lazy"}" decoding="async">`
+        ? `${isVideo && !p.thumbnail_path
+            ? `<video src="${p.url}" muted playsinline preload="metadata" aria-label="${escape(currentTeacherStudent)} 동영상"></video>`
+            : `<img src="${p.url}" alt="${escape(currentTeacherStudent)} ${isVideo?"동영상":"사진"}" loading="${i<6?"eager":"lazy"}" decoding="async">`}${isVideo?'<span class="teacher-media-play">▶</span><span class="teacher-media-kind">동영상</span>':""}`
         : '<div class="teacher-photo-skeleton"><span>최적화 중</span></div>';
       if(activeClass?.status!=="종료")div.onclick=async()=>{
-        if(!p.id||!p.url)return notify("사진 최적화가 끝난 뒤 선택해주세요.");
+        if(!p.id||!p.url)return notify("자료 처리가 끝난 뒤 선택해주세요.");
         try{
           if(st.photos.has(i)){
             const {error}=await db.from("photo_assignments").delete().eq("photo_id",p.id).eq("child_id",st.childId);
@@ -3255,7 +3314,7 @@
             if(error)throw error;st.photos.add(i);
           }
           div.classList.toggle("sel",st.photos.has(i));
-        }catch(e){notify("사진 연결 실패: "+e.message);}
+        }catch(e){notify("자료 연결 실패: "+e.message);}
       };
       pool.appendChild(div);
     });
@@ -3369,6 +3428,59 @@
     }finally{URL.revokeObjectURL(url);}
   }
 
+  async function createTeacherVideoThumbnailFile(file){
+    if(!String(file?.type||"").toLowerCase().startsWith("video/"))return null;
+    const url=URL.createObjectURL(file);
+    const video=document.createElement("video");
+    video.muted=true;
+    video.playsInline=true;
+    video.preload="metadata";
+    video.src=url;
+    try{
+      await new Promise((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(new Error("동영상 썸네일 시간 초과")),12000);
+        video.onloadedmetadata=()=>{clearTimeout(timer);resolve();};
+        video.onerror=()=>{clearTimeout(timer);reject(new Error("동영상 미리보기 불러오기 실패"));};
+      });
+      const duration=Number.isFinite(video.duration)?video.duration:0;
+      const seek=Math.max(0,Math.min(duration>1?0.5:0,duration||0));
+      if(seek>0){
+        await new Promise((resolve,reject)=>{
+          const timer=setTimeout(()=>{clearTimeout(timer);resolve();},5000);
+          video.onseeked=()=>{clearTimeout(timer);resolve();};
+          video.onerror=()=>{clearTimeout(timer);reject(new Error("동영상 썸네일 탐색 실패"));};
+          video.currentTime=seek;
+        });
+      }else{
+        await new Promise(resolve=>{
+          if(video.readyState>=2)return resolve();
+          const timer=setTimeout(resolve,4000);
+          video.onloadeddata=()=>{clearTimeout(timer);resolve();};
+        });
+      }
+      const vw=video.videoWidth||640, vh=video.videoHeight||360;
+      const maxDim=420;
+      const scale=Math.min(1,maxDim/Math.max(vw,vh));
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.max(1,Math.round(vw*scale));
+      canvas.height=Math.max(1,Math.round(vh*scale));
+      const ctx=canvas.getContext("2d",{alpha:false});
+      if(!ctx)return null;
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.58));
+      if(!blob)return null;
+      return new File([blob],"video-thumb.jpg",{type:"image/jpeg",lastModified:Date.now()});
+    }catch(e){
+      console.warn("video thumbnail fallback:",e);
+      return null;
+    }finally{
+      try{video.pause();}catch{}
+      video.removeAttribute("src");
+      try{video.load();}catch{}
+      URL.revokeObjectURL(url);
+    }
+  }
+
   function teacherThumbnailPath(originalPath){
     const parts=String(originalPath||"").split("/");
     const file=parts.pop()||"photo";
@@ -3382,15 +3494,11 @@
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     const rawExt=String(file.name||"").split(".").pop().toLowerCase();
-    const allowedExt=/^(jpg|jpeg|png|webp|gif|heic|heif)$/i.test(rawExt)?rawExt:"";
+    const allowedExt=/^(jpg|jpeg|png|webp|gif|heic|heif|mp4|mov|m4v|webm|3gp|3gpp|ogv|ogg)$/i.test(rawExt)?rawExt:"";
     const mimeExt={
-      "image/jpeg":"jpg",
-      "image/png":"png",
-      "image/webp":"webp",
-      "image/gif":"gif",
-      "image/heic":"heic",
-      "image/heif":"heif"
-    }[String(file.type||"").toLowerCase()]||"jpg";
+      "image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif","image/heic":"heic","image/heif":"heif",
+      "video/mp4":"mp4","video/quicktime":"mov","video/x-m4v":"m4v","video/webm":"webm","video/3gpp":"3gp","video/ogg":"ogv"
+    }[String(file.type||"").toLowerCase()] || (isVideoMedia(file)?"mp4":"jpg");
 
     return `${activeClass.id}/${uploadDate}/${uid}.${allowedExt||mimeExt}`;
   }
@@ -3408,12 +3516,50 @@
     }
     banner.style.display="block";
     const pct=total?Math.round((done/total)*100):0;
-    banner.innerHTML=`<b>📤 사진 업로드 ${done}/${total}장 · ${pct}%</b><br><span style="font-size:12px">선택한 사진은 먼저 화면에 보여드리고, 뒤에서 가볍게 최적화해 저장하고 있어요.</span>`;
+    banner.innerHTML=`<b>📤 사진·동영상 업로드 ${done}/${total}장 · ${pct}%</b><br><span style="font-size:12px">선택한 자료는 먼저 화면에 보여드리고, 뒤에서 안정적으로 저장하고 있어요.</span>`;
   }
 
   function clearTeacherUploadProgress(){
     const banner=$("teacherUploadProgressBanner");
     if(banner)banner.remove();
+  }
+
+  async function uploadTeacherMediaToStorage(path,file){
+    const isVideo=isVideoMedia(file);
+    const useTus=isVideo && file.size>6*1024*1024 && window.tus?.Upload;
+    if(!useTus){
+      const {error}=await db.storage.from("activity-photos").upload(
+        path,file,{upsert:false,contentType:file.type||undefined,cacheControl:"31536000"}
+      );
+      if(error)throw error;
+      return;
+    }
+
+    const {data:{session:authSession},error:sessionError}=await db.auth.getSession();
+    if(sessionError||!authSession?.access_token)throw new Error("동영상 업로드 인증을 확인해주세요.");
+    const projectRef=(new URL(cfg.SUPABASE_URL)).hostname.split(".")[0];
+    await new Promise((resolve,reject)=>{
+      const upload=new window.tus.Upload(file,{
+        endpoint:`https://${projectRef}.storage.supabase.co/storage/v1/upload/resumable`,
+        retryDelays:[0,3000,5000,10000,20000],
+        headers:{authorization:`Bearer ${authSession.access_token}`},
+        uploadDataDuringCreation:true,
+        removeFingerprintOnSuccess:true,
+        metadata:{
+          bucketName:"activity-photos",
+          objectName:path,
+          contentType:file.type||"video/mp4",
+          cacheControl:"31536000"
+        },
+        chunkSize:6*1024*1024,
+        onError:error=>reject(error),
+        onSuccess:()=>resolve()
+      });
+      upload.findPreviousUploads().then(previous=>{
+        if(previous?.length)upload.resumeFromPreviousUpload(previous[0]);
+        upload.start();
+      }).catch(reject);
+    });
   }
 
   function bindBulkUpload(){
@@ -3427,8 +3573,10 @@
 
     fresh.onchange=async e=>{
       const selected=[...e.target.files];
-      const files=selected.slice(0,30);
-      if(selected.length>30)notify(`한 번에 최대 30장까지 올릴 수 있어요. 선택한 ${selected.length}장 중 앞의 30장을 업로드합니다.`);
+      const allowed=selected.filter(file=>String(file.type||"").startsWith("image/") || String(file.type||"").startsWith("video/"));
+      const files=allowed.slice(0,30);
+      if(selected.length!==allowed.length)notify("사진 또는 동영상 파일만 올릴 수 있어요.");
+      if(allowed.length>30)notify(`사진·동영상은 합쳐서 한 번에 최대 30개까지 올릴 수 있어요. 선택한 ${allowed.length}개 중 앞의 30개를 업로드합니다.`);
 
       if(activeClass?.status==="종료"){
         e.target.value="";
@@ -3454,7 +3602,8 @@
           storage_path:"",
           thumbnail_path:null,
           lesson_date:uploadDate,
-          class_id:classId
+          class_id:classId,
+          media_type:isVideoMedia(file)?"video":"image"
         };
       });
 
@@ -3472,19 +3621,21 @@
       const uploadOne=async original=>{
         const ownPaths=[];
         try{
-          const file=await optimizeTeacherPhotoFile(original);
+          const video=isVideoMedia(original);
+          const file=video ? original : await optimizeTeacherPhotoFile(original);
           const path=teacherPhotoStoragePath(file,uploadDate);
 
-          const {error:upErr}=await db.storage.from("activity-photos").upload(
-            path,
-            file,
-            {upsert:false,contentType:file.type||undefined,cacheControl:"31536000"}
-          );
-          if(upErr)throw new Error("사진 파일 저장: "+upErr.message);
+          try{
+            await uploadTeacherMediaToStorage(path,file);
+          }catch(uploadErr){
+            throw new Error((video?"동영상":"사진")+" 파일 저장: "+(uploadErr?.message||uploadErr));
+          }
           ownPaths.push(path);
 
           let thumbnailPath=null;
-          const thumbnailFile=await createTeacherThumbnailFile(file);
+          const thumbnailFile=video
+            ? await createTeacherVideoThumbnailFile(file)
+            : await createTeacherThumbnailFile(file);
           if(thumbnailFile){
             const candidate=teacherThumbnailPath(path);
             const {error:thumbErr}=await db.storage.from("activity-photos").upload(
@@ -3517,9 +3668,10 @@
       };
 
       try{
-        // 모바일 메모리를 지키면서도 30장이 너무 오래 걸리지 않도록 4장씩 병렬 처리합니다.
-        for(let i=0;i<files.length;i+=4){
-          const batch=files.slice(i,i+4);
+        // 사진은 빠르게, 용량이 큰 동영상이 섞인 경우에는 모바일 메모리를 위해 동시 업로드 수를 낮춥니다.
+        const batchSize=files.some(isVideoMedia)?2:4;
+        for(let i=0;i<files.length;i+=batchSize){
+          const batch=files.slice(i,i+batchSize);
           const settled=await Promise.allSettled(batch.map(uploadOne));
           const batchResults=settled.filter(x=>x.status==="fulfilled").map(x=>x.value);
           const failed=settled.find(x=>x.status==="rejected");
@@ -3565,7 +3717,7 @@
         await loadTeacherPhotos();
         reloadSucceeded=true;
         clearTeacherUploadProgress();
-        notify(`${files.length}장의 사진 업로드가 완료되었습니다.`);
+        notify(`${files.length}개의 사진·동영상 업로드가 완료되었습니다.`);
       }catch(err){
         e.target.value="";
         clearTeacherUploadProgress();
@@ -3573,8 +3725,8 @@
           await loadTeacherPhotos();
           reloadSucceeded=true;
         }catch{}
-        if(done>0)notify(`${done}장은 저장되었고, 나머지 사진 업로드 중 오류가 생겼어요 · `+(err?.message||err));
-        else notify("사진 업로드 실패 · "+(err?.message||err));
+        if(done>0)notify(`${done}개는 저장되었고, 나머지 자료 업로드 중 오류가 생겼어요 · `+(err?.message||err));
+        else notify("사진·동영상 업로드 실패 · "+(err?.message||err));
       }finally{
         // 서버 사진으로 정상 교체된 뒤에만 로컬 미리보기 메모리를 해제합니다.
         if(reloadSucceeded)localPreviewUrls.forEach(url=>URL.revokeObjectURL(url));
@@ -4290,16 +4442,63 @@
     }
   };
 
+  function populateAdminClassFilters(){
+    setFilterOptions("adminClassCenterFilter",adminClassRows.map(c=>c.centers?.name||""),"전체 센터");
+    setFilterOptions("adminClassTermFilter",adminClassRows.map(c=>c.term||""),"전체 학기");
+    setFilterOptions("adminClassProgramFilter",adminClassRows.map(c=>c.program||""),"전체 프로그램");
+    setFilterOptions("adminClassWeekdayFilter",adminClassRows.map(c=>c.weekday||""),"전체 요일");
+    setFilterOptions("adminClassTeacherFilter",adminClassRows.map(c=>c.profiles?.name||"미지정"),"전체 강사");
+    setFilterOptions("adminClassStatusFilter",adminClassRows.map(c=>c.status||""),"전체 상태");
+  }
+
+  window.filterAdminClasses=function(){
+    const center=$("adminClassCenterFilter")?.value||"";
+    const term=$("adminClassTermFilter")?.value||"";
+    const program=$("adminClassProgramFilter")?.value||"";
+    const weekday=$("adminClassWeekdayFilter")?.value||"";
+    const teacher=$("adminClassTeacherFilter")?.value||"";
+    const status=$("adminClassStatusFilter")?.value||"";
+    let visible=0;
+    qAll("#adminClassBody tr[data-class-id]").forEach(tr=>{
+      const show=
+        (!center || tr.dataset.center===center) &&
+        (!term || tr.dataset.term===term) &&
+        (!program || tr.dataset.program===program) &&
+        (!weekday || tr.dataset.weekday===weekday) &&
+        (!teacher || tr.dataset.teacher===teacher) &&
+        (!status || tr.dataset.status===status);
+      tr.hidden=!show;
+      if(show)visible++;
+    });
+    const result=$("adminClassFilterResult");
+    if(result)result.textContent=`${visible}개 반 표시 / 전체 ${adminClassRows.length}개`;
+  };
+
+  window.resetAdminClassFilters=function(){
+    ["adminClassCenterFilter","adminClassTermFilter","adminClassProgramFilter","adminClassWeekdayFilter","adminClassTeacherFilter","adminClassStatusFilter"]
+      .forEach(id=>{const el=$(id);if(el)el.value="";});
+    window.filterAdminClasses();
+  };
+
   async function renderAdminClasses(){
     const body=$("adminClassBody");if(!body)return;
     const {data,error}=await db.from("classes")
       .select("id,term,program,weekday,class_time,start_date,end_date,teacher_id,student_capacity,status,class_amount,join_code,centers(id,name),profiles!classes_teacher_id_fkey(id,name)")
       .order("created_at",{ascending:false});
     if(error) throw error;
+    adminClassRows=data||[];
+    populateAdminClassFilters();
     body.innerHTML="";
-    (data||[]).forEach(c=>{
+    adminClassRows.forEach(c=>{
       const tr=document.createElement("tr");
-      tr.dataset.classId=c.id;tr.dataset.joinCode=c.join_code||"";
+      tr.dataset.classId=c.id;
+      tr.dataset.joinCode=c.join_code||"";
+      tr.dataset.center=c.centers?.name||"";
+      tr.dataset.term=c.term||"";
+      tr.dataset.program=c.program||"";
+      tr.dataset.weekday=c.weekday||"";
+      tr.dataset.teacher=c.profiles?.name||"미지정";
+      tr.dataset.status=c.status||"";
       const vals=[c.centers?.name||"",c.term,c.program,`${c.weekday} ${String(c.class_time).slice(0,5)}`,c.profiles?.name||"미지정",`${c.student_capacity||0}명`,c.class_amount?money(c.class_amount):"미입력"];
       vals.forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});
       const td=document.createElement("td");td.innerHTML=`<span class="badge ${c.status==="운영중"?"":"gray"}">${escape(c.status)}</span>`;tr.appendChild(td);
@@ -4307,6 +4506,7 @@
       body.appendChild(tr);
     });
     prepareResponsiveTables();
+    window.filterAdminClasses();
   }
 
   function openAdminClassEditProd(c){
@@ -5499,14 +5699,14 @@
         </div>
         <div class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">
           <span class="badge ${allDone?"":"warn"}">${allDone?"성장기록 전원완료":"성장기록 확인 필요"}</span>
-          <span class="badge ${photoUploaded?"":"warn"}">${photoUploaded?`사진 ${photoCount}장 업로드`:"사진 미업로드"}</span>
+          <span class="badge ${photoUploaded?"":"warn"}">${photoUploaded?`사진 ${photoCount}장 업로드`:"사진·영상 미업로드"}</span>
         </div>
       </div>
 
       <div class="admin-today-status-grid">
         <div class="admin-today-status-card"><b>${doneIds.size} / ${total}명</b><span>성장기록 완료 또는 결석 처리</span></div>
         <div class="admin-today-status-card"><b>${growthIds.size}명</b><span>성장기록 저장 완료</span></div>
-        <div class="admin-today-status-card"><b>${photoUploaded?`${photoCount}장`:"0장"}</b><span>강사 활동사진 업로드</span></div>
+        <div class="admin-today-status-card"><b>${photoUploaded?`${photoCount}장`:"0장"}</b><span>강사 활동사진·영상 업로드</span></div>
       </div>
 
       <div style="margin-top:13px">

@@ -5389,6 +5389,112 @@ body.auth-modal-open .toast.show{
 }
 </style>
 
+
+<style id="growlog-v37-admin-class-filters">
+/* ===== Growlog v37 · admin center/class filters only ===== */
+.admin-class-filter-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(180px,1fr));
+  gap:10px;
+  align-items:end;
+  margin:14px 0 12px;
+  padding:13px;
+  border:1px solid #e0e7f1;
+  border-radius:16px;
+  background:#f8faff;
+}
+.admin-class-filter-grid .admin-filter-item{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:5px;
+}
+.admin-class-filter-grid .admin-filter-item label{
+  font-size:11px;
+  font-weight:900;
+  color:var(--muted);
+}
+.admin-class-filter-grid .admin-filter-item select{
+  width:100%;
+  min-width:0;
+  min-height:42px;
+}
+.admin-class-filter-reset{
+  justify-self:start;
+  min-width:110px;
+}
+.admin-class-filter-result{
+  justify-self:end;
+  align-self:center;
+  font-size:12px;
+  font-weight:800;
+}
+@media(max-width:900px){
+  .admin-class-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+  .admin-class-filter-grid{
+    grid-template-columns:1fr;
+    gap:8px;
+    padding:11px;
+  }
+  .admin-class-filter-reset,
+  .admin-class-filter-result{justify-self:stretch}
+  .admin-class-filter-result{text-align:right}
+}
+</style>
+
+
+<style id="growlog-v37-media-preview">
+/* ===== Growlog v37 · photo + video preview only ===== */
+#uploadPreview .teacher-photo-manage video,
+#childPhotoPicker .photo video,
+#parentActivityPhotos .prod-photo-card video,
+.prod-history-photos .prod-photo-card video{
+  width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;background:#111;
+}
+
+.teacher-media-play,
+.parent-media-play{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:rgba(20,28,43,.78);
+  color:#fff;
+  font-size:17px;
+  font-weight:900;
+  pointer-events:none;
+  box-shadow:0 5px 15px rgba(0,0,0,.22);
+}
+.teacher-media-kind,
+.parent-media-kind{
+  position:absolute;
+  right:7px;
+  bottom:7px;
+  z-index:2;
+  padding:3px 6px;
+  border-radius:999px;
+  background:rgba(20,28,43,.74);
+  color:#fff;
+  font-size:9px;
+  font-weight:900;
+  pointer-events:none;
+}
+.parent-photo-viewer-image-wrap video{
+  width:100%;
+  max-height:min(72vh,760px);
+  display:block;
+  background:#000;
+  border-radius:14px;
+}
+.parent-photo-viewer-image-wrap video.hide{display:none!important}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -5480,19 +5586,20 @@ body.auth-modal-open .toast.show{
   <div class="parent-photo-viewer-card">
     <div class="parent-photo-viewer-head">
       <div>
-        <b>📷 활동사진</b>
+        <b>📷 활동사진·동영상</b>
         <span id="parentPhotoViewerDate" class="muted"></span>
       </div>
       <button class="btn ghost small" type="button" onclick="closeParentPhotoViewer()">닫기</button>
     </div>
     <div class="parent-photo-viewer-image-wrap">
       <img id="parentPhotoViewerImage" src="" alt="선택한 활동사진">
+      <video id="parentPhotoViewerVideo" class="hide" controls playsinline preload="metadata"></video>
     </div>
     <div class="parent-photo-viewer-actions">
-      <button id="parentPhotoSaveBtn" class="btn" type="button" onclick="saveParentPhotoFromViewer()">사진 저장</button>
+      <button id="parentPhotoSaveBtn" class="btn" type="button" onclick="saveParentPhotoFromViewer()">저장</button>
       <button class="btn sec" type="button" onclick="openParentPhotoInNewWindow()">새 창에서 보기</button>
     </div>
-    <div class="parent-photo-save-help">휴대폰에서는 저장/공유 메뉴에서 ‘사진에 저장’ 또는 사진 앱을 선택할 수 있어요.</div>
+    <div class="parent-photo-save-help">휴대폰에서는 저장/공유 메뉴에서 ‘사진에 저장’, ‘비디오 저장’ 또는 사진 앱을 선택할 수 있어요.</div>
   </div>
 </div>
 
@@ -5683,8 +5790,8 @@ body.auth-modal-open .toast.show{
           <span id="parentPhotoSelectionCount" class="parent-photo-selection-count">0장 선택</span>
         </div>
         <div class="parent-photo-bulk-actions">
-          <button id="parentPhotoSaveSelectedBtn" class="btn small sec" type="button" onclick="saveSelectedParentPhotos()" disabled>선택한 사진 저장</button>
-          <button id="parentPhotoSaveAllBtn" class="btn small" type="button" onclick="saveAllParentPhotos()">전체 사진 저장</button>
+          <button id="parentPhotoSaveSelectedBtn" class="btn small sec" type="button" onclick="saveSelectedParentPhotos()" disabled>선택한 자료 저장</button>
+          <button id="parentPhotoSaveAllBtn" class="btn small" type="button" onclick="saveAllParentPhotos()">전체 자료 저장</button>
         </div>
       </div>
       <div id="parentActivityPhotos" class="photos"><div class="photo-empty">활동사진을 불러오고 있어요.</div></div>
@@ -5836,11 +5943,11 @@ body.auth-modal-open .toast.show{
     <div id="lessonPhotosPanel" class="lesson-work-panel on">
       <div class="grid two">
         <div class="card">
-          <h2>1. 전체 활동사진 올리기</h2>
-          <input id="bulk" type="file" multiple accept="image/*">
-          <p class="muted" style="font-size:12px">수업 사진은 한 번에 최대 30장까지 올릴 수 있어요. 선택하면 미리보기가 먼저 뜨고, 뒤에서 가볍게 최적화해 저장합니다. 업로드한 사진은 모든 아이 이름 탭에서 동일하게 확인하고 아이별로 선택할 수 있습니다.</p>
+          <h2>1. 전체 활동사진·동영상 올리기</h2>
+          <input id="bulk" type="file" multiple accept="image/*,video/*">
+          <p class="muted" style="font-size:12px">수업 사진·동영상은 합쳐서 한 번에 최대 30개까지 올릴 수 있어요. 선택하면 미리보기가 먼저 뜨고, 사진은 가볍게 최적화하고 동영상은 안정적으로 저장합니다. 업로드한 자료는 모든 아이 이름 탭에서 동일하게 확인하고 아이별로 선택할 수 있습니다.</p>
           <div id="uploadPreview" class="photos">
-            <div class="photo-empty">아직 업로드된 사진이 없습니다.<br>위에서 오늘 수업 사진을 여러 장 선택해주세요.</div>
+            <div class="photo-empty">아직 업로드된 사진·동영상이 없습니다.<br>위에서 오늘 수업 자료를 여러 개 선택해주세요.</div>
           </div>
         </div>
         <div class="card">
@@ -5850,7 +5957,7 @@ body.auth-modal-open .toast.show{
             <div class="stat"><b id="completeStat">0</b><span>기록완료</span></div>
             <div class="stat"><b id="remainingStat">0</b><span>미작성</span></div>
           </div>
-          <p class="muted" style="font-size:12px;margin:14px 0 0">사진을 올린 뒤 위의 아이 이름을 눌러 성장기록과 사진 선택을 진행해주세요.</p>
+          <p class="muted" style="font-size:12px;margin:14px 0 0">사진·동영상을 올린 뒤 위의 아이 이름을 눌러 성장기록과 자료 선택을 진행해주세요.</p>
         </div>
       </div>
     </div>
@@ -5881,9 +5988,9 @@ body.auth-modal-open .toast.show{
         <div id="expansion" class="question"></div>
 
         <h3>오늘 사진 선택</h3>
-        <p class="muted" style="font-size:12px;margin-top:-5px">전체 사진 탭에서 올린 사진 중 이 아이의 사진을 선택해주세요.</p>
+        <p class="muted" style="font-size:12px;margin-top:-5px">전체 사진 탭에서 올린 사진·동영상 중 이 아이의 자료를 선택해주세요.</p>
         <div id="childPhotoPicker" class="photos">
-          <div class="photo-empty">아직 업로드된 사진이 없습니다.<br>먼저 ‘전체 사진’ 탭에서 사진을 올려주세요.</div>
+          <div class="photo-empty">아직 업로드된 사진·동영상이 없습니다.<br>먼저 ‘전체 사진’ 탭에서 자료를 올려주세요.</div>
         </div>
       </div>
     </div>
@@ -5951,6 +6058,16 @@ body.auth-modal-open .toast.show{
             <h3>전체 센터 현황</h3>
             <div class="muted">등록된 센터·반 전체 목록입니다.</div>
           </div>
+        </div>
+        <div class="admin-class-filter-grid" aria-label="센터 관리 필터">
+          <div class="admin-filter-item"><label for="adminClassCenterFilter">센터</label><select id="adminClassCenterFilter" onchange="filterAdminClasses()"><option value="">전체 센터</option></select></div>
+          <div class="admin-filter-item"><label for="adminClassTermFilter">학기</label><select id="adminClassTermFilter" onchange="filterAdminClasses()"><option value="">전체 학기</option></select></div>
+          <div class="admin-filter-item"><label for="adminClassProgramFilter">프로그램</label><select id="adminClassProgramFilter" onchange="filterAdminClasses()"><option value="">전체 프로그램</option></select></div>
+          <div class="admin-filter-item"><label for="adminClassWeekdayFilter">요일</label><select id="adminClassWeekdayFilter" onchange="filterAdminClasses()"><option value="">전체 요일</option></select></div>
+          <div class="admin-filter-item"><label for="adminClassTeacherFilter">강사</label><select id="adminClassTeacherFilter" onchange="filterAdminClasses()"><option value="">전체 강사</option></select></div>
+          <div class="admin-filter-item"><label for="adminClassStatusFilter">수업 상태</label><select id="adminClassStatusFilter" onchange="filterAdminClasses()"><option value="">전체 상태</option></select></div>
+          <button class="btn ghost small admin-class-filter-reset" type="button" onclick="resetAdminClassFilters()">필터 초기화</button>
+          <span id="adminClassFilterResult" class="muted admin-class-filter-result">전체 반</span>
         </div>
         <table id="adminClassTable">
           <thead><tr><th>센터</th><th>학기</th><th>프로그램</th><th>요일/시간</th><th>강사</th><th>학생</th><th>수업 금액</th><th>상태</th></tr></thead>
@@ -7973,7 +8090,7 @@ function renderTeacherUploadPreview(){
   pool.innerHTML="";
 
   if(!uploadedActivityPhotos.length){
-    pool.innerHTML='<div class="photo-empty">아직 업로드된 사진이 없습니다.<br>위에서 오늘 수업 사진을 여러 장 선택해주세요.</div>';
+    pool.innerHTML='<div class="photo-empty">아직 업로드된 사진·동영상이 없습니다.<br>위에서 오늘 수업 자료를 여러 개 선택해주세요.</div>';
     return;
   }
 
@@ -7996,7 +8113,7 @@ function renderChildPhotoPicker(){
   picker.innerHTML="";
 
   if(!uploadedActivityPhotos.length){
-    picker.innerHTML='<div class="photo-empty">아직 업로드된 사진이 없습니다.<br>먼저 ‘전체 사진’ 탭에서 사진을 올려주세요.</div>';
+    picker.innerHTML='<div class="photo-empty">아직 업로드된 사진·동영상이 없습니다.<br>먼저 ‘전체 사진’ 탭에서 자료를 올려주세요.</div>';
     return;
   }
 
@@ -8318,7 +8435,8 @@ renderTeacherUploadPreview();
  setTimeout(tryAuto,500);setTimeout(tryAuto,1600);setTimeout(tryAuto,4000);
 })();
 </script>
-<script src="./app.js?v=31"></script>
+<script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
+<script src="./app.js?v=37"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v33.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
