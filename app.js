@@ -318,6 +318,7 @@
   }
 
   function hideAllRolePages(){
+    closeLessonVideo();
     ["parent","teacher","admin"].forEach(id => $(id)?.classList.add("hide"));
   }
 
@@ -500,6 +501,7 @@
   }
 
   async function switchRoleProd(role){
+    closeLessonVideo();
     if (!profile) return;
     if (profile.role !== "admin" && role !== profile.role) return;
     if(profile.role!=="admin") removeAdminPreviewUI();
@@ -1103,6 +1105,144 @@
     }
   };
 
+  // Program-wide monthly lesson videos (v40).
+  let lessonVideoRequest = 0;
+  let adminVideoRequest = 0;
+  function youtubeVideoId(value){
+    const input=String(value||'').trim();
+    if(!input)return null;
+    try{
+      const url=new URL(input);
+      if(url.protocol!=='https:' && url.protocol!=='http:')return null;
+      const host=url.hostname.toLowerCase();
+      let id='';
+      if(host==='youtu.be')id=url.pathname.split('/')[1];
+      else if(['youtube.com','www.youtube.com','m.youtube.com','youtube-nocookie.com','www.youtube-nocookie.com'].includes(host)){
+        const parts=url.pathname.split('/');
+        id=url.pathname==='/watch'?url.searchParams.get('v'):['embed','shorts','live'].includes(parts[1])?parts[2]:'';
+      }
+      return /^[A-Za-z0-9_-]{11}$/.test(id||'')?id:null;
+    }catch(_){return null;}
+  }
+  function closeLessonVideo(){
+    const dialog=$('lessonVideoDialog');
+    if(!dialog)return;
+    dialog.querySelector('iframe')?.remove();
+    if(dialog.open)dialog.close();
+  }
+  function playLessonVideo(id,title,trigger){
+    if(!/^[A-Za-z0-9_-]{11}$/.test(id||''))return;
+    closeLessonVideo();
+    let dialog=$('lessonVideoDialog');
+    if(!dialog){
+      dialog=document.createElement('dialog');dialog.id='lessonVideoDialog';
+      dialog.className='lesson-video-dialog';
+      dialog.innerHTML='<div class="lesson-video-heading"><strong id="lessonVideoTitle"></strong><button type="button" aria-label="영상 닫기">닫기 ✕</button></div><div class="lesson-video-player"></div><p>영상이 재생되지 않으면 <a target="_blank" rel="noopener noreferrer">YouTube에서 보기</a></p>';
+      document.body.append(dialog);
+      dialog.querySelector('button').onclick=closeLessonVideo;
+      dialog.addEventListener('cancel',closeLessonVideo);
+      dialog.addEventListener('close',()=>{dialog.querySelector('iframe')?.remove();dialog._trigger?.focus();});
+      dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeLessonVideo();}});
+    }
+    dialog._trigger=trigger;
+    $('lessonVideoTitle').textContent=title;
+    dialog.querySelector('a').href='https://www.youtube.com/watch?v='+id;
+    const frame=document.createElement('iframe');
+    frame.title=title;frame.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';frame.allowFullscreen=true;
+    frame.referrerPolicy='strict-origin-when-cross-origin';
+    frame.src='https://www.youtube-nocookie.com/embed/'+id+'?playsinline=1&rel=0&autoplay=1';
+    dialog.querySelector('.lesson-video-player').append(frame);
+    dialog.showModal();
+  }
+  function clearParentLessonVideos(){
+    lessonVideoRequest++;closeLessonVideo();$('parentLessonVideos')?.remove();
+  }
+  async function renderParentLessonVideos(){
+    const root=$('parent');if(!root)return;
+    const program=activeClass?.program;
+    if(!program){clearParentLessonVideos();return;}
+    closeLessonVideo();
+    let box=$('parentLessonVideos');
+    if(!box){
+      box=document.createElement('section');box.id='parentLessonVideos';box.className='card lesson-videos';
+      box.innerHTML='<div class="lesson-video-heading"><div><h2>🎬 이번 달 수업 영상</h2><p class="muted" data-program></p></div><label>월 선택 <input type="month" aria-label="수업 영상 월 선택"></label></div><div class="lesson-video-strip" tabindex="0" aria-label="차시별 수업 영상, 좌우로 넘겨보세요"></div><p class="muted lesson-video-help">옆으로 넘겨 다음 차시도 살펴보세요. 아이와 함께 보고, 서로의 생각을 나눠보세요.</p>';
+      root.prepend(box);
+      box.querySelector('input').value=todayISO().slice(0,7);
+      box.querySelector('input').onchange=()=>{renderParentLessonVideos();};
+    }
+    box.querySelector('[data-program]').textContent=program;
+    const month=box.querySelector('input').value;
+    if(!/^\d{4}-\d{2}$/.test(month)){lessonVideoRequest++;box.querySelector('.lesson-video-strip').textContent='월을 선택해주세요.';return;}
+    const token=++lessonVideoRequest;
+    const strip=box.querySelector('.lesson-video-strip');strip.textContent='영상을 불러오고 있어요…';
+    try{
+      const {data,error}=await db.from('program_lesson_videos').select('lesson_no,title,video_id').eq('program',program).eq('month',month+'-01').order('lesson_no');
+      if(token!==lessonVideoRequest)return;if(error)throw error;
+      strip.replaceChildren();strip.scrollLeft=0;
+      for(let n=1;n<=4;n++){
+        const row=(data||[]).find(x=>x.lesson_no===n);
+        const available=/^[A-Za-z0-9_-]{11}$/.test(row?.video_id||'');
+        const card=document.createElement('button');card.type='button';card.className='lesson-video-card';card.disabled=!available;
+        const title=row?.title||n+'차시 수업';
+        card.setAttribute('aria-label',n+'차시 '+title+(available?' 재생':' · 영상 준비 중'));
+        card.innerHTML='<span class="lesson-video-thumb"></span><span class="lesson-video-number">'+n+'차시</span><strong></strong><span class="lesson-video-caption"></span>';
+        card.querySelector('strong').textContent=title;
+        card.querySelector('.lesson-video-caption').textContent=available?'▶ 영상 보기':'영상 준비 중';
+        if(available){
+          const img=document.createElement('img');img.src='https://i.ytimg.com/vi/'+row.video_id+'/hqdefault.jpg';img.alt='';img.loading='lazy';
+          img.onerror=()=>img.remove();card.querySelector('.lesson-video-thumb').append(img);
+          card.onclick=()=>playLessonVideo(row.video_id,n+'차시 · '+title,card);
+        }else card.querySelector('.lesson-video-thumb').textContent='곧 만나요 🌱';
+        strip.append(card);
+      }
+    }catch(e){if(token===lessonVideoRequest){strip.textContent='영상을 불러오지 못했어요. ';const retry=document.createElement('button');retry.textContent='다시 시도';retry.onclick=renderParentLessonVideos;strip.append(retry);}}
+  }
+  async function renderAdminLessonVideos(){
+    if(profile?.role!=='admin')return;
+    let box=$('adminLessonVideos');
+    if(box)return;
+    box=document.createElement('details');box.id='adminLessonVideos';box.className='card lesson-video-admin';
+    box.innerHTML='<summary>🎬 월별 수업 영상 관리</summary><p class="muted">프로그램과 월을 선택한 뒤 네 차시의 제목과 YouTube 주소를 저장하세요. 같은 프로그램의 학부모에게 공통으로 표시됩니다.</p><form><div class="lesson-video-heading"><label>프로그램 <select required aria-label="영상 등록 프로그램"></select></label><label>월 <input type="month" required aria-label="영상 등록 월"></label></div><div data-video-fields></div><p class="muted">주소를 비우고 저장하면 해당 차시는 준비 중으로 표시됩니다.</p><button type="submit" class="btn">네 차시 저장</button><p data-status role="status" aria-live="polite"></p></form>';
+    $('admin')?.prepend(box);
+    const form=box.querySelector('form'),program=box.querySelector('select'),month=box.querySelector('input[type=month]'),status=box.querySelector('[data-status]'),submit=box.querySelector('[type=submit]');
+    month.value=todayISO().slice(0,7);
+    box.querySelector('[data-video-fields]').innerHTML=[1,2,3,4].map(n=>'<fieldset><legend>'+n+'차시</legend><label>수업 제목<input data-title="'+n+'" maxlength="120" placeholder="예: 함께 힘을 모으는 다리"></label><label>YouTube 주소<input data-url="'+n+'" type="url" placeholder="https://youtu.be/…"></label></fieldset>').join('');
+    const setBusy=busy=>{Array.from(form.elements).forEach(el=>el.disabled=busy);};
+    async function load(){
+      if(!program.value||!month.value)return;
+      const token=++adminVideoRequest;setBusy(true);status.textContent='불러오는 중…';
+      try{
+        const {data,error}=await db.from('program_lesson_videos').select('lesson_no,title,video_id').eq('program',program.value).eq('month',month.value+'-01');
+        if(token!==adminVideoRequest)return;if(error)throw error;
+        for(let n=1;n<=4;n++){const row=(data||[]).find(x=>x.lesson_no===n);box.querySelector('[data-title="'+n+'"]').value=row?.title||'';box.querySelector('[data-url="'+n+'"]').value=row?.video_id?'https://youtu.be/'+row.video_id:'';}
+        status.textContent='';setBusy(false);
+      }catch(e){status.textContent='불러오기 실패. 월이나 프로그램을 다시 선택해주세요.';setBusy(true);program.disabled=false;month.disabled=false;}
+    }
+    program.onchange=load;month.onchange=load;
+    form.onsubmit=async e=>{
+      e.preventDefault();if(profile?.role!=='admin')return;
+      const rows=[];
+      for(let n=1;n<=4;n++){
+        const url=box.querySelector('[data-url="'+n+'"]').value.trim(),id=youtubeVideoId(url);
+        if(url&&!id){status.textContent=n+'차시의 YouTube 영상 주소를 확인해주세요.';box.querySelector('[data-url="'+n+'"]').focus();return;}
+        rows.push({program:program.value,month:month.value+'-01',lesson_no:n,title:box.querySelector('[data-title="'+n+'"]').value.trim(),video_id:id});
+      }
+      setBusy(true);status.textContent='저장 중…';
+      try{
+        const {data,error}=await db.from('program_lesson_videos').upsert(rows,{onConflict:'program,month,lesson_no'}).select('lesson_no');
+        if(error)throw error;if(data?.length!==4)throw new Error('저장 결과를 확인하지 못했습니다.');
+        status.textContent='저장했습니다. 해당 프로그램의 학부모 화면에 반영됩니다.';
+      }catch(e){status.textContent='저장 실패: '+(e?.message||'다시 시도해주세요.');}finally{setBusy(false);}
+    };
+    setBusy(true);
+    try{
+      const {data,error}=await db.from('classes').select('program').order('program');if(error)throw error;
+      [...new Set((data||[]).map(x=>x.program).filter(Boolean))].forEach(x=>program.add(new Option(x,x)));
+      if(!program.options.length){status.textContent='수업을 먼저 등록해주세요.';return;}
+      setBusy(false);await load();
+    }catch(e){status.textContent='프로그램을 불러오지 못했습니다. 관리자 화면을 다시 열어주세요.';}
+  }
+
   // ---------- Parent ----------
   async function getParentChildren(){
     let query = db.from("children").select("id,name,birth_date,parent_id").order("created_at");
@@ -1258,6 +1398,7 @@
   }
 
   function renderParentEmpty(text){
+    clearParentLessonVideos();
     activeClass=null;
     activeEnrollment=null;
     currentParentStudentName="";
@@ -1313,6 +1454,7 @@
   }
 
   async function renderSelectedParentActiveClass(){
+    void renderParentLessonVideos();
     if(!activeEnrollment || !activeClass)return;
     const display=shortName(activeChild.name);
 
@@ -1346,6 +1488,7 @@
   };
 
   async function renderParentForChild(){
+    clearParentLessonVideos();
     if(!activeChild) return;
     currentParentStudentName = activeChild.name;
     const display=shortName(activeChild.name);
@@ -4215,6 +4358,8 @@
 
   // ---------- Admin ----------
   async function loadAdminDashboard(){
+    $("adminLessonVideos")?.remove();
+    void renderAdminLessonVideos();
     try{
       await autoClosePastUnrecordedAttendance();
     }catch(e){
