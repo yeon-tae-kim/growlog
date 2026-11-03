@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=40">
+<link rel="manifest" href="./manifest.webmanifest?v=39">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -5488,6 +5488,7 @@ body.auth-modal-open .toast.show{
 .parent-photo-viewer-image-wrap video.hide{display:none!important}
 </style>
 
+<link rel="stylesheet" href="./lesson-videos.css?v=41">
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -8395,13 +8396,11 @@ renderTeacherUploadPreview();
 
 문체는 따뜻하고 명료하게. 부모 상담보고서처럼 딱딱하지 않게 쓰고, ‘잘한다/못한다’보다 ‘자주 보였다/더 발견해볼 수 있다’라는 표현을 사용해줘.`;
  function day(){return new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10);}
- function joinPage(){try{return !!String(new URLSearchParams(location.search).get('join')||'').trim();}catch(e){return false;}}
- function publicPage(){if(joinPage())return false;var landing=document.getElementById('growlogLanding');return landing&&!landing.classList.contains('hide')&&!document.body.classList.contains('auth-modal-open')&&!/prod-role-(parent|teacher|admin)/.test(document.body.className);}
+ function publicPage(){var landing=document.getElementById('growlogLanding');return landing&&!landing.classList.contains('hide')&&!document.body.classList.contains('auth-modal-open')&&!/prod-role-(parent|teacher|admin)/.test(document.body.className);}
  function open(){if(!modal.hidden)return;if(!manual&&!forced&&!publicPage())return;lastFocus=document.activeElement;modal.hidden=false;oldOverflow=document.body.style.overflow;document.body.style.overflow='hidden';background=[];Array.prototype.forEach.call(document.body.children,function(el){if(el!==modal&&el.tagName!=='SCRIPT'&&el.tagName!=='STYLE'){background.push([el,el.inert]);el.inert=true;}});card.scrollTop=0;modal.querySelector('.gl-close').focus();}
  function close(save){if(modal.hidden)return;if(save&&document.getElementById('glHideToday').checked){try{localStorage.setItem(key,day());}catch(e){}}modal.hidden=true;document.body.style.overflow=oldOverflow;background.forEach(function(item){item[0].inert=item[1];});background=[];if(lastFocus&&lastFocus.isConnected)lastFocus.focus();}
  window.openGrowlogPromo=function(){manual=true;open();};
  function tryAuto(){
-  if(joinPage()){if(!modal.hidden)close(false);return;}
   if(attempted)return;
   if(document.body.classList.contains('auth-modal-open'))return;
   if(!forced&&!publicPage())return;
@@ -8431,7 +8430,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=40"></script>
+<script src="./app.js?v=41"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
