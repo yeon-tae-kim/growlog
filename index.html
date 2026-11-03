@@ -5488,8 +5488,26 @@ body.auth-modal-open .toast.show{
 .parent-photo-viewer-image-wrap video.hide{display:none!important}
 </style>
 
-<link rel="stylesheet" href="./lesson-videos.css?v=42">
-</head>
+<link rel="stylesheet" href="./lesson-videos.css?v=43">
+<style>
+#adminphotos .ag-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0}
+#adminphotos .ag-toolbar label{display:flex;gap:8px;align-items:center;font-size:13px}
+#adminphotos .ag-toolbar input{width:auto;min-width:140px}
+#adminphotos .ag-day{margin:24px 0 32px}
+#adminphotos .ag-day h3{font-size:17px;letter-spacing:-.3px;padding-bottom:12px;border-bottom:1px solid #e7ece9;margin:0 0 14px}
+#adminphotos .ag-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px 12px}
+#adminphotos .ag-photo{display:block;min-width:0;padding:0;background:none;border:0;text-align:left;color:inherit;cursor:pointer;border-radius:12px;overflow:hidden;font:inherit}
+#adminphotos .ag-photo:focus-visible{outline:3px solid #5275d3;outline-offset:3px}
+#adminphotos .ag-frame{display:flex;align-items:center;justify-content:center;aspect-ratio:1;background:#eef2ef;border-radius:12px;overflow:hidden;color:#6b786e;font-size:11px}
+#adminphotos .ag-frame img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}
+#adminphotos .ag-photo:hover img{transform:scale(1.025)}
+#adminphotos .ag-caption{display:block;padding:8px 2px;font-size:12px;line-height:1.5;color:#637069;overflow-wrap:anywhere}
+#adminphotos .ag-caption span{display:block}
+#adminphotos .ag-caption span:first-child{font-weight:700;color:#263c30}
+#adminphotos .ag-more{display:block;margin:24px auto}
+#adminphotos .ag-more[hidden]{display:none}
+@media(max-width:600px){#adminphotos .ag-grid{gap:12px 6px}#adminphotos .ag-frame{border-radius:7px}#adminphotos .ag-caption{font-size:10px;padding:6px 0}#adminphotos .ag-toolbar{gap:8px}#adminphotos .ag-day h3{font-size:15px}}
+</style></head>
 <body class="prod-auth-pending">
 <header class="top">
   <div class="brand growlog-brand-logo">
@@ -6041,7 +6059,15 @@ body.auth-modal-open .toast.show{
   <div class="hero"><div><span class="badge">관리자</span><h1>Growlog 운영 대시보드</h1><p>회원 · 수업 · 비용 · 성장기록 · 학부모 문의 관리</p></div></div>
   <div class="grid three" style="margin-bottom:16px"><div class="stat"><b id="prodAdminTodayCount">0</b><span>오늘 수업</span></div><div class="stat"><b id="prodAdminTodayRate">0%</b><span>기록 완료율</span></div><div class="stat"><b id="prodAdminUnreadCount">0</b><span>미확인 문의</span></div></div>
   <div class="card">
-    <div class="mobile-hint">메뉴를 좌우로 밀어서 더 볼 수 있어요.</div><div class="tabs"><button class="tabbtn on" data-tab="classes">센터 관리</button><button class="tabbtn" data-tab="recordcheck">강사 기록 점검</button><button class="tabbtn" data-tab="monthly">월간 기록 현황</button><button class="tabbtn" data-tab="members">회원 관리</button><button class="tabbtn" data-tab="multi">다중 수강</button><button class="tabbtn" data-tab="fees">추가 비용</button><button class="tabbtn" data-tab="feedback">학부모 문의</button></div>
+    <div class="mobile-hint">메뉴를 좌우로 밀어서 더 볼 수 있어요.</div><div class="tabs"><button class="tabbtn on" data-tab="classes">센터 관리</button><button class="tabbtn" data-tab="adminphotos">전체 수업 사진</button><button class="tabbtn" data-tab="recordcheck">강사 기록 점검</button><button class="tabbtn" data-tab="monthly">월간 기록 현황</button><button class="tabbtn" data-tab="members">회원 관리</button><button class="tabbtn" data-tab="multi">다중 수강</button><button class="tabbtn" data-tab="fees">추가 비용</button><button class="tabbtn" data-tab="feedback">학부모 문의</button></div>
+
+    <div id="adminphotos" class="panel">
+      <div class="ag-heading"><div><h2>전체 수업 사진</h2><p class="muted">수업일별로 모아 보는 아이들의 하루 · 사진을 누르면 크게 볼 수 있어요.</p></div></div>
+      <div class="ag-toolbar"><label>수업일 <input id="adminGalleryDate" type="date" onchange="loadAdminPhotoGallery(true)"></label><button class="btn ghost small" type="button" onclick="document.getElementById('adminGalleryDate').value='';loadAdminPhotoGallery(true)">전체 날짜</button><button class="btn ghost small" type="button" onclick="loadAdminPhotoGallery(true)">새로고침</button></div>
+      <p id="adminGalleryStatus" class="muted" role="status" aria-live="polite"></p>
+      <div id="adminGalleryGrid"></div>
+      <button id="adminGalleryMore" class="btn ghost ag-more" type="button" onclick="loadAdminPhotoGallery()">사진 더 보기</button>
+    </div>
 
     <div id="classes" class="panel on">
       <h2>센터 관리</h2>
@@ -6491,6 +6517,7 @@ document.querySelectorAll(".tabbtn").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".panel").forEach(x=>x.classList.remove("on"));
   b.classList.add("on");
   document.getElementById(b.dataset.tab).classList.add("on");
+  if(b.dataset.tab==="adminphotos" && window.loadAdminPhotoGallery) window.loadAdminPhotoGallery(true);
   if(b.dataset.tab==="monthly") renderAdminMonthlyTracking();
   if(b.dataset.tab==="feedback" && window.refreshAdminInquiries) window.refreshAdminInquiries();
 });
@@ -8432,7 +8459,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=42"></script>
+<script src="./app.js?v=43"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

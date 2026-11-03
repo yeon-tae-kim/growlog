@@ -4372,6 +4372,93 @@
     }
   };
 
+  // Admin photo gallery: keep queries within the signed-in user's existing RLS.
+  let adminGalleryVersion=0;
+  let adminGalleryOffset=0;
+  let adminGalleryBusy=false;
+  let adminGalleryDone=false;
+  let adminGalleryCount=0;
+  let adminGallerySeen=new Set();
+  const adminGalleryPageSize=80;
+
+  function adminGalleryCaption(photo,classes,uploaders){
+    const c=classes.get(photo.class_id)||{};
+    const teacher=uploaders.get(photo.uploaded_by)?.name||c.profiles?.name||'강사 미확인';
+    return [c.centers?.name||'센터 미확인',c.program||'프로그램 미확인',teacher,
+      [c.weekday,String(c.class_time||'').slice(0,5)].filter(Boolean).join(' ')||'시간 미확인'];
+  }
+
+  window.loadAdminPhotoGallery=async function(reset=false){
+    if(profile?.role!=='admin'||!db)return;
+    const root=$('adminGalleryGrid'),status=$('adminGalleryStatus'),more=$('adminGalleryMore');
+    if(!root||!status||!more)return;
+    if(reset){
+      adminGalleryVersion++;adminGalleryOffset=0;adminGalleryDone=false;
+      adminGalleryBusy=false;adminGalleryCount=0;adminGallerySeen=new Set();root.replaceChildren();
+    }
+    if(adminGalleryBusy||adminGalleryDone)return;
+    const version=adminGalleryVersion;
+    const current=()=>version===adminGalleryVersion&&profile?.role==='admin';
+    adminGalleryBusy=true;more.disabled=true;status.textContent='사진을 불러오는 중…';
+    try{
+      let query=db.from('photos').select('*').order('lesson_date',{ascending:false,nullsFirst:false})
+        .order('created_at',{ascending:false}).order('id',{ascending:false});
+      const date=$('adminGalleryDate').value;
+      if(date)query=query.eq('lesson_date',date);
+      const {data,error}=await query.range(adminGalleryOffset,adminGalleryOffset+adminGalleryPageSize-1);
+      if(error)throw error;if(!current())return;
+      const raw=data||[],photos=raw.filter(p=>!isVideoMedia(p)&&!adminGallerySeen.has(p.id));
+      const classIds=[...new Set(photos.map(p=>p.class_id).filter(Boolean))];
+      const uploaderIds=[...new Set(photos.map(p=>p.uploaded_by).filter(Boolean))];
+      const [classResult,userResult,thumbs]=await Promise.all([
+        classIds.length?db.from('classes').select('id,program,weekday,class_time,centers(name),profiles!classes_teacher_id_fkey(name)').in('id',classIds):{data:[]},
+        uploaderIds.length?db.from('profiles').select('id,name').in('id',uploaderIds):{data:[]},
+        signedThumbnailListFast(photos)
+      ]);
+      if(classResult.error)throw classResult.error;if(userResult.error)throw userResult.error;
+      if(!current())return;
+      const classes=new Map((classResult.data||[]).map(c=>[c.id,c]));
+      const uploaders=new Map((userResult.data||[]).map(u=>[u.id,u]));
+      for(const p of thumbs){
+        const day=p.lesson_date||'날짜 미지정';
+        let group=Array.from(root.children).find(el=>el.dataset.day===day);
+        if(!group){
+          group=document.createElement('section');group.className='ag-day';group.dataset.day=day;
+          const title=document.createElement('h3');title.textContent=day;
+          const grid=document.createElement('div');grid.className='ag-grid';
+          group.append(title,grid);root.append(group);
+        }
+        const caption=adminGalleryCaption(p,classes,uploaders);
+        const card=document.createElement('button');card.type='button';card.className='ag-photo';
+        card.setAttribute('aria-label',day+' '+caption.join(' · ')+' 사진 크게 보기');
+        const frame=document.createElement('span');frame.className='ag-frame';
+        if(p.url){
+          const img=document.createElement('img');img.src=p.url;img.alt='수업 활동 사진';img.loading='lazy';img.decoding='async';
+          img.onerror=()=>{frame.textContent='미리보기 없음';};frame.append(img);
+        }else frame.textContent='미리보기 없음';
+        const info=document.createElement('span');info.className='ag-caption';
+        caption.forEach(value=>{const line=document.createElement('span');line.textContent=value;info.append(line);});
+        card.append(frame,info);
+        card.onclick=async()=>{
+          if(profile?.role!=='admin')return;
+          card.disabled=true;
+          try{
+            const url=await signedUrl(p.storage_path);
+            if(!current())return;
+            await window.openParentPhotoViewer(url,p.storage_path.split('/').pop(),day+' · '+caption.join(' · '));
+          }catch(e){if(current())status.textContent='사진을 열지 못했습니다. 다시 눌러주세요.';}
+          finally{card.disabled=false;}
+        };
+        group.querySelector('.ag-grid').append(card);adminGallerySeen.add(p.id);adminGalleryCount++;
+      }
+      adminGalleryOffset+=raw.length;adminGalleryDone=raw.length<adminGalleryPageSize;
+      status.textContent=adminGalleryCount?adminGalleryCount+'장 표시'+(adminGalleryDone?' · 마지막 사진입니다.':' · 아래에서 더 불러올 수 있어요.'):
+        (adminGalleryDone?'해당 기간에 등록된 사진이 없습니다.':'이 구간에는 사진이 없습니다. 더 보기를 눌러주세요.');
+      more.hidden=adminGalleryDone;
+    }catch(e){if(current()){status.textContent='사진을 불러오지 못했습니다: '+(e?.message||'다시 시도해주세요.');more.hidden=false;}}
+    finally{if(current()){adminGalleryBusy=false;more.disabled=false;}}
+  };
+
   // ---------- Admin ----------
   async function loadAdminDashboard(){
     $("adminLessonVideos")?.remove();
