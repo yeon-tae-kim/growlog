@@ -5488,7 +5488,7 @@ body.auth-modal-open .toast.show{
 .parent-photo-viewer-image-wrap video.hide{display:none!important}
 </style>
 
-<link rel="stylesheet" href="./lesson-videos.css?v=43">
+<link rel="stylesheet" href="./lesson-videos.css?v=44">
 <style>
 #adminphotos .ag-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0}
 #adminphotos .ag-toolbar label{display:flex;gap:8px;align-items:center;font-size:13px}
@@ -5504,6 +5504,13 @@ body.auth-modal-open .toast.show{
 #adminphotos .ag-caption{display:block;padding:8px 2px;font-size:12px;line-height:1.5;color:#637069;overflow-wrap:anywhere}
 #adminphotos .ag-caption span{display:block}
 #adminphotos .ag-caption span:first-child{font-weight:700;color:#263c30}
+#adminphotos .ag-item{position:relative;min-width:0;border-radius:12px}
+#adminphotos .ag-item .ag-photo{width:100%}
+#adminphotos .ag-selected .ag-frame{outline:3px solid #5275d3;outline-offset:-3px}
+#adminphotos .ag-select-label{position:absolute;top:0;left:0;display:flex;align-items:center;justify-content:center;width:44px;height:44px;cursor:pointer;z-index:1}
+#adminphotos .ag-check{appearance:auto;width:22px;height:22px;min-width:22px;margin:0;padding:0;accent-color:#5275d3;cursor:pointer;box-shadow:0 1px 6px #0004}
+#adminphotos .ag-selection-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#f0f5f2;padding:12px;border-radius:12px}
+#adminphotos .ag-selection-help{font-size:12px}
 #adminphotos .ag-more{display:block;margin:24px auto}
 #adminphotos .ag-more[hidden]{display:none}
 @media(max-width:600px){#adminphotos .ag-grid{gap:12px 6px}#adminphotos .ag-frame{border-radius:7px}#adminphotos .ag-caption{font-size:10px;padding:6px 0}#adminphotos .ag-toolbar{gap:8px}#adminphotos .ag-day h3{font-size:15px}}
@@ -6064,6 +6071,8 @@ body.auth-modal-open .toast.show{
     <div id="adminphotos" class="panel">
       <div class="ag-heading"><div><h2>전체 수업 사진</h2><p class="muted">수업일별로 모아 보는 아이들의 하루 · 사진을 누르면 크게 볼 수 있어요.</p></div></div>
       <div class="ag-toolbar"><label>수업일 <input id="adminGalleryDate" type="date" onchange="loadAdminPhotoGallery(true)"></label><button class="btn ghost small" type="button" onclick="document.getElementById('adminGalleryDate').value='';loadAdminPhotoGallery(true)">전체 날짜</button><button class="btn ghost small" type="button" onclick="loadAdminPhotoGallery(true)">새로고침</button></div>
+      <div class="ag-selection-bar"><button class="btn ghost small" type="button" onclick="selectAllAdminGalleryPhotos(true)">불러온 사진 전체 선택</button><button class="btn ghost small" type="button" onclick="selectAllAdminGalleryPhotos(false)">선택 해제</button><span id="adminGallerySelectedCount" aria-live="polite">0장 선택</span><button id="adminGallerySave" class="btn small" type="button" onclick="saveSelectedAdminGalleryPhotos()" disabled>선택 사진 저장</button></div>
+      <p class="muted ag-selection-help">사진 왼쪽 위 체크박스로 선택하세요. 날짜 변경·새로고침 시 선택이 해제됩니다.</p>
       <p id="adminGalleryStatus" class="muted" role="status" aria-live="polite"></p>
       <div id="adminGalleryGrid"></div>
       <button id="adminGalleryMore" class="btn ghost ag-more" type="button" onclick="loadAdminPhotoGallery()">사진 더 보기</button>
@@ -8459,7 +8468,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=43"></script>
+<script src="./app.js?v=44"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

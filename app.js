@@ -4381,6 +4381,59 @@
   let adminGallerySeen=new Set();
   const adminGalleryPageSize=80;
 
+  const adminGalleryItems=new Map();
+  const adminGallerySelected=new Set();
+  let adminGallerySaving=false;
+  function syncAdminGallerySelection(){
+    const count=$('adminGallerySelectedCount'),save=$('adminGallerySave');
+    if(count)count.textContent=adminGallerySelected.size+'장 선택';
+    if(save){save.disabled=adminGallerySaving||!adminGallerySelected.size;if(!adminGallerySaving)save.textContent='선택 사진 저장';}
+    for(const input of document.querySelectorAll('#adminGalleryGrid .ag-check')){
+      input.checked=adminGallerySelected.has(input.dataset.photoId);
+      input.closest('.ag-item')?.classList.toggle('ag-selected',input.checked);
+    }
+  }
+  window.selectAllAdminGalleryPhotos=function(selected){
+    if(profile?.role!=='admin')return;
+    adminGallerySelected.clear();
+    if(selected)for(const id of adminGalleryItems.keys())adminGallerySelected.add(id);
+    syncAdminGallerySelection();
+  };
+  window.saveSelectedAdminGalleryPhotos=async function(){
+    if(profile?.role!=='admin'||adminGallerySaving)return;
+    const items=[...adminGalleryItems.values()].filter(p=>adminGallerySelected.has(p.id));
+    if(!items.length)return;
+    const btn=$('adminGallerySave'),version=adminGalleryVersion;
+    const current=()=>profile?.role==='admin'&&version===adminGalleryVersion;
+    adminGallerySaving=true;syncAdminGallerySelection();
+    try{
+      const files=[];
+      for(let i=0;i<items.length;i++){
+        if(!current())return;
+        const p=items[i];btn.textContent=`준비 ${i+1}/${items.length}`;
+        const url=await signedUrl(p.storage_path);
+        if(!current())return;
+        const res=await fetch(url);if(!res.ok)throw new Error((i+1)+'번째 사진을 불러오지 못했습니다. 다시 시도해주세요.');
+        const blob=await res.blob();
+        const ext=mediaFileExtension(blob.type,p.storage_path);
+        const name=[p.lesson_date||'날짜미정',...p.caption].map(sanitizePhotoFilenamePart).join('_')+'_'+String(i+1).padStart(3,'0')+'.'+ext;
+        files.push(new File([blob],name,{type:blob.type||'image/jpeg'}));
+      }
+      if(!current())return;
+      if(parentPhotoMobileLike())openParentPhotoBatchDialog(files,'Growlog 관리자 선택 사진');
+      else{
+        if(files.length===1)downloadBlob(files[0],files[0].name);
+        else{
+          btn.textContent='ZIP 만드는 중…';
+          const zip=await makeStoredZip(files);if(!current())return;
+          downloadBlob(zip,`Growlog_선택사진_${todayISO()}_${files.length}장.zip`);
+        }
+        notify(files.length+'장 다운로드를 시작했습니다. 다운로드 폴더를 확인해주세요.');
+      }
+    }catch(e){if(current())notify(e?.message||'사진 저장을 준비하지 못했습니다. 다시 시도해주세요.');}
+    finally{adminGallerySaving=false;syncAdminGallerySelection();}
+  };
+
   function adminGalleryCaption(photo,classes,uploaders){
     const c=classes.get(photo.class_id)||{};
     const teacher=uploaders.get(photo.uploaded_by)?.name||c.profiles?.name||'강사 미확인';
@@ -4395,6 +4448,7 @@
     if(reset){
       adminGalleryVersion++;adminGalleryOffset=0;adminGalleryDone=false;
       adminGalleryBusy=false;adminGalleryCount=0;adminGallerySeen=new Set();root.replaceChildren();
+      adminGalleryItems.clear();adminGallerySelected.clear();syncAdminGallerySelection();
     }
     if(adminGalleryBusy||adminGalleryDone)return;
     const version=adminGalleryVersion;
@@ -4449,8 +4503,16 @@
           }catch(e){if(current())status.textContent='사진을 열지 못했습니다. 다시 눌러주세요.';}
           finally{card.disabled=false;}
         };
-        group.querySelector('.ag-grid').append(card);adminGallerySeen.add(p.id);adminGalleryCount++;
+        const item=document.createElement('div');item.className='ag-item';
+        const label=document.createElement('label');label.className='ag-select-label';
+        const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.className='ag-check';checkbox.dataset.photoId=String(p.id);
+        checkbox.setAttribute('aria-label',day+' '+caption.join(' · ')+' 사진 선택');
+        checkbox.onchange=()=>{if(checkbox.checked)adminGallerySelected.add(p.id);else adminGallerySelected.delete(p.id);syncAdminGallerySelection();};
+        label.append(checkbox);item.append(card,label);
+        adminGalleryItems.set(p.id,{...p,caption});
+        group.querySelector('.ag-grid').append(item);adminGallerySeen.add(p.id);adminGalleryCount++;
       }
+      syncAdminGallerySelection();
       adminGalleryOffset+=raw.length;adminGalleryDone=raw.length<adminGalleryPageSize;
       status.textContent=adminGalleryCount?adminGalleryCount+'장 표시'+(adminGalleryDone?' · 마지막 사진입니다.':' · 아래에서 더 불러올 수 있어요.'):
         (adminGalleryDone?'해당 기간에 등록된 사진이 없습니다.':'이 구간에는 사진이 없습니다. 더 보기를 눌러주세요.');
