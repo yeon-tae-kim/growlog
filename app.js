@@ -1161,6 +1161,21 @@
   function clearParentLessonVideos(){
     lessonVideoRequest++;closeLessonVideo();$('parentLessonVideos')?.remove();
   }
+  // 2027 is the shared annual baseline; saved year/month rows override it.
+  async function loadEffectiveLessonVideos(program,month){
+    const recurring=['블럭동화','블럭과학','영어뮤지컬인형극'].includes(program);
+    if(!/^\d{4}-\d{2}$/.test(month))throw new Error('월을 선택해주세요.');
+    const target=month+'-01',baseline='2027-'+month.slice(5)+'-01';
+    const dates=recurring&&target!==baseline?[target,baseline]:[target];
+    const {data,error}=await db.from('program_lesson_videos').select('month,lesson_no,title,video_id').eq('program',program).in('month',dates).order('lesson_no');
+    if(error)throw error;
+    const own=(data||[]).filter(row=>row.month===target);
+    // Explicit blank rows count as overrides, so clearing a month stays cleared.
+    if(own.length||dates.length===1)return {data:own,inherited:false};
+    const base=(data||[]).filter(row=>row.month===baseline);
+    return {data:base,inherited:base.length>0};
+  }
+
   async function renderParentLessonVideos(){
     const root=$('parent');if(!root)return;
     const program=activeClass?.program;
@@ -1169,24 +1184,27 @@
     let box=$('parentLessonVideos');
     if(!box){
       box=document.createElement('section');box.id='parentLessonVideos';box.className='card lesson-videos';
-      box.innerHTML='<div class="lesson-video-heading"><div><h2>🎬 이번 달 수업 영상</h2><p class="muted" data-program></p></div><label>월 선택 <input type="month" aria-label="수업 영상 월 선택"></label></div><div class="lesson-video-strip" tabindex="0" aria-label="차시별 수업 영상, 좌우로 넘겨보세요"></div><p class="muted lesson-video-help">옆으로 넘겨 다음 차시도 살펴보세요. 아이와 함께 보고, 서로의 생각을 나눠보세요.</p>';
+      box.innerHTML='<div class="lesson-video-heading"><div><h2>🎬 수업 영상</h2><p class="muted" data-program></p></div><label>월 선택 <input type="month" aria-label="수업 영상 월 선택"></label></div><div class="lesson-video-strip" tabindex="0" aria-label="차시별 수업 영상, 좌우로 넘겨보세요"></div><p class="muted lesson-video-help" role="status" aria-live="polite">옆으로 넘겨 다음 차시도 살펴보세요. 아이와 함께 보고, 서로의 생각을 나눠보세요.</p>';
       root.prepend(box);
       box.querySelector('input').value=todayISO().slice(0,7);
       box.querySelector('input').onchange=()=>{renderParentLessonVideos();};
     }
-    box.style.display='none';
+    box.style.display='';
+    const strip=box.querySelector('.lesson-video-strip');
+    const help=box.querySelector('.lesson-video-help');
+    strip.replaceChildren();strip.hidden=true;
+    help.textContent='영상을 불러오고 있어요…';
     box.querySelector('[data-program]').textContent=program;
     const month=box.querySelector('input').value;
-    if(!/^\d{4}-\d{2}$/.test(month)){lessonVideoRequest++;box.querySelector('.lesson-video-strip').textContent='월을 선택해주세요.';return;}
+    if(!/^\d{4}-\d{2}$/.test(month)){lessonVideoRequest++;help.textContent='월을 선택해주세요.';return;}
     const token=++lessonVideoRequest;
-    const strip=box.querySelector('.lesson-video-strip');strip.textContent='영상을 불러오고 있어요…';
     try{
-      const {data,error}=await db.from('program_lesson_videos').select('lesson_no,title,video_id').eq('program',program).eq('month',month+'-01').order('lesson_no');
-      if(token!==lessonVideoRequest)return;if(error)throw error;
+      const {data}=await loadEffectiveLessonVideos(program,month);
+      if(token!==lessonVideoRequest)return;
       strip.replaceChildren();strip.scrollLeft=0;
       const count=lessonVideoCount(program);
       const videos=(data||[]).filter(row=>row.lesson_no>=1 && row.lesson_no<=count && /^[A-Za-z0-9_-]{11}$/.test(row.video_id||''));
-      if(!videos.length)return;
+      if(!videos.length){help.textContent='이 달에는 등록된 영상이 없어요. 다른 월을 선택해보세요.';return;}
       box.classList.toggle('lesson-videos-single',count===1);
       box.querySelector('.lesson-video-help').textContent=(videos.length>2?'옆으로 넘겨 다음 차시도 살펴보세요. ':'')+'아이와 함께 보고, 서로의 생각을 나눠보세요.';
       strip.setAttribute('aria-label',count===1?'이달의 수업 영상':'차시별 수업 영상');
@@ -1203,8 +1221,8 @@
         card.onclick=()=>playLessonVideo(row.video_id,label+' · '+title,card);
         strip.append(card);
       }
-      box.style.display='';
-    }catch(e){if(token===lessonVideoRequest){box.style.display='none';console.warn('Lesson videos could not be loaded:',e?.message||e);}}
+      strip.hidden=false;
+    }catch(e){if(token===lessonVideoRequest){strip.hidden=true;help.textContent='영상을 불러오지 못했어요. 월을 다시 선택해 주세요.';console.warn('Lesson videos could not be loaded:',e?.message||e);}}
   }
 
   async function renderAdminLessonVideos(){
@@ -1212,7 +1230,7 @@
     let box=$('adminLessonVideos');
     if(box)return;
     box=document.createElement('details');box.id='adminLessonVideos';box.className='card lesson-video-admin';
-    box.innerHTML='<summary>🎬 월별 수업 영상 관리</summary><p class="muted">블럭동화·블럭과학은 월 4개, 나머지 프로그램은 월 1개를 등록합니다. 수업이 개설되지 않은 프로그램도 미리 등록할 수 있습니다. 같은 프로그램의 학부모에게 공통으로 표시됩니다.</p><form><div class="lesson-video-heading"><label>프로그램 <select required aria-label="영상 등록 프로그램"></select></label><label>월 <input type="month" required aria-label="영상 등록 월"></label></div><div data-video-fields></div><p class="muted">주소를 비우고 저장하면 해당 영상은 학부모에게 보이지 않습니다. 등록된 영상이 없으면 영상 영역 전체가 숨겨집니다.</p><button type="submit" class="btn">영상 저장</button><p data-status role="status" aria-live="polite"></p></form>';
+    box.innerHTML='<summary>🎬 월별 수업 영상 관리</summary><p class="muted">블럭동화·블럭과학은 월 4개, 나머지 프로그램은 월 1개를 등록합니다. 수업이 개설되지 않은 프로그램도 미리 등록할 수 있습니다. 같은 프로그램의 학부모에게 공통으로 표시됩니다.</p><form><div class="lesson-video-heading"><label>프로그램 <select required aria-label="영상 등록 프로그램"></select></label><label>월 <input type="month" required aria-label="영상 등록 월"></label></div><div data-video-fields></div><p class="muted">주소를 비우고 저장하면 해당 영상은 학부모에게 보이지 않습니다. 영상이 없으면 목록만 접히고, 학부모는 월을 바꾸어 다른 영상을 볼 수 있습니다. 블럭동화·블럭과학·영어뮤지컬인형극은 해당 월에 별도 저장한 내용이 없으면 2027년 같은 월의 영상을 사용합니다. 2027년 영상을 수정하면 기본 영상을 사용하는 다른 해에도 반영됩니다.</p><button type="submit" class="btn">영상 저장</button><p data-status role="status" aria-live="polite"></p></form>';
     $('admin')?.prepend(box);
     const form=box.querySelector('form'),program=box.querySelector('select'),month=box.querySelector('input[type=month]'),status=box.querySelector('[data-status]'),submit=box.querySelector('[type=submit]');
     month.value=todayISO().slice(0,7);
@@ -1226,10 +1244,10 @@
       if(!program.value||!month.value)return;
       const token=++adminVideoRequest;renderFields();setBusy(true);status.textContent='불러오는 중…';
       try{
-        const {data,error}=await db.from('program_lesson_videos').select('lesson_no,title,video_id').eq('program',program.value).eq('month',month.value+'-01');
-        if(token!==adminVideoRequest)return;if(error)throw error;
+        const {data,inherited}=await loadEffectiveLessonVideos(program.value,month.value);
+        if(token!==adminVideoRequest)return;
         for(let n=1;n<=lessonVideoCount(program.value);n++){const row=(data||[]).find(x=>x.lesson_no===n);box.querySelector('[data-title="'+n+'"]').value=row?.title||'';box.querySelector('[data-url="'+n+'"]').value=row?.video_id?'https://youtu.be/'+row.video_id:'';}
-        status.textContent='';setBusy(false);
+        status.textContent=inherited?'2027년 같은 월의 기본 영상입니다. 수정 후 저장하면 선택한 연도·월에만 적용됩니다.':'';setBusy(false);
       }catch(e){status.textContent='불러오기 실패. 월이나 프로그램을 다시 선택해주세요.';setBusy(true);program.disabled=false;month.disabled=false;}
     }
     program.onchange=load;month.onchange=load;

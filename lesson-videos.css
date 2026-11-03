@@ -2,3 +2,5 @@
 
 .lesson-videos-single .lesson-video-card{flex-basis:min(320px,100%)}
 @media(max-width:640px){.lesson-videos-single .lesson-video-card{flex-basis:100%}}
+
+.lesson-video-strip[hidden]{display:none!important}
