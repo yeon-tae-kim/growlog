@@ -269,7 +269,7 @@
     const v=String(value||"").trim();
     return isEmailLogin(v) ? v.toLowerCase() : normalizePhone(v);
   };
-  const joinCodeFromUrl = () => new URLSearchParams(location.search).get("join") || "";
+  const joinCodeFromUrl = () => String(new URLSearchParams(location.search).get("join") || "").trim();
 
   let authTopAlertTimer=null;
   function showAuthTopAlert(msg,duration=4200){
@@ -387,7 +387,7 @@
   function showAuth(){
     showLanding();
     if(joinCodeFromUrl()){
-      setTimeout(()=>window.openGrowlogAuth("signup"),0);
+      window.openGrowlogAuth("signup");
     }
   }
 
