@@ -1655,6 +1655,16 @@
     window.scrollTo({top:0,behavior:"smooth"});
   };
 
+  function trialClassMetaText(c){
+    const parts=[];
+    const teacher=String(c?.teacher_name||"").trim();
+    const weekday=String(c?.weekday||"").trim();
+    const time=String(c?.class_time||"").slice(0,5);
+    if(teacher && teacher!=="강사 미정" && teacher!=="미지정")parts.push(`${teacher} 선생님`);
+    if(weekday && weekday!=="미정" && time && time!=="00:00")parts.push(`${weekday}요일 ${time}`);
+    return parts.join(" · ");
+  }
+
   async function renderParentTrialExperience(trialEnrollments=[]){
     const root=$("parentTrialExperience");
     if(!root || profile?.role!=="parent" || !activeChild){
@@ -1704,7 +1714,7 @@
         button.className="parent-trial-tab"+(c.class_id===parentTrialActiveClassId?" on":"");
         button.innerHTML=`
           <b>${escape(c.center_name||"")} · ${escape(c.program||"")}</b>
-          <small>${escape(c.teacher_name||"강사 미정")} · ${escape(c.weekday||"")} ${escape(String(c.class_time||"").slice(0,5))}</small>
+          <small>${escape(c.teacher_name||"강사 미정")} · ${(c.weekday==="미정" && String(c.class_time||"").slice(0,5)==="00:00")?"일정 미정":`${escape(c.weekday||"")} ${escape(String(c.class_time||"").slice(0,5))}`}</small>
           ${c.joined?'<span class="trial-joined-mini">✓ 내가 참여한 수업</span>':""}`;
         button.onclick=()=>selectParentTrialClass(c.class_id);
         tabs.appendChild(button);
@@ -5218,7 +5228,18 @@
   window.syncNewClassTrialCenter=function(){
     const checked=!!$("newClassTrialCenter")?.checked;
     const term=$("newClassTerm");
-    if(checked && term && !String(term.value||"").trim())term.value="일일특강";
+    const status=$("newClassStatus");
+    document.body.classList.toggle("admin-trial-registering",checked);
+
+    if(checked){
+      if(term)term.value="일일특강";
+      if(status)status.value="예정";
+      ["newClassTime","newClassStartDate","newClassEndDate","newClassTeacher","newClassStudents","newClassAmount"]
+        .forEach(id=>{const el=$(id);if(el)el.value="";});
+    }else{
+      if(term && term.value==="일일특강")term.value="";
+      if(status)status.value="운영중";
+    }
   };
   window.syncEditClassTrialCenter=function(){
     const checked=!!$("editClassTrialCenter")?.checked;
@@ -5288,7 +5309,8 @@
       tr.dataset.teacher=c.profiles?.name||"미지정";
       tr.dataset.status=c.status||"";
       tr.dataset.trial=c.centers?.is_trial?"1":"0";
-      const vals=[c.centers?.name||"",c.term,c.program,`${c.weekday} ${String(c.class_time).slice(0,5)}`,c.profiles?.name||"미지정",`${c.student_capacity||0}명`,c.class_amount?money(c.class_amount):"미입력"];
+      const scheduleLabel=(c.centers?.is_trial && c.weekday==="미정" && String(c.class_time).slice(0,5)==="00:00") ? "미정" : `${c.weekday} ${String(c.class_time).slice(0,5)}`;
+      const vals=[c.centers?.name||"",c.term,c.program,scheduleLabel,c.profiles?.name||"미지정",c.student_capacity?`${c.student_capacity}명`:"미입력",c.class_amount?money(c.class_amount):"미입력"];
       vals.forEach((v,i)=>{const td=document.createElement("td");td.textContent=v;if(i===0 && c.centers?.is_trial){const badge=document.createElement("span");badge.className="admin-class-trial-badge";badge.textContent="일일특강";td.appendChild(badge);}tr.appendChild(td);});
       const td=document.createElement("td");td.innerHTML=`<span class="badge ${c.status==="운영중"?"":"gray"}">${escape(c.status)}</span>`;tr.appendChild(td);
       tr.onclick=()=>openAdminClassEditProd(c);
@@ -5304,7 +5326,7 @@
     if($("editClassTrialCenter"))$("editClassTrialCenter").checked=!!c.centers?.is_trial;
     $("editClassTerm").value=c.term||"";
     $("editClassProgram").value=normalizeProgramName(c.program||"블럭동화");
-    $("editClassTime").value=`${c.weekday} ${String(c.class_time).slice(0,5)}`;
+    $("editClassTime").value=(c.centers?.is_trial && c.weekday==="미정" && String(c.class_time).slice(0,5)==="00:00") ? "" : `${c.weekday} ${String(c.class_time).slice(0,5)}`;
     $("editClassStartDate").value=c.start_date||"";
     $("editClassEndDate").value=c.end_date||"";
     $("editClassTeacher").value=c.profiles?.name||"";
@@ -5327,27 +5349,76 @@
   window.addAdminClass=async function(){
     try{
       const isTrial=!!$("newClassTrialCenter")?.checked;
-      const center=await getOrCreateCenter($("newClassCenter").value,isTrial);
-      const teacher=await resolveTeacherByName($("newClassTeacher").value);
-      const time=splitClassTime($("newClassTime").value);
-      const term=$("newClassTerm").value.trim() || (isTrial?"일일특강":"");
-      const payload={
-        center_id:center.id,term,program:$("newClassProgram").value,
-        ...time,start_date:$("newClassStartDate").value||null,end_date:$("newClassEndDate").value||null,
-        teacher_id:teacher?.id||null,student_capacity:Number($("newClassStudents").value||0),
-        class_amount:Number(String($("newClassAmount").value||"").replace(/\D/g,"")||0),
-        status:$("newClassStatus").value
-      };
-      if(!payload.term) return notify("학기를 입력해주세요.");
-      if(!payload.program) return notify("프로그램을 선택해주세요.");
-      if(!payload.start_date || !payload.end_date) return notify("수업 시작일과 종료일을 입력해주세요.");
-      if(payload.end_date < payload.start_date) return notify("수업 종료일은 시작일보다 빠를 수 없습니다.");
+      const centerName=String($("newClassCenter")?.value||"").trim();
+      const program=$("newClassProgram")?.value||"";
+
+      if(!centerName)return notify("센터를 입력해주세요.");
+      if(!program)return notify("프로그램을 선택해주세요.");
+
+      const center=await getOrCreateCenter(centerName,isTrial);
+      let payload;
+
+      if(isTrial){
+        // 일일특강은 센터 + 프로그램만 사용자가 입력합니다.
+        // DB 필수값은 내부 전용 기본값으로 처리하며 화면에는 노출하지 않습니다.
+        payload={
+          center_id:center.id,
+          term:"일일특강",
+          program,
+          weekday:"미정",
+          class_time:"00:00:00",
+          start_date:null,
+          end_date:null,
+          teacher_id:null,
+          student_capacity:0,
+          class_amount:0,
+          status:"예정"
+        };
+      }else{
+        const teacherName=String($("newClassTeacher")?.value||"").trim();
+        const teacher=teacherName ? await resolveTeacherByName(teacherName) : null;
+        const rawTime=String($("newClassTime")?.value||"").trim();
+        const time=splitClassTime(rawTime);
+        const term=String($("newClassTerm")?.value||"").trim();
+        const startDate=$("newClassStartDate")?.value||null;
+        const endDate=$("newClassEndDate")?.value||null;
+
+        if(!term)return notify("학기를 입력해주세요.");
+        if(!startDate || !endDate)return notify("수업 시작일과 종료일을 입력해주세요.");
+        if(endDate < startDate)return notify("수업 종료일은 시작일보다 빠를 수 없습니다.");
+
+        payload={
+          center_id:center.id,
+          term,
+          program,
+          ...time,
+          start_date:startDate,
+          end_date:endDate,
+          teacher_id:teacher?.id||null,
+          student_capacity:Number($("newClassStudents")?.value||0),
+          class_amount:Number(String($("newClassAmount")?.value||"").replace(/\D/g,"")||0),
+          status:$("newClassStatus")?.value||"예정"
+        };
+      }
+
       const {error}=await db.from("classes").insert(payload);
-      if(error) throw error;
+      if(error)throw error;
+
       $("adminClassForm")?.classList.add("hide");
+      document.body.classList.remove("admin-trial-registering");
+
+      ["newClassCenter","newClassTerm","newClassTime","newClassStartDate","newClassEndDate",
+       "newClassTeacher","newClassStudents","newClassAmount"]
+        .forEach(id=>{const el=$(id);if(el)el.value="";});
+      if($("newClassProgram"))$("newClassProgram").value="";
+      if($("newClassStatus"))$("newClassStatus").value="운영중";
+      if($("newClassTrialCenter"))$("newClassTrialCenter").checked=false;
+
       await loadAdminDashboard();
-      notify(isTrial?"일일특강 센터/반을 등록했습니다.":"정규센터/반을 등록했습니다.");
-    }catch(e){notify("반 등록 실패: "+e.message);}
+      notify(isTrial?"일일특강 반을 등록했습니다.":"정규센터/반을 등록했습니다.");
+    }catch(e){
+      notify("반 등록 실패: "+(e?.message||e));
+    }
   };
 
   window.saveAdminClassEdit=async function(){
@@ -5355,25 +5426,25 @@
     try{
       const isTrial=!!$("editClassTrialCenter")?.checked;
       const center=await getOrCreateCenter($("editClassCenter").value,isTrial);
-      const teacher=await resolveTeacherByName($("editClassTeacher").value);
-      const time=splitClassTime($("editClassTime").value);
+      const teacherName=String($("editClassTeacher")?.value||"").trim();
+      const teacher=teacherName ? await resolveTeacherByName(teacherName) : null;
+      const rawTime=String($("editClassTime")?.value||"").trim();
+      const time=(isTrial && !rawTime)?{weekday:"미정",class_time:"00:00:00"}:splitClassTime(rawTime);
       const term=$("editClassTerm").value.trim() || (isTrial?"일일특강":"");
       const payload={
         center_id:center.id,term,program:$("editClassProgram").value,
         ...time,start_date:$("editClassStartDate").value||null,end_date:$("editClassEndDate").value||null,
         teacher_id:teacher?.id||null,student_capacity:Number($("editClassStudents").value||0),
         class_amount:Number(String($("editClassAmount").value||"").replace(/\D/g,"")||0),
-        status:$("editClassStatus").value
+        status:$("editClassStatus").value||"예정"
       };
-      if(!payload.start_date || !payload.end_date) return notify("수업 시작일과 종료일을 입력해주세요.");
-      if(payload.end_date < payload.start_date) return notify("수업 종료일은 시작일보다 빠를 수 없습니다.");
+      if(!isTrial && (!payload.start_date || !payload.end_date))return notify("수업 시작일과 종료일을 입력해주세요.");
+      if(payload.start_date && payload.end_date && payload.end_date < payload.start_date)return notify("수업 종료일은 시작일보다 빠를 수 없습니다.");
       const {error}=await db.from("classes").update(payload).eq("id",adminEditingClassId);
-      if(error) throw error;
+      if(error)throw error;
       window.closeAdminClassEdit();
       await loadAdminDashboard();
-      notify(payload.status==="종료"
-        ? "수업을 종료 처리했습니다. 해당 학부모 페이지에 수료 업적과 다음 수업 선택이 표시됩니다."
-        : "반 정보를 수정했습니다.");
+      notify(payload.status==="종료"?"수업을 종료 처리했습니다. 해당 학부모 페이지에 수료 업적과 다음 수업 선택이 표시됩니다.":"반 정보를 수정했습니다.");
     }catch(e){notify("반 수정 실패: "+e.message);}
   };
 
