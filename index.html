@@ -5514,7 +5514,115 @@ body.auth-modal-open .toast.show{
 #adminphotos .ag-more{display:block;margin:24px auto}
 #adminphotos .ag-more[hidden]{display:none}
 @media(max-width:600px){#adminphotos .ag-grid{gap:12px 6px}#adminphotos .ag-frame{border-radius:7px}#adminphotos .ag-caption{font-size:10px;padding:6px 0}#adminphotos .ag-toolbar{gap:8px}#adminphotos .ag-day h3{font-size:15px}}
-</style></head>
+</style>
+<style id="growlog-v47-trial-experience">
+.parent-trial-experience{display:grid;gap:16px;margin:16px 0}
+.parent-trial-experience.hide{display:none!important}
+.parent-trial-intro-card{
+  background:linear-gradient(145deg,#fffdf8 0%,#f5f8ff 100%)!important;
+  border:1px solid #e6e9f1!important
+}
+.parent-trial-intro-copy h2{margin:8px 0 6px;font-size:24px}
+.parent-trial-tabs{
+  display:flex;gap:8px;overflow-x:auto;padding:4px 2px 7px;margin-top:14px;
+  scrollbar-width:thin
+}
+.parent-trial-tab{
+  flex:0 0 auto;min-width:210px;max-width:280px;text-align:left;
+  border:1px solid #dfe5ef;background:#fff;border-radius:15px;padding:11px 12px;
+  cursor:pointer;box-shadow:0 3px 12px rgba(31,48,72,.05)
+}
+.parent-trial-tab:hover{border-color:#bac9df}
+.parent-trial-tab.on{border:2px solid #5d78cd;background:#f5f7ff;padding:10px 11px}
+.parent-trial-tab b{display:block;font-size:13px;line-height:1.35;color:#25324a}
+.parent-trial-tab small{display:block;margin-top:4px;color:#68758b;font-size:11px}
+.parent-trial-tab .trial-joined-mini{
+  display:inline-flex;margin-top:7px;padding:3px 6px;border-radius:999px;
+  background:#e7f5ec;color:#2d7650;font-size:9px;font-weight:900
+}
+.parent-trial-selected-head{align-items:flex-start}
+.parent-trial-selected-head h2{margin:7px 0 3px}
+.parent-trial-photo-lock{
+  margin:12px 0;padding:12px 13px;border-radius:13px;background:#f7f8fa;
+  color:#6b7483;font-size:12px;font-weight:800;border:1px solid #e6e9ee
+}
+.parent-trial-photos{margin-top:13px}
+.parent-trial-photo-caption{font-size:11px;margin:8px 0 0}
+.parent-trial-example-note{font-size:12px;line-height:1.55}
+.parent-trial-example-observation{
+  margin-top:13px;padding:14px;border:1px solid #e1e8f2;border-radius:15px;background:#fbfcff
+}
+.parent-trial-example-behavior{margin:11px 0 2px;font-size:16px;font-weight:850;line-height:1.55}
+.parent-trial-example-question{margin-top:12px}
+.parent-trial-example-question p{margin:8px 0 0;font-weight:750;line-height:1.55}
+.parent-trial-growth-bars{display:grid;gap:8px;margin-top:15px}
+.parent-trial-growth-bars>div{
+  display:grid;grid-template-columns:42px minmax(0,1fr) 24px;gap:8px;align-items:center
+}
+.parent-trial-growth-bars span{font-size:11px;font-weight:850;color:#4d596c}
+.parent-trial-growth-bars i{
+  position:relative;height:9px;border-radius:999px;background:#edf0f5;overflow:hidden
+}
+.parent-trial-growth-bars i:after{
+  content:"";position:absolute;inset:0 auto 0 0;width:var(--v);
+  border-radius:999px;background:linear-gradient(90deg,#7895e7,#6fb99b)
+}
+.parent-trial-growth-bars b{font-size:11px;text-align:right}
+.parent-trial-growth-foot{font-size:10px;margin:12px 0 0}
+.parent-trial-ralledu-cta{
+  display:block;text-decoration:none;color:inherit;
+  padding:20px;border-radius:20px;border:1px solid #e0e7f1;
+  background:linear-gradient(135deg,#f4f8ff,#fff9ef);
+  box-shadow:0 8px 24px rgba(37,51,74,.07);
+  transition:transform .16s ease,box-shadow .16s ease
+}
+.parent-trial-ralledu-cta:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(37,51,74,.11)}
+.parent-trial-ralledu-cta>div{display:grid;gap:5px}
+.parent-trial-ralledu-kicker{font-size:10px;font-weight:950;letter-spacing:.13em;color:#5e79c8}
+.parent-trial-ralledu-cta b{font-size:21px;line-height:1.3}
+.parent-trial-ralledu-cta span:last-child{font-size:12px;font-weight:850;color:#5e79c8}
+.parent-trial-survey-card h2{margin:7px 0 5px}
+.parent-trial-survey-options{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+.parent-trial-survey-options label{
+  display:flex;gap:10px;align-items:flex-start;padding:13px;border:1px solid #e0e6ef;
+  border-radius:15px;background:#fff;cursor:pointer;transition:.15s ease
+}
+.parent-trial-survey-options label:has(input:checked){
+  border:2px solid #657fd1;background:#f5f7ff;padding:12px
+}
+.parent-trial-survey-options input[type=radio]{
+  width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;
+  margin:2px 0 0!important;padding:0!important;appearance:auto!important;-webkit-appearance:auto!important;
+  accent-color:#5c78cf!important;flex:0 0 18px!important
+}
+.parent-trial-survey-options span{display:grid;gap:4px}
+.parent-trial-survey-options b{font-size:13px}
+.parent-trial-survey-options small{color:#6d7788;line-height:1.45;font-size:10px}
+.parent-trial-survey-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:13px}
+#parentTrialSurveyStatus{font-size:11px}
+
+body.parent-trial-only #parentCompletionCard,
+body.parent-trial-only #parentNextClassCard,
+body.parent-trial-only #feeNotice,
+body.parent-trial-only #parentAbsentNotice,
+body.parent-trial-only #parentTodayContent,
+body.parent-trial-only #parentGrowthMapCard,
+body.parent-trial-only #parentCourseCard,
+body.parent-trial-only #parentInquiryCard,
+body.parent-trial-only #parentActiveClassSwitcher,
+body.parent-trial-only #parentLessonVideosSection{display:none!important}
+
+@media(max-width:680px){
+  .parent-trial-intro-copy h2{font-size:21px}
+  .parent-trial-tab{min-width:190px}
+  .parent-trial-example-grid{grid-template-columns:1fr!important}
+  .parent-trial-survey-options{grid-template-columns:1fr}
+  .parent-trial-ralledu-cta{padding:17px}
+  .parent-trial-ralledu-cta b{font-size:18px}
+}
+</style>
+
+</head>
 <body class="prod-auth-pending">
 <header class="top">
   <div class="brand growlog-brand-logo">
@@ -5744,6 +5852,120 @@ body.auth-modal-open .toast.show{
       <div class="muted">동시에 듣는 수업이 여러 개일 때만 표시됩니다.</div>
     </div>
     <select id="parentActiveClassSelect" onchange="changeParentActiveClass(this.value)"></select>
+  </div>
+
+
+  <div id="parentTrialExperience" class="parent-trial-experience hide">
+    <div class="card parent-trial-intro-card">
+      <div class="parent-trial-intro-copy">
+        <span class="badge">🎈 일일특강 Growlog 체험</span>
+        <h2>오늘 만난 수업을 다시 만나보세요 😊</h2>
+        <p class="muted">센터 · 프로그램 · 강사를 골라보고, 내가 참여한 수업에서는 활동사진과 Growlog 예시를 확인할 수 있어요.</p>
+      </div>
+      <div id="parentTrialTabs" class="parent-trial-tabs" aria-label="일일특강 센터 선택"></div>
+    </div>
+
+    <div id="parentTrialSelectedCard" class="card parent-trial-selected-card">
+      <div class="row between parent-trial-selected-head">
+        <div>
+          <span id="parentTrialJoinedBadge" class="badge hide">✓ 내가 참여한 수업</span>
+          <h2 id="parentTrialClassTitle">일일특강을 선택해주세요</h2>
+          <p id="parentTrialClassMeta" class="muted"></p>
+        </div>
+      </div>
+
+      <div id="parentTrialPhotoLock" class="parent-trial-photo-lock hide">
+        🔒 활동사진은 해당 일일특강에 참여한 학부모님께만 보여드려요.
+      </div>
+
+      <div id="parentTrialPhotos" class="photos parent-trial-photos">
+        <div class="photo-empty">일일특강을 선택하면 활동사진이 표시됩니다.</div>
+      </div>
+      <p id="parentTrialPhotoCaption" class="muted parent-trial-photo-caption">우리 아이에게 연결된 사진만 보여집니다.</p>
+    </div>
+
+    <div class="grid two parent-trial-example-grid">
+      <div class="card parent-trial-example-card">
+        <div class="row between">
+          <h2>🌱 Growlog 성장기록 예시</h2>
+          <span class="badge gray">예시 화면</span>
+        </div>
+        <p class="muted parent-trial-example-note">실제 우리 아이의 평가가 아니라, 정규수업에서 Growlog가 어떻게 기록되는지 보여주는 예시예요.</p>
+
+        <div class="parent-trial-example-observation">
+          <div class="row between">
+            <b>오늘 발견한 모습</b>
+            <span class="badge">탐색</span>
+          </div>
+          <p class="parent-trial-example-behavior">새로운 방법을 먼저 시도해보고, 발견한 방법을 친구에게 알려주었어요.</p>
+        </div>
+
+        <div class="question parent-trial-example-question">
+          <b>💬 집에서 이어가는 질문</b>
+          <p>“오늘 새롭게 발견한 방법은 뭐였어? 그 방법이 친구에게도 도움이 됐을까?”</p>
+        </div>
+      </div>
+
+      <div class="card parent-trial-growth-sample">
+        <div class="row between">
+          <h2>🌈 성장지도 예시</h2>
+          <span class="badge gray">누적 기록 예시</span>
+        </div>
+        <p class="muted">기록이 쌓이면 아이에게 자주 발견되는 힘을 한눈에 볼 수 있어요.</p>
+        <div class="parent-trial-growth-bars">
+          <div><span>집중</span><i style="--v:80%"></i><b>8</b></div>
+          <div><span>탐색</span><i style="--v:70%"></i><b>7</b></div>
+          <div><span>판단</span><i style="--v:60%"></i><b>6</b></div>
+          <div><span>질서</span><i style="--v:60%"></i><b>6</b></div>
+          <div><span>표현</span><i style="--v:50%"></i><b>5</b></div>
+          <div><span>도전</span><i style="--v:50%"></i><b>5</b></div>
+          <div><span>끈기</span><i style="--v:50%"></i><b>5</b></div>
+          <div><span>협력</span><i style="--v:40%"></i><b>4</b></div>
+          <div><span>배려</span><i style="--v:40%"></i><b>4</b></div>
+        </div>
+        <p class="muted parent-trial-growth-foot">낮은 숫자는 부족함이 아니라, 앞으로 더 발견해볼 영역을 뜻해요.</p>
+      </div>
+    </div>
+
+    <a class="parent-trial-ralledu-cta" href="https://ralledu.co.kr/" target="_blank" rel="noopener">
+      <div>
+        <span class="parent-trial-ralledu-kicker">ROLLEDU</span>
+        <b>롤에듀의 다른 프로그램도 궁금하시다면?</b>
+        <span>프로그램 보러가기 →</span>
+      </div>
+    </a>
+
+    <div id="parentTrialSurveyCard" class="card parent-trial-survey-card">
+      <div class="parent-trial-survey-head">
+        <span class="badge">1분 설문</span>
+        <h2>문화센터에서 수강해보고 싶은 강의는?</h2>
+        <p class="muted">가장 궁금한 프로그램 하나를 선택해주세요. 다음 프로그램 기획에 소중하게 반영할게요.</p>
+      </div>
+
+      <div id="parentTrialSurveyOptions" class="parent-trial-survey-options">
+        <label>
+          <input type="radio" name="trialSurveyChoice" value="블럭동화">
+          <span><b>🧱 블럭동화</b><small>이야기 속 문제를 블록으로 해결해요</small></span>
+        </label>
+        <label>
+          <input type="radio" name="trialSurveyChoice" value="영어뮤지컬인형극">
+          <span><b>🎭 영어뮤지컬인형극</b><small>영어 대사와 인형극으로 자신 있게 표현해요</small></span>
+        </label>
+        <label>
+          <input type="radio" name="trialSurveyChoice" value="스토리보드게임">
+          <span><b>🎲 스토리보드게임</b><small>놀이 속에서 선택·협력·관계를 배워요</small></span>
+        </label>
+        <label>
+          <input type="radio" name="trialSurveyChoice" value="스토리텔링도예">
+          <span><b>🏺 스토리텔링도예</b><small>흙으로 마음과 이야기를 표현해요</small></span>
+        </label>
+      </div>
+
+      <div class="parent-trial-survey-actions">
+        <button id="parentTrialSurveySubmit" class="btn" type="button" onclick="submitParentTrialSurvey()">선택 저장하기</button>
+        <span id="parentTrialSurveyStatus" class="muted"></span>
+      </div>
+    </div>
   </div>
 
   <div id="parentCompletionCard" class="card parent-completion-card hide">
@@ -6151,7 +6373,7 @@ body.auth-modal-open .toast.show{
 <div id="adminClassForm" class="admin-inline-form hide">
           <div class="admin-inline-form-grid">
             <div class="auth-field"><label for="newClassCenter">센터</label><input id="newClassCenter" placeholder="예: 성북점"></div>
-            <div class="auth-field"><label for="newClassTerm">학기</label><input id="newClassTerm" placeholder="예: 가을학기"></div>
+            <div class="auth-field"><label for="newClassTerm">학기</label><input id="newClassTerm" placeholder="예: 가을학기 / 일일특강"></div>
             <div class="auth-field"><label for="newClassProgram">프로그램</label><select id="newClassProgram">
               <option value="">프로그램 선택</option>
               <option value="블럭동화">블럭동화</option>
@@ -8468,7 +8690,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=46"></script>
+<script src="./app.js?v=47"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

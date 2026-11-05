@@ -45,6 +45,9 @@
   let activeLessonDate = null;
   let teacherSessionCache = [];
   let parentActiveEnrollments = [];
+  let parentTrialEnrollments = [];
+  let parentTrialClasses = [];
+  let parentTrialActiveClassId = null;
   let adminChildClassChildren = [];
   let adminChildClassClasses = [];
   let teacherMultiRosterRows = [];
@@ -1433,6 +1436,8 @@
 
   function renderParentEmpty(text){
     clearParentLessonVideos();
+    setParentTrialOnlyMode(false);
+    $("parentTrialExperience")?.classList.add("hide");
     activeClass=null;
     activeEnrollment=null;
     currentParentStudentName="";
@@ -1521,6 +1526,251 @@
     await renderSelectedParentActiveClass();
   };
 
+
+  function isTrialClass(c){
+    return String(c?.term||"").trim()==="일일특강";
+  }
+
+  function setParentTrialOnlyMode(on){
+    document.body.classList.toggle("parent-trial-only",!!on);
+  }
+
+  async function renderParentTrialExperience(trialEnrollments){
+    const root=$("parentTrialExperience");
+    if(!root)return false;
+
+    if(profile?.role!=="parent" || !activeChild || !trialEnrollments?.length){
+      root.classList.add("hide");
+      parentTrialClasses=[];
+      parentTrialActiveClassId=null;
+      return false;
+    }
+
+    const joinedIds=new Set(trialEnrollments.map(e=>e.class_id));
+    const {data,error}=await db.rpc("list_trial_classes_for_parent");
+    if(error){
+      console.warn("trial classes",error.message);
+      root.classList.add("hide");
+      return false;
+    }
+
+    parentTrialClasses=(data||[]).map(c=>({...c,joined:joinedIds.has(c.class_id)}));
+    if(!parentTrialClasses.length){
+      root.classList.add("hide");
+      return false;
+    }
+
+    root.classList.remove("hide");
+
+    const preferred=
+      parentTrialClasses.find(c=>c.class_id===parentTrialActiveClassId && c.joined)
+      || parentTrialClasses.find(c=>c.joined)
+      || parentTrialClasses[0];
+    parentTrialActiveClassId=preferred?.class_id||null;
+
+    const tabs=$("parentTrialTabs");
+    if(tabs){
+      tabs.innerHTML="";
+      parentTrialClasses.forEach(c=>{
+        const button=document.createElement("button");
+        button.type="button";
+        button.className="parent-trial-tab"+(c.class_id===parentTrialActiveClassId?" on":"");
+        button.innerHTML=`
+          <b>${escape(c.center_name||"")} · ${escape(c.program||"")}</b>
+          <small>${escape(c.teacher_name||"강사 미정")} · ${escape(c.weekday||"")} ${escape(String(c.class_time||"").slice(0,5))}</small>
+          ${c.joined?'<span class="trial-joined-mini">✓ 내가 참여한 수업</span>':""}`;
+        button.onclick=()=>selectParentTrialClass(c.class_id);
+        tabs.appendChild(button);
+      });
+    }
+
+    await renderParentTrialSelectedClass(parentTrialActiveClassId);
+    return true;
+  }
+
+  window.selectParentTrialClass=async function(classId){
+    parentTrialActiveClassId=classId;
+    qAll(".parent-trial-tab",$("parentTrialTabs")).forEach((b,i)=>{
+      b.classList.toggle("on",parentTrialClasses[i]?.class_id===classId);
+    });
+    await renderParentTrialSelectedClass(classId);
+  };
+
+  async function renderParentTrialSelectedClass(classId){
+    const c=parentTrialClasses.find(x=>x.class_id===classId);
+    if(!c)return;
+
+    if($("parentTrialClassTitle")){
+      $("parentTrialClassTitle").textContent=`${c.center_name||""} · ${c.program||""}`;
+    }
+    if($("parentTrialClassMeta")){
+      $("parentTrialClassMeta").textContent=
+        `${c.teacher_name||"강사 미정"} 선생님 · ${c.weekday||""}요일 ${String(c.class_time||"").slice(0,5)}`;
+    }
+
+    $("parentTrialJoinedBadge")?.classList.toggle("hide",!c.joined);
+    $("parentTrialPhotoLock")?.classList.toggle("hide",!!c.joined);
+
+    if($("parentTrialPhotoCaption")){
+      $("parentTrialPhotoCaption").textContent=
+        c.joined
+          ? `${shortName(activeChild.name)}에게 연결된 일일특강 사진·동영상만 보여집니다.`
+          : "다른 수업의 사진은 개인정보 보호를 위해 공개되지 않습니다.";
+    }
+
+    await renderParentTrialPhotos(c);
+    await loadParentTrialSurvey(c);
+  }
+
+  async function renderParentTrialPhotos(c){
+    const pool=$("parentTrialPhotos");
+    if(!pool)return;
+
+    if(!c.joined){
+      pool.innerHTML='<div class="photo-empty">🔒 내가 참여한 일일특강을 선택하면 활동사진을 볼 수 있어요.</div>';
+      return;
+    }
+
+    pool.innerHTML='<div class="photo-empty">📷 일일특강 사진·동영상을 불러오는 중...</div>';
+
+    const {data,error}=await db.from("photo_assignments")
+      .select("photo_id,photos(id,storage_path,thumbnail_path,lesson_date,class_id)")
+      .eq("child_id",activeChild.id);
+
+    if(error){
+      pool.innerHTML='<div class="photo-empty">사진을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</div>';
+      return;
+    }
+
+    const rows=(data||[]).filter(x=>x.photos?.class_id===c.class_id);
+    if(!rows.length){
+      pool.innerHTML='<div class="photo-empty">아직 우리 아이에게 연결된 일일특강 사진·동영상이 없어요.</div>';
+      return;
+    }
+
+    const signedRows=await signedThumbnailListFast(rows.map(x=>x.photos));
+    const signedById=new Map(signedRows.map(x=>[x.id,x]));
+    pool.innerHTML="";
+
+    let count=0;
+    for(const row of rows.sort((a,b)=>String(b.photos?.lesson_date||"").localeCompare(String(a.photos?.lesson_date||"")))){
+      const media=signedById.get(row.photos.id)||row.photos;
+      const previewUrl=media.url||"";
+      if(!previewUrl)continue;
+      count++;
+
+      const isVideo=isVideoMedia(row.photos.storage_path);
+      const card=document.createElement("div");
+      card.className="photo prod-photo-card";
+
+      const mediaPreview=(isVideo && !row.photos.thumbnail_path)
+        ? `<video src="${previewUrl}" muted playsinline preload="metadata" aria-label="일일특강 동영상 ${count}"></video>`
+        : `<img src="${previewUrl}" alt="일일특강 ${isVideo?"동영상":"사진"} ${count}" loading="lazy" decoding="async">`;
+
+      card.innerHTML=
+        `${mediaPreview}${isVideo?'<span class="parent-media-play">▶</span><span class="parent-media-kind">동영상</span>':""}`;
+
+      card.onclick=async()=>{
+        try{
+          const originalUrl=await signedUrl(row.photos.storage_path,21600);
+          const ext=mediaFileExtension("",row.photos.storage_path);
+          const date=row.photos.lesson_date||"일일특강";
+          openParentPhotoViewer(
+            originalUrl,
+            `${activeChild.name}_${date}_${row.photos.id}.${ext}`,
+            date,
+            isVideo?"video":"image"
+          );
+        }catch(e){
+          notify("원본 자료를 불러오지 못했습니다. 잠시 후 다시 눌러주세요.");
+        }
+      };
+      pool.appendChild(card);
+    }
+
+    if(!count){
+      pool.innerHTML='<div class="photo-empty">사진을 다시 불러오지 못했어요. 화면을 새로고침해주세요.</div>';
+    }
+  }
+
+  async function loadParentTrialSurvey(c){
+    const options=qAll('input[name="trialSurveyChoice"]',$("parentTrialSurveyOptions"));
+    const button=$("parentTrialSurveySubmit");
+    const status=$("parentTrialSurveyStatus");
+
+    options.forEach(x=>{
+      x.checked=false;
+      x.disabled=!c.joined;
+    });
+    if(button)button.disabled=!c.joined;
+
+    if(!c.joined){
+      if(status)status.textContent="내가 참여한 수업 탭에서 설문에 답할 수 있어요.";
+      return;
+    }
+
+    if(status)status.textContent="선택 후 저장해주세요.";
+
+    const {data,error}=await db.from("trial_survey_responses")
+      .select("choice")
+      .eq("parent_id",profile.id)
+      .eq("child_id",activeChild.id)
+      .eq("trial_class_id",c.class_id)
+      .maybeSingle();
+
+    if(error){
+      console.warn("trial survey load",error.message);
+      return;
+    }
+
+    if(data?.choice){
+      const radio=options.find(x=>x.value===data.choice);
+      if(radio)radio.checked=true;
+      if(status)status.textContent="이전에 선택한 답변이에요. 바꾼 뒤 다시 저장할 수 있어요.";
+    }
+  }
+
+  window.submitParentTrialSurvey=async function(){
+    const c=parentTrialClasses.find(x=>x.class_id===parentTrialActiveClassId);
+    if(!c?.joined)return notify("내가 참여한 일일특강을 선택해주세요.");
+
+    const selected=q('input[name="trialSurveyChoice"]:checked',$("parentTrialSurveyOptions"));
+    if(!selected)return notify("수강해보고 싶은 강의를 하나 선택해주세요.");
+
+    const button=$("parentTrialSurveySubmit");
+    const status=$("parentTrialSurveyStatus");
+
+    if(button){
+      button.disabled=true;
+      button.textContent="저장 중...";
+    }
+
+    try{
+      const payload={
+        parent_id:profile.id,
+        child_id:activeChild.id,
+        trial_class_id:c.class_id,
+        choice:selected.value,
+        updated_at:new Date().toISOString()
+      };
+
+      const {error}=await db.from("trial_survey_responses")
+        .upsert(payload,{onConflict:"parent_id,child_id,trial_class_id"});
+      if(error)throw error;
+
+      if(status)status.textContent="✓ 응답이 저장되었어요. 감사합니다!";
+      notify("설문 응답이 저장되었습니다. 감사합니다 😊");
+    }catch(e){
+      if(status)status.textContent="저장하지 못했어요. 다시 눌러주세요.";
+      notify("설문 저장 실패 · "+(e?.message||e));
+    }finally{
+      if(button){
+        button.disabled=false;
+        button.textContent="선택 저장하기";
+      }
+    }
+  };
+
   async function renderParentForChild(){
     clearParentLessonVideos();
     if(!activeChild) return;
@@ -1532,6 +1782,9 @@
       .eq("child_id",activeChild.id)
       .order("created_at",{ascending:false});
     if(e1) throw e1;
+
+    parentTrialEnrollments=(enrollments||[]).filter(e=>e.active && e.classes && isTrialClass(e.classes));
+    const hasTrialExperience=await renderParentTrialExperience(parentTrialEnrollments);
 
     if(profile?.role==="admin" && adminParentPreviewClassId){
       const previewEnrollment=(enrollments||[]).find(e=>e.class_id===adminParentPreviewClassId)||null;
@@ -1571,9 +1824,9 @@
       return;
     }
 
-    parentActiveEnrollments=(enrollments||[]).filter(e=>e.active && e.classes && e.classes.status!=="종료");
+    parentActiveEnrollments=(enrollments||[]).filter(e=>e.active && e.classes && !isTrialClass(e.classes) && e.classes.status!=="종료");
 
-    const endedEnrollments=(enrollments||[]).filter(e=>e.classes?.status==="종료");
+    const endedEnrollments=(enrollments||[]).filter(e=>e.classes?.status==="종료" && !isTrialClass(e.classes));
     const latestEnded=endedEnrollments[0]||null;
     const endedAt=latestEnded?new Date(latestEnded.created_at||0).getTime():0;
     const hasNewerActiveAfterCompletion=latestEnded && parentActiveEnrollments.some(e=>
@@ -1589,6 +1842,7 @@
     activeClass=activeEnrollment?.classes||null;
 
     renderParentActiveClassSwitcher();
+    setParentTrialOnlyMode(false);
 
     if(unresolvedCompletion){
       await renderParentCompletionAchievement(unresolvedCompletion);
@@ -1599,6 +1853,17 @@
     if(activeClass){
       await renderSelectedParentActiveClass();
       if(unresolvedCompletion) await renderParentNextClassChooser();
+    }else if(hasTrialExperience && !unresolvedCompletion){
+      setParentTrialOnlyMode(true);
+      clearParentLessonVideos();
+      $("parentActiveClassSwitcher")?.classList.add("hide");
+      $("parentTodayContent")?.classList.add("hide");
+      $("parentAbsentNotice")?.classList.add("hide");
+      $("feeNotice")?.classList.add("hide");
+      $("parentInquiryCard")?.classList.add("hide");
+      $("parentNextClassCard")?.classList.add("hide");
+      if($("parentHeroTitle")) $("parentHeroTitle").textContent=display+"의 일일특강 Growlog 체험이에요. 🎈";
+      if($("parentHeroText")) $("parentHeroText").textContent="오늘의 사진을 다시 보고, 정규수업에서 이어지는 Growlog 성장기록도 미리 만나보세요.";
     }else{
       $("parentActiveClassSwitcher")?.classList.add("hide");
       $("parentTodayContent")?.classList.add("hide");
@@ -1610,9 +1875,11 @@
       await renderParentNextClassChooser();
     }
 
-    await renderParentCourses(enrollments||[]);
-    await renderParentGrowthMap();
-    wireParentInquiry();
+    if(!document.body.classList.contains("parent-trial-only")){
+      await renderParentCourses(enrollments||[]);
+      await renderParentGrowthMap();
+      wireParentInquiry();
+    }
   }
 
   async function renderParentToday(){
