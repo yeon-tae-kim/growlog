@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=39">
+<link rel="manifest" href="./manifest.webmanifest?v=48">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -5601,16 +5601,6 @@ body.auth-modal-open .toast.show{
 .parent-trial-survey-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:13px}
 #parentTrialSurveyStatus{font-size:11px}
 
-body.parent-trial-only #parentCompletionCard,
-body.parent-trial-only #parentNextClassCard,
-body.parent-trial-only #feeNotice,
-body.parent-trial-only #parentAbsentNotice,
-body.parent-trial-only #parentTodayContent,
-body.parent-trial-only #parentGrowthMapCard,
-body.parent-trial-only #parentCourseCard,
-body.parent-trial-only #parentInquiryCard,
-body.parent-trial-only #parentActiveClassSwitcher,
-body.parent-trial-only #parentLessonVideosSection{display:none!important}
 
 @media(max-width:680px){
   .parent-trial-intro-copy h2{font-size:21px}
@@ -5619,6 +5609,73 @@ body.parent-trial-only #parentLessonVideosSection{display:none!important}
   .parent-trial-survey-options{grid-template-columns:1fr}
   .parent-trial-ralledu-cta{padding:17px}
   .parent-trial-ralledu-cta b{font-size:18px}
+}
+</style>
+
+
+<style id="growlog-v48-parent-main-trial-tabs">
+.parent-main-tabs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  margin:14px 0 16px;
+  padding:6px;
+  border:1px solid #e1e6ee;
+  border-radius:16px;
+  background:#f4f6f9;
+}
+.parent-main-tabs button{
+  min-height:46px;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  color:#68758a;
+  font-size:14px;
+  font-weight:900;
+  cursor:pointer;
+}
+.parent-main-tabs button.on{
+  background:#fff;
+  color:#385b9e;
+  box-shadow:0 4px 14px rgba(44,62,91,.10);
+}
+.parent-trial-join-action{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin:13px 0;
+  padding:14px;
+  border:1px solid #dbe5f2;
+  border-radius:15px;
+  background:#f5f8ff;
+}
+.parent-trial-join-action.hide{display:none!important}
+.parent-trial-join-action>div{display:grid;gap:4px}
+.parent-trial-join-action b{font-size:14px}
+.parent-trial-join-action span{font-size:11px;color:#6c7789;line-height:1.45}
+.parent-trial-join-action .btn{flex:0 0 auto;white-space:nowrap}
+
+body.parent-main-view-regular #parentTrialExperience{display:none!important}
+body.parent-main-view-trial #parentActiveClassSwitcher,
+body.parent-main-view-trial #parentCompletionCard,
+body.parent-main-view-trial #parentNextClassCard,
+body.parent-main-view-trial #feeNotice,
+body.parent-main-view-trial #parentAbsentNotice,
+body.parent-main-view-trial #parentTodayContent,
+body.parent-main-view-trial #parentGrowthMapCard,
+body.parent-main-view-trial #parentCourseCard,
+body.parent-main-view-trial #parentInquiryCard,
+body.parent-main-view-trial #parentLessonVideos{
+  display:none!important;
+}
+body.parent-main-view-trial #parentTrialExperience{display:grid!important}
+
+@media(max-width:620px){
+  .parent-main-tabs{position:sticky;top:6px;z-index:18}
+  .parent-main-tabs button{font-size:13px}
+  .parent-trial-join-action{align-items:stretch;flex-direction:column}
+  .parent-trial-join-action .btn{width:100%}
 }
 </style>
 
@@ -5846,6 +5903,11 @@ body.parent-trial-only #parentLessonVideosSection{display:none!important}
 <section id="parent" class="role hide">
   <div class="hero"><div><span class="badge">우리 아이 성장노트</span><h1 id="parentHeroTitle">아이의 오늘을 불러오고 있어요.</h1><p id="parentHeroText">수업 속 작은 좋은 행동을 한 줄씩 쌓아갑니다.</p></div></div>
 
+  <div id="parentMainTabs" class="parent-main-tabs" role="tablist" aria-label="학부모 페이지 보기">
+    <button id="parentMainRegularTab" class="on" type="button" role="tab" onclick="showParentMainSection('regular')">📚 정규수업</button>
+    <button id="parentMainTrialTab" type="button" role="tab" onclick="showParentMainSection('trial')">🎈 일일특강</button>
+  </div>
+
   <div id="parentActiveClassSwitcher" class="card parent-active-class-switcher hide">
     <div>
       <div class="parent-active-switch-title">📚 현재 듣고 있는 수업</div>
@@ -5872,6 +5934,14 @@ body.parent-trial-only #parentLessonVideosSection{display:none!important}
           <h2 id="parentTrialClassTitle">일일특강을 선택해주세요</h2>
           <p id="parentTrialClassMeta" class="muted"></p>
         </div>
+      </div>
+
+      <div id="parentTrialJoinAction" class="parent-trial-join-action hide">
+        <div>
+          <b>이 수업을 들으셨나요?</b>
+          <span>내가 참여한 반이 맞다면 선택해주세요. 선택 후 우리 아이의 활동사진을 확인할 수 있어요.</span>
+        </div>
+        <button id="parentTrialJoinBtn" class="btn" type="button" onclick="joinSelectedTrialClass()">이 수업을 들었어요</button>
       </div>
 
       <div id="parentTrialPhotoLock" class="parent-trial-photo-lock hide">
@@ -8690,7 +8760,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=47"></script>
+<script src="./app.js?v=48"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

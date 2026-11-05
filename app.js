@@ -273,6 +273,24 @@
     return isEmailLogin(v) ? v.toLowerCase() : normalizePhone(v);
   };
   const joinCodeFromUrl = () => String(new URLSearchParams(location.search).get("join") || "").trim();
+  const trialJoinCodeCache=new Map();
+  let parentMainView="regular";
+
+  async function isTrialJoinCode(code){
+    const key=String(code||"").trim().toLowerCase();
+    if(!key)return false;
+    if(trialJoinCodeCache.has(key))return trialJoinCodeCache.get(key);
+    try{
+      const {data,error}=await db.rpc("is_trial_join_code",{p_code:key});
+      if(error)throw error;
+      const result=!!data;
+      trialJoinCodeCache.set(key,result);
+      return result;
+    }catch(e){
+      console.warn("trial join code check:",e?.message||e);
+      return false;
+    }
+  }
 
   let authTopAlertTimer=null;
   function showAuthTopAlert(msg,duration=4200){
@@ -463,16 +481,22 @@
       throw new Error("비활성화된 계정입니다. 관리자에게 문의해주세요.");
     }
 
-    // 기존 학부모가 새 반 QR로 로그인한 경우, 한 명의 자녀 계정이면
-    // 해당 수업에 자동 연결합니다. (이미 연결된 경우에는 그대로 유지)
+    // 정규수업 QR은 기존처럼 반에 바로 연결합니다.
+    // 일일특강 공용 QR은 특정 반에 연결하지 않고 일일특강 탭만 바로 엽니다.
     if(profile.role==="parent" && joinCodeFromUrl()){
-      const {error:joinError}=await db.rpc("parent_join_class_by_code",{
-        p_join_code:joinCodeFromUrl()
-      });
-      if(joinError){
-        const msg=String(joinError.message||"");
-        // 자녀가 여러 명인 경우처럼 자동 선택이 위험한 상황은 로그인 자체를 막지 않습니다.
-        if(!/여러 명|선택/i.test(msg)) console.warn("parent QR class join:",msg);
+      const code=joinCodeFromUrl();
+      const trialCode=await isTrialJoinCode(code);
+      if(trialCode){
+        parentMainView="trial";
+      }else{
+        const {error:joinError}=await db.rpc("parent_join_class_by_code",{
+          p_join_code:code
+        });
+        if(joinError){
+          const msg=String(joinError.message||"");
+          // 자녀가 여러 명인 경우처럼 자동 선택이 위험한 상황은 로그인 자체를 막지 않습니다.
+          if(!/여러 명|선택/i.test(msg)) console.warn("parent QR class join:",msg);
+        }
       }
     }
 
@@ -642,13 +666,22 @@
     if(!pending) return false;
     if((session.user.email||"").toLowerCase() !== String(pending.email||"").toLowerCase()) return false;
 
-    const { error:rpcError } = await db.rpc("register_parent_child",{
-      p_guardian_name:pending.guardian,
-      p_child_name:pending.child,
-      p_birth_date:pending.birth,
-      p_join_code:pending.joinCode
-    });
-    if(rpcError) throw rpcError;
+    const trialSignup=pending.joinType==="trial" || await isTrialJoinCode(pending.joinCode);
+    const registration=trialSignup
+      ? await db.rpc("register_parent_child_trial",{
+          p_guardian_name:pending.guardian,
+          p_child_name:pending.child,
+          p_birth_date:pending.birth,
+          p_trial_join_code:pending.joinCode
+        })
+      : await db.rpc("register_parent_child",{
+          p_guardian_name:pending.guardian,
+          p_child_name:pending.child,
+          p_birth_date:pending.birth,
+          p_join_code:pending.joinCode
+        });
+    if(registration.error) throw registration.error;
+    if(trialSignup) parentMainView="trial";
 
     const phone=String(pending.phone||session.user?.user_metadata?.phone||"").trim();
     if(phone){
@@ -685,8 +718,10 @@
       if(!agree)return notify("필수 동의 항목을 확인해주세요.");
       if(!joinCode)return notify("수업 QR을 통해 접속해야 첫 회원가입을 진행할 수 있습니다.");
 
-      const pending={guardian,phone,email,child,birth,joinCode};
+      const trialSignup=await isTrialJoinCode(joinCode);
+      const pending={guardian,phone,email,child,birth,joinCode,joinType:trialSignup?"trial":"class"};
       savePendingParentRegistration(pending);
+      if(trialSignup)parentMainView="trial";
 
       const { data, error } = await db.auth.signUp({
         email,
@@ -1436,9 +1471,9 @@
 
   function renderParentEmpty(text){
     clearParentLessonVideos();
-    setParentTrialOnlyMode(false);
     $("parentTrialExperience")?.classList.add("hide");
     activeClass=null;
+    setParentMainView(parentMainView);
     activeEnrollment=null;
     currentParentStudentName="";
 
@@ -1531,44 +1566,75 @@
     return String(c?.term||"").trim()==="일일특강";
   }
 
-  function setParentTrialOnlyMode(on){
-    document.body.classList.toggle("parent-trial-only",!!on);
+  function setParentMainView(mode){
+    parentMainView=mode==="trial"?"trial":"regular";
+    document.body.classList.toggle("parent-main-view-trial",parentMainView==="trial");
+    document.body.classList.toggle("parent-main-view-regular",parentMainView!=="trial");
+    $("parentMainRegularTab")?.classList.toggle("on",parentMainView==="regular");
+    $("parentMainTrialTab")?.classList.toggle("on",parentMainView==="trial");
+
+    if(parentMainView==="trial" && activeChild){
+      const display=shortName(activeChild.name);
+      if($("parentHeroTitle"))$("parentHeroTitle").textContent=`${display}의 일일특강을 확인해보세요. 🎈`;
+      if($("parentHeroText"))$("parentHeroText").textContent="센터 · 프로그램 · 선생님을 확인하고, 내가 들은 수업을 선택해주세요.";
+    }
   }
 
-  async function renderParentTrialExperience(trialEnrollments){
-    const root=$("parentTrialExperience");
-    if(!root)return false;
+  window.showParentMainSection=async function(mode){
+    const next=mode==="trial"?"trial":"regular";
+    parentMainView=next;
+    if(next==="trial"){
+      setParentMainView("trial");
+      await renderParentTrialExperience(parentTrialEnrollments||[]);
+      window.scrollTo({top:0,behavior:"smooth"});
+      return;
+    }
+    setParentMainView("regular");
+    await renderParentForChild();
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
 
-    if(profile?.role!=="parent" || !activeChild || !trialEnrollments?.length){
-      root.classList.add("hide");
-      parentTrialClasses=[];
-      parentTrialActiveClassId=null;
+  async function renderParentTrialExperience(trialEnrollments=[]){
+    const root=$("parentTrialExperience");
+    if(!root || profile?.role!=="parent" || !activeChild){
+      root?.classList.add("hide");
       return false;
     }
 
-    const joinedIds=new Set(trialEnrollments.map(e=>e.class_id));
+    const joinedIds=new Set((trialEnrollments||[]).filter(e=>e.active).map(e=>e.class_id));
     const {data,error}=await db.rpc("list_trial_classes_for_parent");
     if(error){
       console.warn("trial classes",error.message);
-      root.classList.add("hide");
+      root.classList.remove("hide");
+      if($("parentTrialTabs"))$("parentTrialTabs").innerHTML='<div class="photo-empty">일일특강 목록을 불러오지 못했어요.</div>';
       return false;
     }
 
     parentTrialClasses=(data||[]).map(c=>({...c,joined:joinedIds.has(c.class_id)}));
-    if(!parentTrialClasses.length){
-      root.classList.add("hide");
-      return false;
-    }
-
     root.classList.remove("hide");
 
+    const tabs=$("parentTrialTabs");
+    if(!parentTrialClasses.length){
+      parentTrialActiveClassId=null;
+      if(tabs)tabs.innerHTML='<div class="photo-empty">현재 등록된 일일특강이 없습니다.</div>';
+      if($("parentTrialClassTitle"))$("parentTrialClassTitle").textContent="일일특강이 준비되면 이곳에 보여요";
+      if($("parentTrialClassMeta"))$("parentTrialClassMeta").textContent="";
+      $("parentTrialJoinedBadge")?.classList.add("hide");
+      $("parentTrialJoinAction")?.classList.add("hide");
+      $("parentTrialPhotoLock")?.classList.add("hide");
+      if($("parentTrialPhotos"))$("parentTrialPhotos").innerHTML='<div class="photo-empty">등록된 특강을 기다리고 있어요.</div>';
+      qAll('input[name="trialSurveyChoice"]',$("parentTrialSurveyOptions")).forEach(x=>x.disabled=true);
+      if($("parentTrialSurveySubmit"))$("parentTrialSurveySubmit").disabled=true;
+      if($("parentTrialSurveyStatus"))$("parentTrialSurveyStatus").textContent="일일특강을 선택하면 설문에 답할 수 있어요.";
+      return true;
+    }
+
     const preferred=
-      parentTrialClasses.find(c=>c.class_id===parentTrialActiveClassId && c.joined)
+      parentTrialClasses.find(c=>c.class_id===parentTrialActiveClassId)
       || parentTrialClasses.find(c=>c.joined)
       || parentTrialClasses[0];
-    parentTrialActiveClassId=preferred?.class_id||null;
+    parentTrialActiveClassId=preferred.class_id;
 
-    const tabs=$("parentTrialTabs");
     if(tabs){
       tabs.innerHTML="";
       parentTrialClasses.forEach(c=>{
@@ -1600,34 +1666,58 @@
     const c=parentTrialClasses.find(x=>x.class_id===classId);
     if(!c)return;
 
-    if($("parentTrialClassTitle")){
-      $("parentTrialClassTitle").textContent=`${c.center_name||""} · ${c.program||""}`;
-    }
-    if($("parentTrialClassMeta")){
-      $("parentTrialClassMeta").textContent=
-        `${c.teacher_name||"강사 미정"} 선생님 · ${c.weekday||""}요일 ${String(c.class_time||"").slice(0,5)}`;
-    }
+    if($("parentTrialClassTitle"))$("parentTrialClassTitle").textContent=`${c.center_name||""} · ${c.program||""}`;
+    if($("parentTrialClassMeta"))$("parentTrialClassMeta").textContent=
+      `${c.teacher_name||"강사 미정"} 선생님 · ${c.weekday||""}요일 ${String(c.class_time||"").slice(0,5)}`;
 
     $("parentTrialJoinedBadge")?.classList.toggle("hide",!c.joined);
+    $("parentTrialJoinAction")?.classList.toggle("hide",!!c.joined);
     $("parentTrialPhotoLock")?.classList.toggle("hide",!!c.joined);
 
     if($("parentTrialPhotoCaption")){
-      $("parentTrialPhotoCaption").textContent=
-        c.joined
-          ? `${shortName(activeChild.name)}에게 연결된 일일특강 사진·동영상만 보여집니다.`
-          : "다른 수업의 사진은 개인정보 보호를 위해 공개되지 않습니다.";
+      $("parentTrialPhotoCaption").textContent=c.joined
+        ? `${shortName(activeChild.name)}에게 연결된 일일특강 사진·동영상만 보여집니다.`
+        : "내가 들은 수업이 맞다면 위의 ‘이 수업을 들었어요’를 눌러주세요.";
     }
 
     await renderParentTrialPhotos(c);
     await loadParentTrialSurvey(c);
   }
 
+  window.joinSelectedTrialClass=async function(){
+    const c=parentTrialClasses.find(x=>x.class_id===parentTrialActiveClassId);
+    if(!c || !activeChild)return;
+    if(c.joined)return;
+
+    const label=`${c.center_name||""} · ${c.program||""} · ${c.teacher_name||"강사 미정"} 선생님`;
+    if(!confirm(`${label}\n\n이 수업을 들으신 게 맞나요?`))return;
+
+    const btn=$("parentTrialJoinBtn");
+    if(btn){btn.disabled=true;btn.textContent="연결 중...";}
+    try{
+      const {error}=await db.rpc("parent_join_trial_class",{
+        p_child_id:activeChild.id,
+        p_class_id:c.class_id
+      });
+      if(error)throw error;
+
+      c.joined=true;
+      parentTrialEnrollments.push({class_id:c.class_id,active:true,classes:{id:c.class_id,term:"일일특강"}});
+      notify("내 일일특강으로 연결했어요. 이제 수업 기록을 확인할 수 있어요 😊");
+      await renderParentTrialExperience(parentTrialEnrollments);
+    }catch(e){
+      notify("일일특강 연결 실패 · "+(e?.message||e));
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent="이 수업을 들었어요";}
+    }
+  };
+
   async function renderParentTrialPhotos(c){
     const pool=$("parentTrialPhotos");
     if(!pool)return;
 
     if(!c.joined){
-      pool.innerHTML='<div class="photo-empty">🔒 내가 참여한 일일특강을 선택하면 활동사진을 볼 수 있어요.</div>';
+      pool.innerHTML='<div class="photo-empty">내가 들은 반을 선택하면 활동사진·동영상을 볼 수 있어요.</div>';
       return;
     }
 
@@ -1662,14 +1752,11 @@
       const isVideo=isVideoMedia(row.photos.storage_path);
       const card=document.createElement("div");
       card.className="photo prod-photo-card";
-
       const mediaPreview=(isVideo && !row.photos.thumbnail_path)
         ? `<video src="${previewUrl}" muted playsinline preload="metadata" aria-label="일일특강 동영상 ${count}"></video>`
         : `<img src="${previewUrl}" alt="일일특강 ${isVideo?"동영상":"사진"} ${count}" loading="lazy" decoding="async">`;
 
-      card.innerHTML=
-        `${mediaPreview}${isVideo?'<span class="parent-media-play">▶</span><span class="parent-media-kind">동영상</span>':""}`;
-
+      card.innerHTML=`${mediaPreview}${isVideo?'<span class="parent-media-play">▶</span><span class="parent-media-kind">동영상</span>':""}`;
       card.onclick=async()=>{
         try{
           const originalUrl=await signedUrl(row.photos.storage_path,21600);
@@ -1688,9 +1775,7 @@
       pool.appendChild(card);
     }
 
-    if(!count){
-      pool.innerHTML='<div class="photo-empty">사진을 다시 불러오지 못했어요. 화면을 새로고침해주세요.</div>';
-    }
+    if(!count)pool.innerHTML='<div class="photo-empty">사진을 다시 불러오지 못했어요. 화면을 새로고침해주세요.</div>';
   }
 
   async function loadParentTrialSurvey(c){
@@ -1698,19 +1783,15 @@
     const button=$("parentTrialSurveySubmit");
     const status=$("parentTrialSurveyStatus");
 
-    options.forEach(x=>{
-      x.checked=false;
-      x.disabled=!c.joined;
-    });
+    options.forEach(x=>{x.checked=false;x.disabled=!c.joined;});
     if(button)button.disabled=!c.joined;
 
     if(!c.joined){
-      if(status)status.textContent="내가 참여한 수업 탭에서 설문에 답할 수 있어요.";
+      if(status)status.textContent="내가 참여한 수업을 선택한 뒤 설문에 답할 수 있어요.";
       return;
     }
 
     if(status)status.textContent="선택 후 저장해주세요.";
-
     const {data,error}=await db.from("trial_survey_responses")
       .select("choice")
       .eq("parent_id",profile.id)
@@ -1722,7 +1803,6 @@
       console.warn("trial survey load",error.message);
       return;
     }
-
     if(data?.choice){
       const radio=options.find(x=>x.value===data.choice);
       if(radio)radio.checked=true;
@@ -1732,18 +1812,14 @@
 
   window.submitParentTrialSurvey=async function(){
     const c=parentTrialClasses.find(x=>x.class_id===parentTrialActiveClassId);
-    if(!c?.joined)return notify("내가 참여한 일일특강을 선택해주세요.");
+    if(!c?.joined)return notify("먼저 내가 참여한 일일특강을 선택해주세요.");
 
     const selected=q('input[name="trialSurveyChoice"]:checked',$("parentTrialSurveyOptions"));
     if(!selected)return notify("수강해보고 싶은 강의를 하나 선택해주세요.");
 
     const button=$("parentTrialSurveySubmit");
     const status=$("parentTrialSurveyStatus");
-
-    if(button){
-      button.disabled=true;
-      button.textContent="저장 중...";
-    }
+    if(button){button.disabled=true;button.textContent="저장 중...";}
 
     try{
       const payload={
@@ -1753,21 +1829,16 @@
         choice:selected.value,
         updated_at:new Date().toISOString()
       };
-
       const {error}=await db.from("trial_survey_responses")
         .upsert(payload,{onConflict:"parent_id,child_id,trial_class_id"});
       if(error)throw error;
-
       if(status)status.textContent="✓ 응답이 저장되었어요. 감사합니다!";
       notify("설문 응답이 저장되었습니다. 감사합니다 😊");
     }catch(e){
       if(status)status.textContent="저장하지 못했어요. 다시 눌러주세요.";
       notify("설문 저장 실패 · "+(e?.message||e));
     }finally{
-      if(button){
-        button.disabled=false;
-        button.textContent="선택 저장하기";
-      }
+      if(button){button.disabled=false;button.textContent="선택 저장하기";}
     }
   };
 
@@ -1784,7 +1855,7 @@
     if(e1) throw e1;
 
     parentTrialEnrollments=(enrollments||[]).filter(e=>e.active && e.classes && isTrialClass(e.classes));
-    const hasTrialExperience=await renderParentTrialExperience(parentTrialEnrollments);
+    await renderParentTrialExperience(parentTrialEnrollments);
 
     if(profile?.role==="admin" && adminParentPreviewClassId){
       const previewEnrollment=(enrollments||[]).find(e=>e.class_id===adminParentPreviewClassId)||null;
@@ -1842,7 +1913,6 @@
     activeClass=activeEnrollment?.classes||null;
 
     renderParentActiveClassSwitcher();
-    setParentTrialOnlyMode(false);
 
     if(unresolvedCompletion){
       await renderParentCompletionAchievement(unresolvedCompletion);
@@ -1853,8 +1923,7 @@
     if(activeClass){
       await renderSelectedParentActiveClass();
       if(unresolvedCompletion) await renderParentNextClassChooser();
-    }else if(hasTrialExperience && !unresolvedCompletion){
-      setParentTrialOnlyMode(true);
+    }else if(!endedEnrollments.length){
       clearParentLessonVideos();
       $("parentActiveClassSwitcher")?.classList.add("hide");
       $("parentTodayContent")?.classList.add("hide");
@@ -1862,8 +1931,8 @@
       $("feeNotice")?.classList.add("hide");
       $("parentInquiryCard")?.classList.add("hide");
       $("parentNextClassCard")?.classList.add("hide");
-      if($("parentHeroTitle")) $("parentHeroTitle").textContent=display+"의 일일특강 Growlog 체험이에요. 🎈";
-      if($("parentHeroText")) $("parentHeroText").textContent="오늘의 사진을 다시 보고, 정규수업에서 이어지는 Growlog 성장기록도 미리 만나보세요.";
+      if($("parentHeroTitle")) $("parentHeroTitle").textContent=display+"의 정규수업은 아직 연결되지 않았어요.";
+      if($("parentHeroText")) $("parentHeroText").textContent="일일특강으로 오셨다면 위의 ‘일일특강’ 탭에서 내가 들은 반을 선택해주세요.";
     }else{
       $("parentActiveClassSwitcher")?.classList.add("hide");
       $("parentTodayContent")?.classList.add("hide");
@@ -1875,11 +1944,10 @@
       await renderParentNextClassChooser();
     }
 
-    if(!document.body.classList.contains("parent-trial-only")){
-      await renderParentCourses(enrollments||[]);
-      await renderParentGrowthMap();
-      wireParentInquiry();
-    }
+    await renderParentCourses(enrollments||[]);
+    await renderParentGrowthMap();
+    wireParentInquiry();
+    setParentMainView(parentMainView);
   }
 
   async function renderParentToday(){
