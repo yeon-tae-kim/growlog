@@ -49,6 +49,7 @@
   let parentTrialEnrollments = [];
   let parentTrialClasses = [];
   let parentTrialActiveClassId = null;
+  let parentRegularRegistrationClasses = [];
   let adminChildClassChildren = [];
   let adminChildClassClasses = [];
   let teacherMultiRosterRows = [];
@@ -1491,6 +1492,8 @@
   function renderParentEmpty(text){
     clearParentLessonVideos();
     $("parentTrialExperience")?.classList.add("hide");
+    $("parentRegularRegistration")?.classList.add("hide");
+    $("parentMainRegisterTab")?.classList.add("hide");
     activeClass=null;
     $("parentMainTabs")?.classList.add("hide");
     parentMainView="regular";
@@ -1591,53 +1594,72 @@
     const tabs=$("parentMainTabs");
     const regularTab=$("parentMainRegularTab");
     const trialTab=$("parentMainTrialTab");
+    const registerTab=$("parentMainRegisterTab");
+
     if(!tabs || profile?.role!=="parent"){
       tabs?.classList.add("hide");
-      return {trialAllowed:false,hasRegular:false,hasTrialHistory:false,fromTrialQr:false};
+      registerTab?.classList.add("hide");
+      return {trialAllowed:false,hasRegular:false,hasTrialHistory:false,fromTrialQr:false,registerAllowed:false};
     }
 
     const rows=enrollments||[];
-    const hasRegular=rows.some(e=>e.classes && !isTrialClass(e.classes));
-    const hasTrialHistory=rows.some(e=>e.active && e.classes && isTrialClass(e.classes));
+    const hasRegular=rows.some(e=>e.active && e.classes && !isTrialClass(e.classes) && e.classes.status!=="종료");
+    const hasTrialHistory=rows.some(e=>e.classes && isTrialClass(e.classes));
     const fromTrialQr=(await isTrialJoinCode(joinCodeFromUrl())) || hasTrialEntrySession();
     const trialAllowed=hasTrialHistory || fromTrialQr;
+    const registerAllowed=hasTrialHistory;
 
     if(!trialAllowed){
       tabs.classList.add("hide");
+      registerTab?.classList.add("hide");
       regularTab?.classList.remove("hide");
       trialTab?.classList.remove("hide");
       parentMainView="regular";
-      document.body.classList.remove("parent-main-view-trial");
+      document.body.classList.remove("parent-main-view-trial","parent-main-view-register");
       document.body.classList.add("parent-main-view-regular");
-      return {trialAllowed,hasRegular,hasTrialHistory,fromTrialQr};
+      return {trialAllowed,hasRegular,hasTrialHistory,fromTrialQr,registerAllowed};
     }
 
     tabs.classList.remove("hide");
     trialTab?.classList.remove("hide");
     regularTab?.classList.toggle("hide",!hasRegular);
-    if(fromTrialQr || !hasRegular) parentMainView="trial";
-    return {trialAllowed,hasRegular,hasTrialHistory,fromTrialQr};
+    registerTab?.classList.toggle("hide",!registerAllowed);
+
+    if(fromTrialQr && !hasTrialHistory) parentMainView="trial";
+    if(!hasRegular && parentMainView==="regular") parentMainView="trial";
+
+    return {trialAllowed,hasRegular,hasTrialHistory,fromTrialQr,registerAllowed};
   }
 
   function setParentMainView(mode){
-    parentMainView=mode==="trial"?"trial":"regular";
+    parentMainView=["trial","register"].includes(mode)?mode:"regular";
+
     document.body.classList.toggle("parent-main-view-trial",parentMainView==="trial");
-    document.body.classList.toggle("parent-main-view-regular",parentMainView!=="trial");
+    document.body.classList.toggle("parent-main-view-register",parentMainView==="register");
+    document.body.classList.toggle("parent-main-view-regular",parentMainView==="regular");
+
     $("parentMainRegularTab")?.classList.toggle("on",parentMainView==="regular");
     $("parentMainTrialTab")?.classList.toggle("on",parentMainView==="trial");
+    $("parentMainRegisterTab")?.classList.toggle("on",parentMainView==="register");
 
-    if(parentMainView==="trial" && activeChild){
-      const display=shortName(activeChild.name);
+    if(!activeChild)return;
+    const display=shortName(activeChild.name);
+
+    if(parentMainView==="trial"){
       if($("parentHeroTitle"))$("parentHeroTitle").textContent=`${display}의 일일특강을 확인해보세요. 🎈`;
       if($("parentHeroText"))$("parentHeroText").textContent="센터 · 프로그램 · 선생님을 확인하고, 내가 들은 수업을 선택해주세요.";
+    }else if(parentMainView==="register"){
+      if($("parentHeroTitle"))$("parentHeroTitle").textContent=`${display}가 이어갈 정규수업을 연결해보세요. 📚`;
+      if($("parentHeroText"))$("parentHeroText").textContent="문화센터에서 신청한 정규강의를 검색해 Growlog에 연결할 수 있어요.";
     }
   }
 
   window.showParentMainSection=async function(mode){
-    const next=mode==="trial"?"trial":"regular";
+    const next=["trial","register"].includes(mode)?mode:"regular";
+
     if(next==="trial"){
       const fromTrialQr=(await isTrialJoinCode(joinCodeFromUrl())) || hasTrialEntrySession();
-      const hasTrialHistory=(parentTrialEnrollments||[]).some(e=>e.active);
+      const hasTrialHistory=(parentTrialEnrollments||[]).length>0;
       if(!fromTrialQr && !hasTrialHistory){
         parentMainView="regular";
         setParentMainView("regular");
@@ -1649,11 +1671,139 @@
       window.scrollTo({top:0,behavior:"smooth"});
       return;
     }
+
+    if(next==="register"){
+      const hasTrialHistory=(parentTrialEnrollments||[]).length>0;
+      if(!hasTrialHistory){
+        notify("일일특강 참여 후 이용할 수 있어요.");
+        return;
+      }
+      parentMainView="register";
+      setParentMainView("register");
+      await renderParentRegularRegistration();
+      window.scrollTo({top:0,behavior:"smooth"});
+      return;
+    }
+
     parentMainView="regular";
     setParentMainView("regular");
     await renderParentForChild();
     window.scrollTo({top:0,behavior:"smooth"});
   };
+
+  function regularClassSearchText(c){
+    return [
+      c?.center_name,c?.term,c?.program,c?.teacher_name,
+      c?.weekday,String(c?.class_time||"").slice(0,5),c?.status
+    ].filter(Boolean).join(" ").toLowerCase();
+  }
+
+  function formatRegularClassDateRange(c){
+    const start=String(c?.start_date||"").trim();
+    const end=String(c?.end_date||"").trim();
+    if(start && end)return `${start} ~ ${end}`;
+    if(start)return `${start} 시작`;
+    return "";
+  }
+
+  function renderParentRegularClassResults(rows){
+    const root=$("parentRegularClassResults");
+    if(!root)return;
+    root.innerHTML="";
+
+    if(!rows?.length){
+      root.innerHTML='<div class="card"><div class="photo-empty">검색 조건에 맞는 정규강의가 없어요.</div></div>';
+      return;
+    }
+
+    rows.forEach(c=>{
+      const card=document.createElement("div");
+      card.className="card parent-regular-class-card";
+
+      const teacher=(c.teacher_name && c.teacher_name!=="미지정")?`${c.teacher_name} 선생님`:"";
+      const dayTime=(c.weekday && c.weekday!=="미정" && String(c.class_time||"").slice(0,5)!=="00:00")
+        ? `${c.weekday}요일 ${String(c.class_time||"").slice(0,5)}`
+        : "";
+      const dates=formatRegularClassDateRange(c);
+
+      card.innerHTML=`
+        <div>
+          <h3>${escape(c.center_name||"")} · ${escape(c.program||"")}</h3>
+          <div class="parent-regular-class-meta">
+            ${c.term?`<span>${escape(c.term)}</span>`:""}
+            ${dayTime?`<span>${escape(dayTime)}</span>`:""}
+            ${teacher?`<span>${escape(teacher)}</span>`:""}
+            ${c.status?`<span>${escape(c.status)}</span>`:""}
+          </div>
+        </div>
+        ${dates?`<div class="parent-regular-class-sub">수업기간 · ${escape(dates)}</div>`:""}
+        <div class="parent-regular-class-action">
+          <button class="btn" type="button" ${c.joined?"disabled":""}>
+            ${c.joined?"✓ 이미 연결된 수업":"이 수업을 신청했어요"}
+          </button>
+        </div>
+      `;
+
+      const btn=card.querySelector("button");
+      if(btn && !c.joined){
+        btn.onclick=()=>joinSelectedRegularClass(c.class_id);
+      }
+      root.appendChild(card);
+    });
+  }
+
+  window.filterParentRegularClasses=function(value){
+    const q=String(value||"").trim().toLowerCase();
+    const rows=!q
+      ? parentRegularRegistrationClasses
+      : parentRegularRegistrationClasses.filter(c=>regularClassSearchText(c).includes(q));
+    renderParentRegularClassResults(rows);
+  };
+
+  async function renderParentRegularRegistration(){
+    const root=$("parentRegularRegistration");
+    const results=$("parentRegularClassResults");
+    if(!root || profile?.role!=="parent" || !activeChild)return;
+
+    root.classList.remove("hide");
+    if(results)results.innerHTML='<div class="card"><div class="photo-empty">정규강의 목록을 불러오는 중...</div></div>';
+
+    const {data,error}=await db.rpc("list_regular_classes_for_trial_parent");
+    if(error){
+      console.warn("regular class registration list",error.message);
+      if(results)results.innerHTML='<div class="card"><div class="photo-empty">정규강의 목록을 불러오지 못했어요.</div></div>';
+      return;
+    }
+
+    parentRegularRegistrationClasses=data||[];
+    if($("parentRegularClassSearch"))$("parentRegularClassSearch").value="";
+    renderParentRegularClassResults(parentRegularRegistrationClasses);
+  }
+
+  window.joinSelectedRegularClass=async function(classId){
+    const c=parentRegularRegistrationClasses.find(x=>x.class_id===classId);
+    if(!c || !activeChild)return;
+
+    const label=`${c.center_name||""} · ${c.program||""}${c.weekday&&c.weekday!=="미정"?` · ${c.weekday}요일 ${String(c.class_time||"").slice(0,5)}`:""}`;
+    if(!confirm(`${label}\n\n문화센터에서 신청한 정규강의가 맞나요?\n확인하면 ${activeChild.name}의 Growlog에 연결됩니다.`))return;
+
+    try{
+      const {error}=await db.rpc("parent_join_regular_class_from_trial",{
+        p_child_id:activeChild.id,
+        p_class_id:c.class_id
+      });
+      if(error)throw error;
+
+      notify("정규수업이 Growlog에 연결되었어요 😊");
+      parentMainView="regular";
+      await renderParentForChild();
+      setParentMainView("regular");
+      window.scrollTo({top:0,behavior:"smooth"});
+    }catch(e){
+      notify("정규수업 연결 실패 · "+(e?.message||e));
+    }
+  };
+
 
   function trialClassMetaText(c){
     const parts=[];
@@ -2029,6 +2179,11 @@
     await renderParentGrowthMap();
     wireParentInquiry();
     setParentMainView(parentMainView);
+    if(parentMainView==="register" && parentTabAccess.registerAllowed){
+      await renderParentRegularRegistration();
+    }else{
+      $("parentRegularRegistration")?.classList.add("hide");
+    }
   }
 
   async function renderParentToday(){

@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=52">
+<link rel="manifest" href="./manifest.webmanifest?v=53">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -5715,6 +5715,112 @@ body.admin-trial-registering #adminClassForm{
 }
 </style>
 
+
+<style id="growlog-v53-parent-regular-registration">
+.parent-main-tabs{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.parent-regular-registration{
+  display:grid;
+  gap:14px;
+  margin:16px 0;
+}
+.parent-regular-registration.hide{display:none!important}
+.parent-register-intro h2{margin:8px 0 6px}
+.parent-register-search-wrap{margin-top:14px}
+.parent-register-search-wrap input{
+  width:100%;
+  min-height:48px;
+  padding:0 15px;
+  border:1px solid #dfe5ee;
+  border-radius:14px;
+  background:#fff;
+  font-size:14px;
+}
+.parent-register-search-wrap input:focus{
+  outline:none;
+  border-color:#6c84cf;
+  box-shadow:0 0 0 3px rgba(108,132,207,.10);
+}
+.parent-regular-class-results{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.parent-regular-class-card{
+  display:grid;
+  gap:11px;
+  padding:16px;
+}
+.parent-regular-class-card h3{
+  margin:0;
+  font-size:17px;
+  line-height:1.35;
+}
+.parent-regular-class-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.parent-regular-class-meta span{
+  display:inline-flex;
+  padding:5px 8px;
+  border-radius:999px;
+  background:#f3f5f8;
+  color:#657085;
+  font-size:10px;
+  font-weight:800;
+}
+.parent-regular-class-sub{
+  color:#677386;
+  font-size:11px;
+  line-height:1.55;
+}
+.parent-regular-class-action{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:2px;
+}
+.parent-regular-class-action .btn[disabled]{
+  opacity:.6;
+  cursor:default;
+}
+body.parent-main-view-register #parentTrialExperience,
+body.parent-main-view-register #parentActiveClassSwitcher,
+body.parent-main-view-register #parentCompletionCard,
+body.parent-main-view-register #parentNextClassCard,
+body.parent-main-view-register #feeNotice,
+body.parent-main-view-register #parentAbsentNotice,
+body.parent-main-view-register #parentTodayContent,
+body.parent-main-view-register #parentGrowthMapCard,
+body.parent-main-view-register #parentCourseCard,
+body.parent-main-view-register #parentInquiryCard,
+body.parent-main-view-register #parentLessonVideos{
+  display:none!important;
+}
+body.parent-main-view-register #parentRegularRegistration{
+  display:grid!important;
+}
+body.parent-main-view-regular #parentRegularRegistration,
+body.parent-main-view-trial #parentRegularRegistration{
+  display:none!important;
+}
+@media(max-width:720px){
+  .parent-main-tabs{
+    grid-template-columns:1fr 1fr 1.25fr;
+    gap:5px;
+    padding:5px;
+  }
+  .parent-main-tabs button{
+    padding:8px 5px;
+    font-size:11px;
+  }
+  .parent-regular-class-results{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -5942,6 +6048,29 @@ body.admin-trial-registering #adminClassForm{
   <div id="parentMainTabs" class="parent-main-tabs hide" role="tablist" aria-label="학부모 페이지 보기">
     <button id="parentMainRegularTab" class="on" type="button" role="tab" onclick="showParentMainSection('regular')">📚 정규수업</button>
     <button id="parentMainTrialTab" type="button" role="tab" onclick="showParentMainSection('trial')">🎈 일일특강</button>
+    <button id="parentMainRegisterTab" class="hide" type="button" role="tab" onclick="showParentMainSection('register')">🔎 정규강의 등록</button>
+  </div>
+
+
+  <div id="parentRegularRegistration" class="parent-regular-registration hide">
+    <div class="card parent-register-intro">
+      <span class="badge">📚 정규수업 연결</span>
+      <h2>신청한 정규강의를 찾아주세요</h2>
+      <p class="muted">
+        문화센터에서 정규강의 신청을 완료하셨다면, 아래에서 우리 아이가 들을 반을 찾아 Growlog에 연결해주세요.
+      </p>
+
+      <div class="parent-register-search-wrap">
+        <input id="parentRegularClassSearch"
+               type="search"
+               placeholder="센터명, 프로그램, 강사, 요일로 검색"
+               oninput="filterParentRegularClasses(this.value)">
+      </div>
+    </div>
+
+    <div id="parentRegularClassResults" class="parent-regular-class-results">
+      <div class="card"><div class="photo-empty">정규강의 목록을 불러오는 중...</div></div>
+    </div>
   </div>
 
   <div id="parentActiveClassSwitcher" class="card parent-active-class-switcher hide">
@@ -8816,7 +8945,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=52"></script>
+<script src="./app.js?v=53"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
