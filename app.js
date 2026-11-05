@@ -276,6 +276,17 @@
   const trialJoinCodeCache=new Map();
   let parentMainView="regular";
 
+  function setTrialEntrySession(on=true){
+    try{
+      if(on) sessionStorage.setItem("growlog_trial_entry","1");
+      else sessionStorage.removeItem("growlog_trial_entry");
+    }catch(e){}
+  }
+
+  function hasTrialEntrySession(){
+    try{return sessionStorage.getItem("growlog_trial_entry")==="1";}catch(e){return false;}
+  }
+
   async function isTrialJoinCode(code){
     const key=String(code||"").trim().toLowerCase();
     if(!key)return false;
@@ -487,6 +498,7 @@
       const code=joinCodeFromUrl();
       const trialCode=await isTrialJoinCode(code);
       if(trialCode){
+        setTrialEntrySession(true);
         parentMainView="trial";
       }else{
         const {error:joinError}=await db.rpc("parent_join_class_by_code",{
@@ -681,7 +693,10 @@
           p_join_code:pending.joinCode
         });
     if(registration.error) throw registration.error;
-    if(trialSignup) parentMainView="trial";
+    if(trialSignup){
+      setTrialEntrySession(true);
+      parentMainView="trial";
+    }
 
     const phone=String(pending.phone||session.user?.user_metadata?.phone||"").trim();
     if(phone){
@@ -721,7 +736,10 @@
       const trialSignup=await isTrialJoinCode(joinCode);
       const pending={guardian,phone,email,child,birth,joinCode,joinType:trialSignup?"trial":"class"};
       savePendingParentRegistration(pending);
-      if(trialSignup)parentMainView="trial";
+      if(trialSignup){
+        setTrialEntrySession(true);
+        parentMainView="trial";
+      }
 
       const { data, error } = await db.auth.signUp({
         email,
@@ -1473,7 +1491,9 @@
     clearParentLessonVideos();
     $("parentTrialExperience")?.classList.add("hide");
     activeClass=null;
-    setParentMainView(parentMainView);
+    $("parentMainTabs")?.classList.add("hide");
+    parentMainView="regular";
+    setParentMainView("regular");
     activeEnrollment=null;
     currentParentStudentName="";
 
@@ -1566,6 +1586,38 @@
     return String(c?.term||"").trim()==="일일특강";
   }
 
+  async function updateParentMainTabsVisibility(enrollments=[]){
+    const tabs=$("parentMainTabs");
+    const regularTab=$("parentMainRegularTab");
+    const trialTab=$("parentMainTrialTab");
+    if(!tabs || profile?.role!=="parent"){
+      tabs?.classList.add("hide");
+      return {trialAllowed:false,hasRegular:false,hasTrialHistory:false,fromTrialQr:false};
+    }
+
+    const rows=enrollments||[];
+    const hasRegular=rows.some(e=>e.classes && !isTrialClass(e.classes));
+    const hasTrialHistory=rows.some(e=>e.active && e.classes && isTrialClass(e.classes));
+    const fromTrialQr=(await isTrialJoinCode(joinCodeFromUrl())) || hasTrialEntrySession();
+    const trialAllowed=hasTrialHistory || fromTrialQr;
+
+    if(!trialAllowed){
+      tabs.classList.add("hide");
+      regularTab?.classList.remove("hide");
+      trialTab?.classList.remove("hide");
+      parentMainView="regular";
+      document.body.classList.remove("parent-main-view-trial");
+      document.body.classList.add("parent-main-view-regular");
+      return {trialAllowed,hasRegular,hasTrialHistory,fromTrialQr};
+    }
+
+    tabs.classList.remove("hide");
+    trialTab?.classList.remove("hide");
+    regularTab?.classList.toggle("hide",!hasRegular);
+    if(fromTrialQr || !hasRegular) parentMainView="trial";
+    return {trialAllowed,hasRegular,hasTrialHistory,fromTrialQr};
+  }
+
   function setParentMainView(mode){
     parentMainView=mode==="trial"?"trial":"regular";
     document.body.classList.toggle("parent-main-view-trial",parentMainView==="trial");
@@ -1582,13 +1634,21 @@
 
   window.showParentMainSection=async function(mode){
     const next=mode==="trial"?"trial":"regular";
-    parentMainView=next;
     if(next==="trial"){
+      const fromTrialQr=(await isTrialJoinCode(joinCodeFromUrl())) || hasTrialEntrySession();
+      const hasTrialHistory=(parentTrialEnrollments||[]).some(e=>e.active);
+      if(!fromTrialQr && !hasTrialHistory){
+        parentMainView="regular";
+        setParentMainView("regular");
+        return;
+      }
+      parentMainView="trial";
       setParentMainView("trial");
       await renderParentTrialExperience(parentTrialEnrollments||[]);
       window.scrollTo({top:0,behavior:"smooth"});
       return;
     }
+    parentMainView="regular";
     setParentMainView("regular");
     await renderParentForChild();
     window.scrollTo({top:0,behavior:"smooth"});
@@ -1702,7 +1762,10 @@
       if(error)throw error;
 
       c.joined=true;
+      setTrialEntrySession(false);
       parentTrialEnrollments.push({class_id:c.class_id,active:true,classes:{id:c.class_id,term:"일일특강"}});
+      $("parentMainTabs")?.classList.remove("hide");
+      $("parentMainTrialTab")?.classList.remove("hide");
       notify("내 일일특강으로 연결했어요. 이제 수업 기록을 확인할 수 있어요 😊");
       await renderParentTrialExperience(parentTrialEnrollments);
     }catch(e){
@@ -1855,7 +1918,14 @@
     if(e1) throw e1;
 
     parentTrialEnrollments=(enrollments||[]).filter(e=>e.active && e.classes && isTrialClass(e.classes));
-    await renderParentTrialExperience(parentTrialEnrollments);
+    const parentTabAccess=await updateParentMainTabsVisibility(enrollments||[]);
+    if(parentTabAccess.trialAllowed){
+      await renderParentTrialExperience(parentTrialEnrollments);
+    }else{
+      $("parentTrialExperience")?.classList.add("hide");
+      parentTrialClasses=[];
+      parentTrialActiveClassId=null;
+    }
 
     if(profile?.role==="admin" && adminParentPreviewClassId){
       const previewEnrollment=(enrollments||[]).find(e=>e.class_id===adminParentPreviewClassId)||null;
