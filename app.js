@@ -40,6 +40,7 @@
   let activeTeacherProfile = null;
   let adminEditingClassId = null;
   let adminClassRows = [];
+  let adminCenterTypeView = "regular";
   let prodPhotos = [];
   let realtimeChannel = null;
   let activeLessonDate = null;
@@ -1583,7 +1584,7 @@
 
 
   function isTrialClass(c){
-    return String(c?.term||"").trim()==="일일특강";
+    return c?.centers?.is_trial===true || String(c?.term||"").trim()==="일일특강";
   }
 
   async function updateParentMainTabsVisibility(enrollments=[]){
@@ -1912,7 +1913,7 @@
     const display=shortName(activeChild.name);
 
     const {data:enrollments,error:e1}=await db.from("enrollments")
-      .select("id,active,created_at,class_id,classes(id,term,program,weekday,class_time,start_date,end_date,status,class_amount,center_id,teacher_id,centers(name))")
+      .select("id,active,created_at,class_id,classes(id,term,program,weekday,class_time,start_date,end_date,status,class_amount,center_id,teacher_id,centers(name,is_trial))")
       .eq("child_id",activeChild.id)
       .order("created_at",{ascending:false});
     if(e1) throw e1;
@@ -5003,12 +5004,14 @@
     if($("prodAdminUnreadCount")) $("prodAdminUnreadCount").textContent=String(parentUnread+externalUnread);
   }
 
-  async function getOrCreateCenter(name){
-    const n=name.trim();
-    let {data,error}=await db.from("centers").select("id,name").eq("name",n).maybeSingle();
+  async function getOrCreateCenter(name,isTrial=false){
+    const n=String(name||"").trim();
+    if(!n)throw new Error("센터명을 입력해주세요.");
+    const trial=!!isTrial;
+    let {data,error}=await db.from("centers").select("id,name,is_trial").eq("name",n).eq("is_trial",trial).maybeSingle();
     if(error) throw error;
     if(data) return data;
-    const res=await db.from("centers").insert({name:n}).select("id,name").single();
+    const res=await db.from("centers").insert({name:n,is_trial:trial}).select("id,name,is_trial").single();
     if(res.error) throw res.error;
     return res.data;
   }
@@ -5177,13 +5180,60 @@
     }
   };
 
+  function adminClassRowsForCurrentCenterType(){
+    const trial=adminCenterTypeView==="trial";
+    return (adminClassRows||[]).filter(c=>!!c.centers?.is_trial===trial);
+  }
+
+  function updateAdminCenterTypeUI(){
+    const regularRows=(adminClassRows||[]).filter(c=>!c.centers?.is_trial);
+    const trialRows=(adminClassRows||[]).filter(c=>!!c.centers?.is_trial);
+    const regularCenters=new Set(regularRows.map(c=>c.centers?.id).filter(Boolean));
+    const trialCenters=new Set(trialRows.map(c=>c.centers?.id).filter(Boolean));
+    if($("adminCenterRegularCount"))$("adminCenterRegularCount").textContent=String(regularCenters.size);
+    if($("adminCenterTrialCount"))$("adminCenterTrialCount").textContent=String(trialCenters.size);
+    $("adminCenterRegularView")?.classList.toggle("on",adminCenterTypeView==="regular");
+    $("adminCenterTrialView")?.classList.toggle("on",adminCenterTypeView==="trial");
+    if($("adminCenterTypeTitle"))$("adminCenterTypeTitle").textContent=adminCenterTypeView==="trial"?"일일특강 센터 현황":"정규센터 현황";
+    if($("adminCenterTypeDescription"))$("adminCenterTypeDescription").textContent=adminCenterTypeView==="trial"?"일일특강으로 체크한 센터와 반만 모아봅니다.":"정규수업 센터와 반만 모아봅니다.";
+    if($("adminNewClassButton"))$("adminNewClassButton").textContent=adminCenterTypeView==="trial"?"+ 일일특강 센터/반 등록":"+ 정규센터/반 등록";
+  }
+
+  window.setAdminCenterType=function(type){
+    adminCenterTypeView=type==="trial"?"trial":"regular";
+    updateAdminCenterTypeUI();
+    ["adminClassCenterFilter","adminClassTermFilter","adminClassProgramFilter","adminClassWeekdayFilter","adminClassTeacherFilter","adminClassStatusFilter"].forEach(id=>{const el=$(id);if(el)el.value="";});
+    populateAdminClassFilters();
+    window.filterAdminClasses();
+    $("adminClassEditForm")?.classList.add("hide");
+    adminEditingClassId=null;
+    $("adminClassForm")?.classList.add("hide");
+  };
+
+  window.syncNewClassTrialCenterFromView=function(){
+    const checkbox=$("newClassTrialCenter");
+    if(checkbox)checkbox.checked=adminCenterTypeView==="trial";
+    window.syncNewClassTrialCenter();
+  };
+  window.syncNewClassTrialCenter=function(){
+    const checked=!!$("newClassTrialCenter")?.checked;
+    const term=$("newClassTerm");
+    if(checked && term && !String(term.value||"").trim())term.value="일일특강";
+  };
+  window.syncEditClassTrialCenter=function(){
+    const checked=!!$("editClassTrialCenter")?.checked;
+    const term=$("editClassTerm");
+    if(checked && term && !String(term.value||"").trim())term.value="일일특강";
+  };
+
   function populateAdminClassFilters(){
-    setFilterOptions("adminClassCenterFilter",adminClassRows.map(c=>c.centers?.name||""),"전체 센터");
-    setFilterOptions("adminClassTermFilter",adminClassRows.map(c=>c.term||""),"전체 학기");
-    setFilterOptions("adminClassProgramFilter",adminClassRows.map(c=>c.program||""),"전체 프로그램");
-    setFilterOptions("adminClassWeekdayFilter",adminClassRows.map(c=>c.weekday||""),"전체 요일");
-    setFilterOptions("adminClassTeacherFilter",adminClassRows.map(c=>c.profiles?.name||"미지정"),"전체 강사");
-    setFilterOptions("adminClassStatusFilter",adminClassRows.map(c=>c.status||""),"전체 상태");
+    const rows=adminClassRowsForCurrentCenterType();
+    setFilterOptions("adminClassCenterFilter",rows.map(c=>c.centers?.name||""),"전체 센터");
+    setFilterOptions("adminClassTermFilter",rows.map(c=>c.term||""),"전체 학기");
+    setFilterOptions("adminClassProgramFilter",rows.map(c=>c.program||""),"전체 프로그램");
+    setFilterOptions("adminClassWeekdayFilter",rows.map(c=>c.weekday||""),"전체 요일");
+    setFilterOptions("adminClassTeacherFilter",rows.map(c=>c.profiles?.name||"미지정"),"전체 강사");
+    setFilterOptions("adminClassStatusFilter",rows.map(c=>c.status||""),"전체 상태");
   }
 
   window.filterAdminClasses=function(){
@@ -5195,7 +5245,9 @@
     const status=$("adminClassStatusFilter")?.value||"";
     let visible=0;
     qAll("#adminClassBody tr[data-class-id]").forEach(tr=>{
+      const typeOk=(adminCenterTypeView==="trial") === (tr.dataset.trial==="1");
       const show=
+        typeOk &&
         (!center || tr.dataset.center===center) &&
         (!term || tr.dataset.term===term) &&
         (!program || tr.dataset.program===program) &&
@@ -5206,7 +5258,7 @@
       if(show)visible++;
     });
     const result=$("adminClassFilterResult");
-    if(result)result.textContent=`${visible}개 반 표시 / 전체 ${adminClassRows.length}개`;
+    if(result)result.textContent=`${visible}개 반 표시 / ${adminCenterTypeView==="trial"?"일일특강":"정규"} 전체 ${adminClassRowsForCurrentCenterType().length}개`;
   };
 
   window.resetAdminClassFilters=function(){
@@ -5218,10 +5270,11 @@
   async function renderAdminClasses(){
     const body=$("adminClassBody");if(!body)return;
     const {data,error}=await db.from("classes")
-      .select("id,term,program,weekday,class_time,start_date,end_date,teacher_id,student_capacity,status,class_amount,join_code,centers(id,name),profiles!classes_teacher_id_fkey(id,name)")
+      .select("id,term,program,weekday,class_time,start_date,end_date,teacher_id,student_capacity,status,class_amount,join_code,centers(id,name,is_trial),profiles!classes_teacher_id_fkey(id,name)")
       .order("created_at",{ascending:false});
     if(error) throw error;
     adminClassRows=data||[];
+    updateAdminCenterTypeUI();
     populateAdminClassFilters();
     body.innerHTML="";
     adminClassRows.forEach(c=>{
@@ -5234,8 +5287,9 @@
       tr.dataset.weekday=c.weekday||"";
       tr.dataset.teacher=c.profiles?.name||"미지정";
       tr.dataset.status=c.status||"";
+      tr.dataset.trial=c.centers?.is_trial?"1":"0";
       const vals=[c.centers?.name||"",c.term,c.program,`${c.weekday} ${String(c.class_time).slice(0,5)}`,c.profiles?.name||"미지정",`${c.student_capacity||0}명`,c.class_amount?money(c.class_amount):"미입력"];
-      vals.forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});
+      vals.forEach((v,i)=>{const td=document.createElement("td");td.textContent=v;if(i===0 && c.centers?.is_trial){const badge=document.createElement("span");badge.className="admin-class-trial-badge";badge.textContent="일일특강";td.appendChild(badge);}tr.appendChild(td);});
       const td=document.createElement("td");td.innerHTML=`<span class="badge ${c.status==="운영중"?"":"gray"}">${escape(c.status)}</span>`;tr.appendChild(td);
       tr.onclick=()=>openAdminClassEditProd(c);
       body.appendChild(tr);
@@ -5247,6 +5301,7 @@
   function openAdminClassEditProd(c){
     adminEditingClassId=c.id;
     $("editClassCenter").value=c.centers?.name||"";
+    if($("editClassTrialCenter"))$("editClassTrialCenter").checked=!!c.centers?.is_trial;
     $("editClassTerm").value=c.term||"";
     $("editClassProgram").value=normalizeProgramName(c.program||"블럭동화");
     $("editClassTime").value=`${c.weekday} ${String(c.class_time).slice(0,5)}`;
@@ -5271,11 +5326,13 @@
 
   window.addAdminClass=async function(){
     try{
-      const center=await getOrCreateCenter($("newClassCenter").value);
+      const isTrial=!!$("newClassTrialCenter")?.checked;
+      const center=await getOrCreateCenter($("newClassCenter").value,isTrial);
       const teacher=await resolveTeacherByName($("newClassTeacher").value);
       const time=splitClassTime($("newClassTime").value);
+      const term=$("newClassTerm").value.trim() || (isTrial?"일일특강":"");
       const payload={
-        center_id:center.id,term:$("newClassTerm").value.trim(),program:$("newClassProgram").value,
+        center_id:center.id,term,program:$("newClassProgram").value,
         ...time,start_date:$("newClassStartDate").value||null,end_date:$("newClassEndDate").value||null,
         teacher_id:teacher?.id||null,student_capacity:Number($("newClassStudents").value||0),
         class_amount:Number(String($("newClassAmount").value||"").replace(/\D/g,"")||0),
@@ -5289,18 +5346,20 @@
       if(error) throw error;
       $("adminClassForm")?.classList.add("hide");
       await loadAdminDashboard();
-      notify("새 반을 등록했습니다.");
+      notify(isTrial?"일일특강 센터/반을 등록했습니다.":"정규센터/반을 등록했습니다.");
     }catch(e){notify("반 등록 실패: "+e.message);}
   };
 
   window.saveAdminClassEdit=async function(){
     if(!adminEditingClassId)return notify("수정할 반을 선택해주세요.");
     try{
-      const center=await getOrCreateCenter($("editClassCenter").value);
+      const isTrial=!!$("editClassTrialCenter")?.checked;
+      const center=await getOrCreateCenter($("editClassCenter").value,isTrial);
       const teacher=await resolveTeacherByName($("editClassTeacher").value);
       const time=splitClassTime($("editClassTime").value);
+      const term=$("editClassTerm").value.trim() || (isTrial?"일일특강":"");
       const payload={
-        center_id:center.id,term:$("editClassTerm").value.trim(),program:$("editClassProgram").value,
+        center_id:center.id,term,program:$("editClassProgram").value,
         ...time,start_date:$("editClassStartDate").value||null,end_date:$("editClassEndDate").value||null,
         teacher_id:teacher?.id||null,student_capacity:Number($("editClassStudents").value||0),
         class_amount:Number(String($("editClassAmount").value||"").replace(/\D/g,"")||0),

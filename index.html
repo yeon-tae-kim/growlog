@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=49">
+<link rel="manifest" href="./manifest.webmanifest?v=50">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -5679,6 +5679,10 @@ body.parent-main-view-trial #parentTrialExperience{display:grid!important}
 }
 </style>
 
+
+<style id="growlog-v50-trial-center-admin">
+.admin-center-type-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px}.admin-center-type-tabs button{border:1px solid #dfe5ec;background:#fff;color:#697589;min-height:42px;padding:9px 14px;border-radius:13px;font-weight:900;cursor:pointer}.admin-center-type-tabs button.on{border-color:#5e78c9;background:#f3f6ff;color:#385a9d;box-shadow:0 4px 12px rgba(43,66,111,.08)}.admin-center-type-tabs button span{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:5px;border-radius:999px;background:#eef1f5;font-size:10px}.admin-center-type-tabs button.on span{background:#fff}.admin-center-trial-guide{margin:0 0 13px;padding:10px 12px;border:1px solid #e5e9ef;border-radius:12px;background:#fafbfc;color:#687488;font-size:11px;line-height:1.5}.admin-center-trial-guide b{color:#3d5e9d}.admin-trial-center-field{align-self:end}.admin-trial-center-check{display:flex!important;align-items:flex-start;gap:9px;padding:11px 12px;border:1px solid #dfe6ee;border-radius:13px;background:#f8faff;cursor:pointer}.admin-trial-center-check input[type=checkbox]{width:19px!important;height:19px!important;min-width:19px!important;min-height:19px!important;margin:1px 0 0!important;padding:0!important;accent-color:#5c78cf!important;appearance:auto!important;-webkit-appearance:auto!important}.admin-trial-center-check span{display:grid;gap:3px}.admin-trial-center-check b{font-size:12px}.admin-trial-center-check small{font-size:10px;color:#707b8d;line-height:1.35}.admin-class-trial-badge{display:inline-flex;margin-left:5px;padding:2px 6px;border-radius:999px;background:#fff0dc;color:#a96719;font-size:9px;font-weight:900;vertical-align:middle}@media(max-width:620px){.admin-center-type-tabs{display:grid;grid-template-columns:1fr 1fr}.admin-center-type-tabs button{padding:8px 7px;font-size:12px}}
+</style>
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -6376,10 +6380,16 @@ body.parent-main-view-trial #parentTrialExperience{display:grid!important}
       <div class="admin-class-section">
         <div class="admin-class-section-head">
           <div>
-            <h3>전체 센터 현황</h3>
-            <div class="muted">등록된 센터·반 전체 목록입니다.</div>
+            <h3 id="adminCenterTypeTitle">정규센터 현황</h3>
+            <div id="adminCenterTypeDescription" class="muted">정규수업 센터와 반 목록입니다.</div>
           </div>
         </div>
+
+        <div class="admin-center-type-tabs" aria-label="센터 구분">
+          <button id="adminCenterRegularView" class="on" type="button" onclick="setAdminCenterType('regular')">🏢 정규센터 <span id="adminCenterRegularCount">0</span></button>
+          <button id="adminCenterTrialView" type="button" onclick="setAdminCenterType('trial')">🎈 일일특강 <span id="adminCenterTrialCount">0</span></button>
+        </div>
+        <div class="admin-center-trial-guide"><b>일일특강 센터</b>로 등록한 센터의 수업은 학부모의 일일특강 선택 목록에 자동으로 표시됩니다.</div>
         <div class="admin-class-filter-grid" aria-label="센터 관리 필터">
           <div class="admin-filter-item"><label for="adminClassCenterFilter">센터</label><select id="adminClassCenterFilter" onchange="filterAdminClasses()"><option value="">전체 센터</option></select></div>
           <div class="admin-filter-item"><label for="adminClassTermFilter">학기</label><select id="adminClassTermFilter" onchange="filterAdminClasses()"><option value="">전체 학기</option></select></div>
@@ -6407,6 +6417,12 @@ body.parent-main-view-trial #parentTrialExperience{display:grid!important}
 
           <div class="admin-inline-form-grid">
             <div class="auth-field"><label for="editClassCenter">센터</label><input id="editClassCenter"></div>
+            <div class="auth-field admin-trial-center-field">
+              <label class="admin-trial-center-check" for="editClassTrialCenter">
+                <input id="editClassTrialCenter" type="checkbox" onchange="syncEditClassTrialCenter()">
+                <span><b>일일특강 센터</b><small>변경 시 이 반이 정규/일일특강 센터로 이동됩니다.</small></span>
+              </label>
+            </div>
             <div class="auth-field"><label for="editClassTerm">학기</label><input id="editClassTerm"></div>
             <div class="auth-field"><label for="editClassProgram">프로그램</label><select id="editClassProgram">
               <option value="블럭동화">블럭동화</option>
@@ -6437,13 +6453,19 @@ body.parent-main-view-trial #parentTrialExperience{display:grid!important}
           </div>
         </div>
 
-        <div style="margin-top:14px"><button class="btn" type="button" onclick="toggleAdminClassForm()">+ 새 반 등록</button></div>
+        <div style="margin-top:14px"><button id="adminNewClassButton" class="btn" type="button" onclick="toggleAdminClassForm()">+ 정규센터/반 등록</button></div>
 
         <datalist id="adminTeacherNameOptions"></datalist>
 <div id="adminClassForm" class="admin-inline-form hide">
           <div class="admin-inline-form-grid">
             <div class="auth-field"><label for="newClassCenter">센터</label><input id="newClassCenter" placeholder="예: 성북점"></div>
-            <div class="auth-field"><label for="newClassTerm">학기</label><input id="newClassTerm" placeholder="예: 가을학기 / 일일특강"></div>
+            <div class="auth-field admin-trial-center-field">
+              <label class="admin-trial-center-check" for="newClassTrialCenter">
+                <input id="newClassTrialCenter" type="checkbox" onchange="syncNewClassTrialCenter()">
+                <span><b>일일특강 센터</b><small>체크하면 학부모 일일특강 목록에 자동 표시됩니다.</small></span>
+              </label>
+            </div>
+            <div class="auth-field"><label for="newClassTerm">학기</label><input id="newClassTerm" placeholder="예: 가을학기"></div>
             <div class="auth-field"><label for="newClassProgram">프로그램</label><select id="newClassProgram">
               <option value="">프로그램 선택</option>
               <option value="블럭동화">블럭동화</option>
@@ -7892,6 +7914,7 @@ function toggleAdminClassForm(force){
   if(!form) return;
   const show=typeof force==="boolean" ? force : form.classList.contains("hide");
   form.classList.toggle("hide",!show);
+  if(show && typeof window.syncNewClassTrialCenterFromView==="function") window.syncNewClassTrialCenterFromView();
 }
 
 function addAdminClass(){
@@ -8760,7 +8783,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=49"></script>
+<script src="./app.js?v=50"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
