@@ -280,13 +280,52 @@
 
   function setTrialEntrySession(on=true){
     try{
-      if(on) sessionStorage.setItem("growlog_trial_entry","1");
-      else sessionStorage.removeItem("growlog_trial_entry");
+      if(on){
+        sessionStorage.setItem("growlog_trial_entry","1");
+      }else{
+        sessionStorage.removeItem("growlog_trial_entry");
+        localStorage.removeItem("growlog_trial_entry_pending");
+      }
     }catch(e){}
   }
 
+  function setPendingTrialEntry(){
+    try{
+      const until=Date.now()+(1000*60*30); // 로그인/회원가입 이동용 30분 임시 표식
+      localStorage.setItem("growlog_trial_entry_pending",String(until));
+      sessionStorage.setItem("growlog_trial_entry","1");
+    }catch(e){}
+  }
+
+  function restorePendingTrialEntry(){
+    try{
+      const until=Number(localStorage.getItem("growlog_trial_entry_pending")||0);
+      if(until>Date.now()){
+        sessionStorage.setItem("growlog_trial_entry","1");
+        return true;
+      }
+      localStorage.removeItem("growlog_trial_entry_pending");
+      return false;
+    }catch(e){return false;}
+  }
+
   function hasTrialEntrySession(){
-    try{return sessionStorage.getItem("growlog_trial_entry")==="1";}catch(e){return false;}
+    try{
+      if(sessionStorage.getItem("growlog_trial_entry")==="1")return true;
+      return restorePendingTrialEntry();
+    }catch(e){return false;}
+  }
+
+  async function captureTrialEntryFromUrl(){
+    const code=joinCodeFromUrl();
+    if(!code)return false;
+    const isTrial=await isTrialJoinCode(code);
+    if(isTrial){
+      setPendingTrialEntry();
+      parentMainView="trial";
+      return true;
+    }
+    return false;
   }
 
   async function isTrialJoinCode(code){
@@ -500,7 +539,7 @@
       const code=joinCodeFromUrl();
       const trialCode=await isTrialJoinCode(code);
       if(trialCode){
-        setTrialEntrySession(true);
+        setPendingTrialEntry();
         parentMainView="trial";
       }else{
         const {error:joinError}=await db.rpc("parent_join_class_by_code",{
@@ -696,7 +735,7 @@
         });
     if(registration.error) throw registration.error;
     if(trialSignup){
-      setTrialEntrySession(true);
+      setPendingTrialEntry();
       parentMainView="trial";
     }
 
@@ -739,7 +778,7 @@
       const pending={guardian,phone,email,child,birth,joinCode,joinType:trialSignup?"trial":"class"};
       savePendingParentRegistration(pending);
       if(trialSignup){
-        setTrialEntrySession(true);
+        setPendingTrialEntry();
         parentMainView="trial";
       }
 
@@ -1625,7 +1664,11 @@
     regularTab?.classList.toggle("hide",!hasRegular);
     registerTab?.classList.toggle("hide",!registerAllowed);
 
-    if(fromTrialQr && !hasTrialHistory) parentMainView="trial";
+    // 공용 QR 진입 직후에는 아직 수강 연결이 없어도 일일특강 선택 탭은 반드시 보입니다.
+    if(fromTrialQr && !hasTrialHistory){
+      parentMainView="trial";
+      trialTab?.classList.remove("hide");
+    }
     if(!hasRegular && parentMainView==="regular") parentMainView="trial";
 
     return {trialAllowed,hasRegular,hasTrialHistory,fromTrialQr,registerAllowed};
@@ -1924,10 +1967,17 @@
 
       c.joined=true;
       setTrialEntrySession(false);
-      parentTrialEnrollments.push({class_id:c.class_id,active:true,classes:{id:c.class_id,term:"일일특강"}});
+      parentTrialEnrollments.push({
+        class_id:c.class_id,
+        active:true,
+        classes:{id:c.class_id,term:"일일특강",centers:{is_trial:true}}
+      });
+
       $("parentMainTabs")?.classList.remove("hide");
       $("parentMainTrialTab")?.classList.remove("hide");
-      notify("내 일일특강으로 연결했어요. 이제 수업 기록을 확인할 수 있어요 😊");
+      $("parentMainRegisterTab")?.classList.remove("hide");
+
+      notify("내 일일특강으로 연결했어요. 정규강의를 신청했다면 ‘정규강의 등록’에서도 바로 연결할 수 있어요 😊");
       await renderParentTrialExperience(parentTrialEnrollments);
     }catch(e){
       notify("일일특강 연결 실패 · "+(e?.message||e));
@@ -7198,6 +7248,10 @@
       db = window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{
         auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
       });
+
+      // 일일특강 공용 QR은 로그인/회원가입 전에 먼저 기억합니다.
+      // 인증 과정에서 URL 쿼리가 사라져도 같은 진입 흐름을 유지합니다.
+      await captureTrialEntryFromUrl();
 
       if($("prodLogoutBtn")) $("prodLogoutBtn").onclick=logout;
       qa(".roles button,.mobile-nav button").forEach(btn=>btn.onclick=()=>switchRoleProd(btn.dataset.role));
