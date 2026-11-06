@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=54">
+<link rel="manifest" href="./manifest.webmanifest?v=55">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -5850,6 +5850,24 @@ body.parent-main-view-trial #parentRegularRegistration{
 }
 </style>
 
+
+<style id="growlog-v55-trial-search">
+.parent-trial-search-wrap{margin:12px 0 7px}
+.parent-trial-search-wrap input{
+  width:100%;min-height:46px;padding:0 14px;
+  border:1px solid #dfe5ee;border-radius:14px;
+  background:#fff;font-size:14px;
+}
+.parent-trial-search-wrap input:focus{
+  outline:none;border-color:#6d85cf;
+  box-shadow:0 0 0 3px rgba(109,133,207,.10);
+}
+.parent-trial-search-status{
+  min-height:18px;margin:0 2px 6px;
+  color:#748095;font-size:11px;
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -6118,6 +6136,13 @@ body.parent-main-view-trial #parentRegularRegistration{
         <h2>오늘 만난 수업을 다시 만나보세요 😊</h2>
         <p class="muted">센터 · 프로그램 · 강사를 골라보고, 내가 참여한 수업에서는 활동사진과 Growlog 예시를 확인할 수 있어요.</p>
       </div>
+      <div class="parent-trial-search-wrap">
+        <input id="parentTrialSearch"
+               type="search"
+               placeholder="지역명·센터명·프로그램·강사 검색 (예: 월계)"
+               oninput="filterParentTrialClasses(this.value)">
+      </div>
+      <div id="parentTrialSearchStatus" class="parent-trial-search-status"></div>
       <div id="parentTrialTabs" class="parent-trial-tabs" aria-label="일일특강 센터 선택"></div>
     </div>
 
@@ -8974,7 +8999,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=54"></script>
+<script src="./app.js?v=55"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

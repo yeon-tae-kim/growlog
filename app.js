@@ -1858,6 +1858,60 @@
     return parts.join(" · ");
   }
 
+  function parentTrialSearchText(c){
+    return [
+      c?.center_name,
+      c?.program,
+      c?.teacher_name,
+      c?.weekday,
+      String(c?.class_time||"").slice(0,5)
+    ].filter(Boolean).join(" ").toLowerCase();
+  }
+
+  function renderParentTrialTabsList(rows){
+    const tabs=$("parentTrialTabs");
+    if(!tabs)return;
+    tabs.innerHTML="";
+
+    if(!rows?.length){
+      tabs.innerHTML='<div class="photo-empty">검색 조건에 맞는 일일특강이 없어요.</div>';
+      return;
+    }
+
+    rows.forEach(c=>{
+      const button=document.createElement("button");
+      button.type="button";
+      button.className="parent-trial-tab"+(c.class_id===parentTrialActiveClassId?" on":"");
+      button.innerHTML=`
+        <b>${escape(c.center_name||"")} · ${escape(c.program||"")}</b>
+        <small>${escape(c.teacher_name||"강사 미정")} · ${(c.weekday==="미정" && String(c.class_time||"").slice(0,5)==="00:00")?"일정 미정":`${escape(c.weekday||"")} ${escape(String(c.class_time||"").slice(0,5))}`}</small>
+        ${c.joined?'<span class="trial-joined-mini">✓ 내가 참여한 수업</span>':""}`;
+      button.onclick=()=>selectParentTrialClass(c.class_id);
+      tabs.appendChild(button);
+    });
+  }
+
+  window.filterParentTrialClasses=function(value){
+    const q=String(value||"").trim().toLowerCase();
+    const rows=!q
+      ? parentTrialClasses
+      : parentTrialClasses.filter(c=>parentTrialSearchText(c).includes(q));
+
+    renderParentTrialTabsList(rows);
+
+    const status=$("parentTrialSearchStatus");
+    if(status){
+      status.textContent=q
+        ? `${rows.length}개 특강이 검색됐어요.`
+        : `전체 ${parentTrialClasses.length}개 특강`;
+    }
+
+    if(rows.length && !rows.some(c=>c.class_id===parentTrialActiveClassId)){
+      parentTrialActiveClassId=rows[0].class_id;
+      renderParentTrialSelectedClass(parentTrialActiveClassId);
+    }
+  };
+
   async function renderParentTrialExperience(trialEnrollments=[]){
     const root=$("parentTrialExperience");
     if(!root || profile?.role!=="parent" || !activeChild){
@@ -1871,6 +1925,7 @@
       console.warn("trial classes",error.message);
       root.classList.remove("hide");
       if($("parentTrialTabs"))$("parentTrialTabs").innerHTML='<div class="photo-empty">일일특강 목록을 불러오지 못했어요.</div>';
+      if($("parentTrialSearchStatus"))$("parentTrialSearchStatus").textContent="";
       return false;
     }
 
@@ -1881,6 +1936,8 @@
     if(!parentTrialClasses.length){
       parentTrialActiveClassId=null;
       if(tabs)tabs.innerHTML='<div class="photo-empty">현재 등록된 일일특강이 없습니다.</div>';
+      if($("parentTrialSearch"))$("parentTrialSearch").value="";
+      if($("parentTrialSearchStatus"))$("parentTrialSearchStatus").textContent="";
       if($("parentTrialClassTitle"))$("parentTrialClassTitle").textContent="일일특강이 준비되면 이곳에 보여요";
       if($("parentTrialClassMeta"))$("parentTrialClassMeta").textContent="";
       $("parentTrialJoinedBadge")?.classList.add("hide");
@@ -1899,20 +1956,9 @@
       || parentTrialClasses[0];
     parentTrialActiveClassId=preferred.class_id;
 
-    if(tabs){
-      tabs.innerHTML="";
-      parentTrialClasses.forEach(c=>{
-        const button=document.createElement("button");
-        button.type="button";
-        button.className="parent-trial-tab"+(c.class_id===parentTrialActiveClassId?" on":"");
-        button.innerHTML=`
-          <b>${escape(c.center_name||"")} · ${escape(c.program||"")}</b>
-          <small>${escape(c.teacher_name||"강사 미정")} · ${(c.weekday==="미정" && String(c.class_time||"").slice(0,5)==="00:00")?"일정 미정":`${escape(c.weekday||"")} ${escape(String(c.class_time||"").slice(0,5))}`}</small>
-          ${c.joined?'<span class="trial-joined-mini">✓ 내가 참여한 수업</span>':""}`;
-        button.onclick=()=>selectParentTrialClass(c.class_id);
-        tabs.appendChild(button);
-      });
-    }
+    if($("parentTrialSearch"))$("parentTrialSearch").value="";
+    if($("parentTrialSearchStatus"))$("parentTrialSearchStatus").textContent=`전체 ${parentTrialClasses.length}개 특강`;
+    renderParentTrialTabsList(parentTrialClasses);
 
     await renderParentTrialSelectedClass(parentTrialActiveClassId);
     return true;
@@ -1920,8 +1966,13 @@
 
   window.selectParentTrialClass=async function(classId){
     parentTrialActiveClassId=classId;
+    const q=String($("parentTrialSearch")?.value||"").trim().toLowerCase();
+    const visibleRows=!q
+      ? parentTrialClasses
+      : parentTrialClasses.filter(c=>parentTrialSearchText(c).includes(q));
+
     qAll(".parent-trial-tab",$("parentTrialTabs")).forEach((b,i)=>{
-      b.classList.toggle("on",parentTrialClasses[i]?.class_id===classId);
+      b.classList.toggle("on",visibleRows[i]?.class_id===classId);
     });
     await renderParentTrialSelectedClass(classId);
   };
