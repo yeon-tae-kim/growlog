@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=57">
+<link rel="manifest" href="./manifest.webmanifest?v=58">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -5920,6 +5920,30 @@ body.admin-trial-registering #adminClassForm label[for="newClassTeacher"]::after
 }
 </style>
 
+
+<style id="growlog-v58-trial-edit">
+body.admin-trial-editing #adminClassEditForm .trial-edit-regular-only{
+  display:none!important;
+}
+body.admin-trial-editing #adminClassEditForm .admin-inline-form-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+body.admin-trial-editing #adminClassEditForm{
+  background:linear-gradient(145deg,#fffaf4,#f8fbff);
+}
+body.admin-trial-editing #adminClassEditForm label[for="editClassTeacher"]::after{
+  content:" · 미정 가능";
+  color:#7b8596;
+  font-size:10px;
+  font-weight:700;
+}
+@media(max-width:620px){
+  body.admin-trial-editing #adminClassEditForm .admin-inline-form-grid{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -6678,7 +6702,7 @@ body.admin-trial-registering #adminClassForm label[for="newClassTeacher"]::after
           <div class="row between" style="margin-bottom:12px">
             <div>
               <b>반 정보 수정</b>
-              <div class="muted" style="font-size:12px">선택한 행의 정보를 수정한 뒤 저장해주세요.</div>
+              <div id="adminClassEditHelp" class="muted" style="font-size:12px">선택한 행의 정보를 수정한 뒤 저장해주세요.</div>
             </div>
             <button class="btn ghost small" type="button" onclick="closeAdminClassEdit()">닫기</button>
           </div>
@@ -6691,7 +6715,7 @@ body.admin-trial-registering #adminClassForm label[for="newClassTeacher"]::after
                 <span><b>일일특강 센터</b><small>체크하면 일일특강 센터로 분류됩니다.</small></span>
               </label>
             </div>
-            <div class="auth-field"><label for="editClassTerm">학기</label><input id="editClassTerm"></div>
+            <div class="auth-field trial-edit-regular-only"><label for="editClassTerm">학기</label><input id="editClassTerm"></div>
             <div class="auth-field"><label for="editClassProgram">프로그램</label><select id="editClassProgram">
               <option value="블럭동화">블럭동화</option>
               <option value="블럭과학">블럭과학</option>
@@ -6699,17 +6723,17 @@ body.admin-trial-registering #adminClassForm label[for="newClassTeacher"]::after
               <option value="영어뮤지컬인형극">영어뮤지컬인형극</option>
               <option value="스토리텔링도예">스토리텔링도예</option>
             </select></div>
-            <div class="auth-field"><label for="editClassTime">요일/시간</label><input id="editClassTime"></div>
-            <div class="auth-field"><label for="editClassStartDate">수업 시작일</label><input id="editClassStartDate" type="date"></div>
-            <div class="auth-field"><label for="editClassEndDate">수업 종료일</label><input id="editClassEndDate" type="date"></div>
+            <div class="auth-field trial-edit-regular-only"><label for="editClassTime">요일/시간</label><input id="editClassTime"></div>
+            <div class="auth-field trial-edit-regular-only"><label for="editClassStartDate">수업 시작일</label><input id="editClassStartDate" type="date"></div>
+            <div class="auth-field trial-edit-regular-only"><label for="editClassEndDate">수업 종료일</label><input id="editClassEndDate" type="date"></div>
             <div class="auth-field">
               <label for="editClassTeacher">강사 <span class="muted">(선택사항)</span></label>
               <input id="editClassTeacher" list="adminTeacherNameOptions" placeholder="비우면 강사 미지정">
               <div class="auth-help">나중에 강사를 지정하거나, 비워서 미지정으로 변경할 수 있어요.</div>
             </div>
-            <div class="auth-field"><label for="editClassStudents">학생 수</label><input id="editClassStudents" inputmode="numeric" type="number" min="0"></div>
-            <div class="auth-field"><label for="editClassAmount">수업 금액</label><input id="editClassAmount" inputmode="numeric" placeholder="예: 168000"><div class="auth-help">원 단위로 입력해주세요.</div></div>
-            <div class="auth-field"><label for="editClassStatus">상태</label><select id="editClassStatus"><option>운영중</option><option>예정</option><option>종료</option></select></div>
+            <div class="auth-field trial-edit-regular-only"><label for="editClassStudents">학생 수</label><input id="editClassStudents" inputmode="numeric" type="number" min="0"></div>
+            <div class="auth-field trial-edit-regular-only"><label for="editClassAmount">수업 금액</label><input id="editClassAmount" inputmode="numeric" placeholder="예: 168000"><div class="auth-help">원 단위로 입력해주세요.</div></div>
+            <div class="auth-field trial-edit-regular-only"><label for="editClassStatus">상태</label><select id="editClassStatus"><option>운영중</option><option>예정</option><option>종료</option></select></div>
           </div>
 
           <div class="admin-inline-form-actions">
@@ -7836,7 +7860,7 @@ function formatFeeInputValue(value){
 
 let editingAdminClassRow=null;
 
-function openAdminClassEdit(row){
+function openAdminClassEditLegacy(row){
   if(!row) return;
 
   editingAdminClassRow=row;
@@ -7861,7 +7885,7 @@ function openAdminClassEdit(row){
 }
 
 
-function deleteAdminClass(){
+function deleteAdminClassLegacy(){
   if(!editingAdminClassRow){
     toast("삭제할 반을 먼저 선택해주세요.");
     return;
@@ -7896,14 +7920,14 @@ function deleteAdminClass(){
   toast(center+" · "+program+" 반을 삭제했습니다. "+teacher+" 강사 수업목록에도 반영했습니다.");
 }
 
-function closeAdminClassEdit(){
+function closeAdminClassEditLegacy(){
   if(editingAdminClassRow) editingAdminClassRow.classList.remove("admin-class-editing");
   editingAdminClassRow=null;
   const form=document.getElementById("adminClassEditForm");
   if(form) form.classList.add("hide");
 }
 
-function saveAdminClassEdit(){
+function saveAdminClassEditLegacy(){
   if(!editingAdminClassRow){
     toast("수정할 반을 먼저 선택해주세요.");
     return;
@@ -7938,21 +7962,21 @@ function saveAdminClassEdit(){
   cells[7].innerHTML="";
   cells[7].appendChild(statusBadge);
 
-  closeAdminClassEdit();
+  closeAdminClassEditLegacy();
   renderTeacherClassSelection();
   renderAdminMonthlyTracking();
   prepareResponsiveTables();
   toast("반 정보를 수정했습니다. 담당 강사 수업목록에도 반영했습니다.");
 }
 
-function initAdminClassRowEditing(){
+function initAdminClassRowEditingLegacy(){
   const body=document.getElementById("adminClassBody");
   if(!body || body.dataset.editReady==="true") return;
   body.dataset.editReady="true";
 
   body.addEventListener("click",event=>{
     const row=event.target.closest("tr");
-    if(row && body.contains(row)) openAdminClassEdit(row);
+    if(row && body.contains(row)) openAdminClassEditLegacy(row);
   });
 }
 
@@ -8884,7 +8908,7 @@ teacherStudents.forEach(updateStudentEditUI);
 updateSummerRecordCount();
 syncParentFee(false);
 refreshAdminTodayMonitoring();
-initAdminClassRowEditing();
+/* legacy admin class row editing disabled */
 ensureAdminClassIds();
 renderTeacherClassSelection();
 renderAdminMonthlyTracking();
@@ -9054,7 +9078,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=57"></script>
+<script src="./app.js?v=58"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

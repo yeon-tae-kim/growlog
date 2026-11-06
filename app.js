@@ -5500,7 +5500,19 @@
   window.syncEditClassTrialCenter=function(){
     const checked=!!$("editClassTrialCenter")?.checked;
     const term=$("editClassTerm");
-    if(checked && term && !String(term.value||"").trim())term.value="일일특강";
+    document.body.classList.toggle("admin-trial-editing",checked);
+
+    if(checked){
+      if(term)term.value="일일특강";
+      if($("adminClassEditHelp")){
+        $("adminClassEditHelp").textContent="일일특강은 센터 · 프로그램 · 강사만 수정하면 됩니다. 강사가 미정이면 비워둘 수 있어요.";
+      }
+    }else{
+      if(term && term.value==="일일특강")term.value="";
+      if($("adminClassEditHelp")){
+        $("adminClassEditHelp").textContent="정규수업은 요일·시간과 수업기간 등 전체 정보를 입력해주세요.";
+      }
+    }
   };
 
   function populateAdminClassFilters(){
@@ -5590,10 +5602,20 @@
     $("editClassAmount").value=c.class_amount||"";
     $("editClassStatus").value=c.status||"운영중";
     $("adminClassEditForm")?.classList.remove("hide");
+
+    const isTrial=!!c.centers?.is_trial;
+    document.body.classList.toggle("admin-trial-editing",isTrial);
+    if($("adminClassEditHelp")){
+      $("adminClassEditHelp").textContent=isTrial
+        ?"일일특강은 센터 · 프로그램 · 강사만 수정하면 됩니다. 강사가 미정이면 비워둘 수 있어요."
+        :"정규수업은 요일·시간과 수업기간 등 전체 정보를 입력해주세요.";
+    }
   }
 
   window.closeAdminClassEdit=function(){
-    adminEditingClassId=null;$("adminClassEditForm")?.classList.add("hide");
+    adminEditingClassId=null;
+    $("adminClassEditForm")?.classList.add("hide");
+    document.body.classList.remove("admin-trial-editing");
   };
 
   function splitClassTime(raw){
@@ -5682,29 +5704,77 @@
 
   window.saveAdminClassEdit=async function(){
     if(!adminEditingClassId)return notify("수정할 반을 선택해주세요.");
+
     try{
+      const current=adminClassRows.find(c=>c.id===adminEditingClassId);
       const isTrial=!!$("editClassTrialCenter")?.checked;
-      const center=await getOrCreateCenter($("editClassCenter").value,isTrial);
+      const centerName=String($("editClassCenter")?.value||"").trim();
+      const program=$("editClassProgram")?.value||"";
       const teacherName=String($("editClassTeacher")?.value||"").trim();
+
+      if(!centerName)return notify("센터를 입력해주세요.");
+      if(!program)return notify("프로그램을 선택해주세요.");
+
+      const center=await getOrCreateCenter(centerName,isTrial);
       const teacher=teacherName ? await resolveTeacherByName(teacherName) : null;
-      const rawTime=String($("editClassTime")?.value||"").trim();
-      const time=(isTrial && !rawTime)?{weekday:"미정",class_time:"00:00:00"}:splitClassTime(rawTime);
-      const term=$("editClassTerm").value.trim() || (isTrial?"일일특강":"");
-      const payload={
-        center_id:center.id,term,program:$("editClassProgram").value,
-        ...time,start_date:$("editClassStartDate").value||null,end_date:$("editClassEndDate").value||null,
-        teacher_id:teacher?.id||null,student_capacity:Number($("editClassStudents").value||0),
-        class_amount:Number(String($("editClassAmount").value||"").replace(/\D/g,"")||0),
-        status:$("editClassStatus").value||"예정"
-      };
-      if(!isTrial && (!payload.start_date || !payload.end_date))return notify("수업 시작일과 종료일을 입력해주세요.");
-      if(payload.start_date && payload.end_date && payload.end_date < payload.start_date)return notify("수업 종료일은 시작일보다 빠를 수 없습니다.");
-      const {error}=await db.from("classes").update(payload).eq("id",adminEditingClassId);
+
+      let payload;
+
+      if(isTrial){
+        // 일일특강 수정은 센터 / 프로그램 / 강사만 변경합니다.
+        // 요일·시간·기간·학생수·금액·상태는 전혀 요구하거나 덮어쓰지 않습니다.
+        payload={
+          center_id:center.id,
+          term:"일일특강",
+          program,
+          teacher_id:teacher?.id||null
+        };
+      }else{
+        const rawTime=String($("editClassTime")?.value||"").trim();
+        const term=String($("editClassTerm")?.value||"").trim();
+        const startDate=$("editClassStartDate")?.value||null;
+        const endDate=$("editClassEndDate")?.value||null;
+
+        if(!term)return notify("학기를 입력해주세요.");
+        if(!rawTime)return notify("요일/시간을 입력해주세요.");
+        if(!startDate || !endDate)return notify("수업 시작일과 종료일을 입력해주세요.");
+        if(endDate < startDate)return notify("수업 종료일은 시작일보다 빠를 수 없습니다.");
+
+        const time=splitClassTime(rawTime);
+
+        payload={
+          center_id:center.id,
+          term,
+          program,
+          ...time,
+          start_date:startDate,
+          end_date:endDate,
+          teacher_id:teacher?.id||null,
+          student_capacity:Number($("editClassStudents")?.value||0),
+          class_amount:Number(String($("editClassAmount")?.value||"").replace(/\D/g,"")||0),
+          status:$("editClassStatus")?.value||current?.status||"예정"
+        };
+      }
+
+      const {error}=await db.from("classes")
+        .update(payload)
+        .eq("id",adminEditingClassId);
+
       if(error)throw error;
+
       window.closeAdminClassEdit();
       await loadAdminDashboard();
-      notify(payload.status==="종료"?"수업을 종료 처리했습니다. 해당 학부모 페이지에 수료 업적과 다음 수업 선택이 표시됩니다.":"반 정보를 수정했습니다.");
-    }catch(e){notify("반 수정 실패: "+e.message);}
+
+      notify(isTrial
+        ? (teacherName
+            ? "일일특강 강사를 연결했습니다."
+            : "일일특강 정보를 수정했습니다. 강사는 미지정 상태입니다.")
+        : (payload.status==="종료"
+            ? "수업을 종료 처리했습니다. 해당 학부모 페이지에 수료 업적과 다음 수업 선택이 표시됩니다."
+            : "반 정보를 수정했습니다."));
+    }catch(e){
+      notify("반 수정 실패: "+(e?.message||e));
+    }
   };
 
   window.deleteAdminClass=async function(){
