@@ -1989,7 +1989,6 @@
       $("parentTrialJoinedBadge")?.classList.add("hide");
       $("parentTrialJoinAction")?.classList.add("hide");
       $("parentTrialCancelAction")?.classList.add("hide");
-      $("parentTrialPhotoLock")?.classList.add("hide");
       if($("parentTrialPhotos"))$("parentTrialPhotos").innerHTML='<div class="photo-empty">등록된 특강을 기다리고 있어요.</div>';
       qAll('input[name="trialSurveyChoice"]',$("parentTrialSurveyOptions")).forEach(x=>x.disabled=true);
       if($("parentTrialSurveySubmit"))$("parentTrialSurveySubmit").disabled=true;
@@ -2035,7 +2034,8 @@
     $("parentTrialJoinedBadge")?.classList.toggle("hide",!c.joined);
     $("parentTrialJoinAction")?.classList.toggle("hide",!!c.joined);
     $("parentTrialCancelAction")?.classList.toggle("hide",!c.joined);
-    $("parentTrialPhotoLock")?.classList.toggle("hide",!!c.joined);
+    $("parentTrialLiveGrid")?.classList.toggle("hide",!c.joined);
+    $("parentTrialGrowthExample")?.classList.toggle("hide",!c.joined);
 
     if($("parentTrialPhotoCaption")){
       $("parentTrialPhotoCaption").textContent=c.joined
@@ -2043,7 +2043,16 @@
         : "내가 들은 수업이 맞다면 위의 ‘이 수업을 들었어요’를 눌러주세요.";
     }
 
-    await renderParentTrialPhotos(c);
+    if(c.joined){
+      await Promise.all([
+        renderParentTrialTodayRecord(c),
+        renderParentTrialPhotos(c)
+      ]);
+      renderParentTrialGrowthExample();
+    }else{
+      resetParentTrialTodayRecord();
+    }
+
     await loadParentTrialSurvey(c);
   }
 
@@ -2123,6 +2132,57 @@
       if(btn){btn.disabled=false;btn.textContent="선택 취소";}
     }
   };
+
+  function resetParentTrialTodayRecord(){
+    if($("parentTrialGrowthArea")){
+      $("parentTrialGrowthArea").textContent="-";
+      $("parentTrialGrowthArea").classList.remove("growth-area-badge");
+    }
+    if($("parentTrialBehaviorText"))$("parentTrialBehaviorText").textContent="강사님의 기록을 기다리고 있어요.";
+    if($("parentTrialBehaviorDesc"))$("parentTrialBehaviorDesc").textContent="강사님이 일일특강 성장기록을 저장하면 이곳에 바로 보여요.";
+    if($("parentTrialMissionText"))$("parentTrialMissionText").textContent="수업 기록이 등록되면 질문 미션도 함께 보여요.";
+    if($("parentTrialExpansionList"))$("parentTrialExpansionList").innerHTML="";
+    if($("parentTrialRecordDate"))$("parentTrialRecordDate").textContent="";
+  }
+
+  async function renderParentTrialTodayRecord(c){
+    resetParentTrialTodayRecord();
+    if(!c?.joined || !activeChild)return;
+
+    const {data,error}=await db.from("growth_records")
+      .select("*")
+      .eq("child_id",activeChild.id)
+      .eq("class_id",c.class_id)
+      .order("lesson_date",{ascending:false})
+      .limit(1)
+      .maybeSingle();
+
+    if(error){
+      console.warn("trial growth record",error.message);
+      if($("parentTrialBehaviorDesc")){
+        $("parentTrialBehaviorDesc").textContent="성장기록을 불러오지 못했어요. 잠시 후 다시 확인해주세요.";
+      }
+      return;
+    }
+
+    if(!data)return;
+
+    const area=canonicalGrowthArea(data.area,data.behavior);
+    if($("parentTrialGrowthArea")){
+      $("parentTrialGrowthArea").textContent=`${parentGrowthIcon(area)} ${area}`;
+      $("parentTrialGrowthArea").classList.add("growth-area-badge");
+    }
+    if($("parentTrialBehaviorText"))$("parentTrialBehaviorText").textContent=data.behavior||"";
+    if($("parentTrialBehaviorDesc"))$("parentTrialBehaviorDesc").textContent=data.observation_text||"";
+    if($("parentTrialMissionText"))$("parentTrialMissionText").textContent=data.mission||"";
+    const ex=Array.isArray(data.expansion_questions)?data.expansion_questions:[];
+    if($("parentTrialExpansionList")){
+      $("parentTrialExpansionList").innerHTML=ex.map(x=>`<li>${escape(x)}</li>`).join("");
+    }
+    if($("parentTrialRecordDate")){
+      $("parentTrialRecordDate").textContent=data.lesson_date?`${data.lesson_date} 강사 기록`:"";
+    }
+  }
 
   async function renderParentTrialPhotos(c){
     const pool=$("parentTrialPhotos");
@@ -3167,8 +3227,8 @@
     return [cx+Math.cos(angle)*r,cy+Math.sin(angle)*r];
   }
 
-  function renderGrowthRadar(counts){
-    const svg=$("parentGrowthRadar"),legend=$("parentGrowthLegend");
+  function renderGrowthRadarInto(counts,svgId="parentGrowthRadar",legendId="parentGrowthLegend"){
+    const svg=$(svgId),legend=$(legendId);
     if(!svg||!legend)return;
     const cx=220,cy=198,maxR=128;
     const rings=[.25,.5,.75,1];
@@ -3244,6 +3304,25 @@
         <span class="growth-legend-label"><span class="growth-legend-icon">${parentGrowthIcon(area)}</span>${escape(area)}</span>
         <span class="growth-legend-count">${Number(counts[area]||0)}회</span>
       </div>`).join("");
+  }
+
+  function renderGrowthRadar(counts){
+    renderGrowthRadarInto(counts,"parentGrowthRadar","parentGrowthLegend");
+  }
+
+  function renderParentTrialGrowthExample(){
+    const sample={
+      "집중":8,
+      "탐색":7,
+      "판단":6,
+      "질서":6,
+      "표현":5,
+      "도전":5,
+      "끈기":5,
+      "협력":4,
+      "배려":4
+    };
+    renderGrowthRadarInto(sample,"parentTrialGrowthRadar","parentTrialGrowthLegend");
   }
 
   async function renderParentGrowthMap(){

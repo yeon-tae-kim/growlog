@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=59">
+<link rel="manifest" href="./manifest.webmanifest?v=60">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -5987,6 +5987,22 @@ body.admin-trial-editing #adminClassEditForm label[for="editClassTeacher"]::afte
 }
 </style>
 
+
+<style id="growlog-v60-trial-live">
+.parent-trial-live-grid{align-items:stretch}
+.parent-trial-live-grid.hide,
+.parent-trial-growth-example.hide{display:none!important}
+.parent-trial-live-observation,
+.parent-trial-live-photo-card{min-height:100%}
+.parent-trial-live-observation .question{margin-top:16px}
+.parent-trial-record-date{margin:10px 0 0;font-size:11px}
+.parent-trial-growth-example{margin-top:0}
+.parent-trial-growth-example .growth-map-layout{margin-top:10px}
+@media(max-width:720px){
+  .parent-trial-live-grid{grid-template-columns:1fr!important}
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -6253,7 +6269,7 @@ body.admin-trial-editing #adminClassEditForm label[for="editClassTeacher"]::afte
       <div class="parent-trial-intro-copy">
         <span class="badge">🎈 일일특강 Growlog 체험</span>
         <h2>오늘 만난 수업을 다시 만나보세요 😊</h2>
-        <p class="muted">센터 · 프로그램 · 강사를 골라보고, 내가 참여한 수업에서는 활동사진과 Growlog 예시를 확인할 수 있어요.</p>
+        <p class="muted">센터 · 프로그램 · 강사를 찾아 내가 참여한 수업을 선택하면, 강사님이 올린 활동사진과 오늘 발견한 모습을 확인할 수 있어요.</p>
       </div>
       <div class="parent-trial-search-wrap">
         <input id="parentTrialSearch"
@@ -6290,57 +6306,58 @@ body.admin-trial-editing #adminClassEditForm label[for="editClassTeacher"]::afte
         <button id="parentTrialCancelBtn" class="btn ghost" type="button" onclick="cancelSelectedTrialClass()">선택 취소</button>
       </div>
 
-      <div id="parentTrialPhotoLock" class="parent-trial-photo-lock hide">
-        🔒 활동사진은 해당 일일특강에 참여한 학부모님께만 보여드려요.
-      </div>
-
-      <div id="parentTrialPhotos" class="photos parent-trial-photos">
-        <div class="photo-empty">일일특강을 선택하면 활동사진이 표시됩니다.</div>
-      </div>
-      <p id="parentTrialPhotoCaption" class="muted parent-trial-photo-caption">우리 아이에게 연결된 사진만 보여집니다.</p>
     </div>
 
-    <div class="grid two parent-trial-example-grid">
-      <div class="card parent-trial-example-card">
+    <div id="parentTrialLiveGrid" class="grid two parent-trial-live-grid hide">
+      <div class="card parent-trial-live-observation">
         <div class="row between">
-          <h2>🌱 Growlog 성장기록 예시</h2>
-          <span class="badge gray">예시 화면</span>
+          <h2>🌱 오늘 발견한 모습</h2>
+          <span id="parentTrialGrowthArea" class="badge">-</span>
         </div>
-        <p class="muted parent-trial-example-note">실제 우리 아이의 평가가 아니라, 정규수업에서 Growlog가 어떻게 기록되는지 보여주는 예시예요.</p>
+        <b id="parentTrialBehaviorText">강사님의 기록을 기다리고 있어요.</b>
+        <p id="parentTrialBehaviorDesc" class="muted">강사님이 일일특강 성장기록을 저장하면 이곳에 바로 보여요.</p>
 
-        <div class="parent-trial-example-observation">
-          <div class="row between">
-            <b>오늘 발견한 모습</b>
-            <span class="badge">탐색</span>
-          </div>
-          <p class="parent-trial-example-behavior">새로운 방법을 먼저 시도해보고, 발견한 방법을 친구에게 알려주었어요.</p>
+        <div class="question parent-trial-live-question">
+          <b>💬 오늘의 질문 미션</b>
+          <p id="parentTrialMissionText" style="font-size:18px;font-weight:800">수업 기록이 등록되면 질문 미션도 함께 보여요.</p>
+          <details>
+            <summary><b>이어지는 질문 5개 보기</b></summary>
+            <ol id="parentTrialExpansionList"></ol>
+          </details>
         </div>
-
-        <div class="question parent-trial-example-question">
-          <b>💬 집에서 이어가는 질문</b>
-          <p>“오늘 새롭게 발견한 방법은 뭐였어? 그 방법이 친구에게도 도움이 됐을까?”</p>
-        </div>
+        <p id="parentTrialRecordDate" class="muted parent-trial-record-date"></p>
       </div>
 
-      <div class="card parent-trial-growth-sample">
-        <div class="row between">
+      <div class="card parent-trial-live-photo-card">
+        <h2>📷 오늘의 활동사진</h2>
+        <div id="parentTrialPhotos" class="photos parent-trial-photos">
+          <div class="photo-empty">강사님이 사진을 올리면 이곳에 표시됩니다.</div>
+        </div>
+        <p id="parentTrialPhotoCaption" class="muted parent-trial-photo-caption">우리 아이에게 연결된 사진·동영상만 보여집니다.</p>
+      </div>
+    </div>
+
+    <div id="parentTrialGrowthExample" class="card growth-map-card parent-trial-growth-example hide">
+      <div class="row between growth-map-head">
+        <div>
           <h2>🌈 성장지도 예시</h2>
-          <span class="badge gray">누적 기록 예시</span>
+          <p class="muted" style="margin:4px 0 0">정규수업에서 기록이 쌓이면 이런 모습으로 아이의 성장 흐름을 볼 수 있어요.</p>
         </div>
-        <p class="muted">기록이 쌓이면 아이에게 자주 발견되는 힘을 한눈에 볼 수 있어요.</p>
-        <div class="parent-trial-growth-bars">
-          <div><span>집중</span><i style="--v:80%"></i><b>8</b></div>
-          <div><span>탐색</span><i style="--v:70%"></i><b>7</b></div>
-          <div><span>판단</span><i style="--v:60%"></i><b>6</b></div>
-          <div><span>질서</span><i style="--v:60%"></i><b>6</b></div>
-          <div><span>표현</span><i style="--v:50%"></i><b>5</b></div>
-          <div><span>도전</span><i style="--v:50%"></i><b>5</b></div>
-          <div><span>끈기</span><i style="--v:50%"></i><b>5</b></div>
-          <div><span>협력</span><i style="--v:40%"></i><b>4</b></div>
-          <div><span>배려</span><i style="--v:40%"></i><b>4</b></div>
+        <div class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <span class="badge gray">예시 화면</span>
+          <span class="badge">누적 기록 예시</span>
         </div>
-        <p class="muted parent-trial-growth-foot">낮은 숫자는 부족함이 아니라, 앞으로 더 발견해볼 영역을 뜻해요.</p>
       </div>
+
+      <div class="growth-map-layout">
+        <div class="growth-radar-wrap">
+          <svg id="parentTrialGrowthRadar" class="growth-radar" viewBox="0 0 440 410" role="img" aria-label="성장지도 예시 9각형 그래프"></svg>
+        </div>
+        <div id="parentTrialGrowthLegend" class="growth-map-legend"></div>
+      </div>
+      <p class="muted growth-map-note">
+        이 지도는 우리 아이의 실제 평가가 아닌 예시입니다. 낮은 숫자는 부족함이 아니라, 앞으로 더 발견해볼 영역을 뜻해요.
+      </p>
     </div>
 
     <a class="parent-trial-ralledu-cta" href="https://ralledu.co.kr/" target="_blank" rel="noopener">
@@ -9129,7 +9146,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=59"></script>
+<script src="./app.js?v=60"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
