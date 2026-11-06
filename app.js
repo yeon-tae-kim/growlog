@@ -1781,16 +1781,26 @@
         </div>
         ${dates?`<div class="parent-regular-class-sub">수업기간 · ${escape(dates)}</div>`:""}
         <div class="parent-regular-class-action">
-          <button class="btn" type="button" ${c.joined?"disabled":""}>
-            ${c.joined?"✓ 이미 연결된 수업":"이 수업을 신청했어요"}
-          </button>
+          ${
+            c.joined
+              ? (c.cancelable
+                  ? `<button class="btn ghost regular-cancel-btn" type="button">등록 취소</button>`
+                  : `<button class="btn" type="button" disabled>✓ 이미 연결된 수업</button>`)
+              : `<button class="btn regular-join-btn" type="button">이 수업을 신청했어요</button>`
+          }
         </div>
       `;
 
-      const btn=card.querySelector("button");
-      if(btn && !c.joined){
-        btn.onclick=()=>joinSelectedRegularClass(c.class_id);
+      const joinBtn=card.querySelector(".regular-join-btn");
+      if(joinBtn){
+        joinBtn.onclick=()=>joinSelectedRegularClass(c.class_id);
       }
+
+      const cancelBtn=card.querySelector(".regular-cancel-btn");
+      if(cancelBtn){
+        cancelBtn.onclick=()=>cancelSelectedRegularClass(c.class_id);
+      }
+
       root.appendChild(card);
     });
   }
@@ -1837,13 +1847,49 @@
       });
       if(error)throw error;
 
-      notify("정규수업이 Growlog에 연결되었어요 😊");
-      parentMainView="regular";
-      await renderParentForChild();
-      setParentMainView("regular");
-      window.scrollTo({top:0,behavior:"smooth"});
+      c.joined=true;
+      c.cancelable=true;
+      notify("정규수업이 Growlog에 연결되었어요 😊 잘못 선택했다면 바로 ‘등록 취소’할 수 있어요.");
+
+      // 선택 결과를 현재 목록에서 즉시 확인할 수 있게 유지합니다.
+      const q=String($("parentRegularClassSearch")?.value||"").trim().toLowerCase();
+      const rows=!q
+        ? parentRegularRegistrationClasses
+        : parentRegularRegistrationClasses.filter(x=>regularClassSearchText(x).includes(q));
+      renderParentRegularClassResults(rows);
+
+      $("parentMainRegularTab")?.classList.remove("hide");
     }catch(e){
       notify("정규수업 연결 실패 · "+(e?.message||e));
+    }
+  };
+
+  window.cancelSelectedRegularClass=async function(classId){
+    const c=parentRegularRegistrationClasses.find(x=>x.class_id===classId);
+    if(!c || !activeChild || !c.joined || !c.cancelable)return;
+
+    const label=`${c.center_name||""} · ${c.program||""}${c.weekday&&c.weekday!=="미정"?` · ${c.weekday}요일 ${String(c.class_time||"").slice(0,5)}`:""}`;
+    if(!confirm(`${label}\n\nGrowlog 정규강의 연결을 취소할까요?\n취소 후 다른 정규반을 다시 선택할 수 있어요.`))return;
+
+    try{
+      const {error}=await db.rpc("parent_cancel_regular_class_from_trial",{
+        p_child_id:activeChild.id,
+        p_class_id:c.class_id
+      });
+      if(error)throw error;
+
+      c.joined=false;
+      c.cancelable=false;
+
+      notify("정규강의 등록을 취소했어요. 다른 반을 다시 선택할 수 있어요.");
+
+      const q=String($("parentRegularClassSearch")?.value||"").trim().toLowerCase();
+      const rows=!q
+        ? parentRegularRegistrationClasses
+        : parentRegularRegistrationClasses.filter(x=>regularClassSearchText(x).includes(q));
+      renderParentRegularClassResults(rows);
+    }catch(e){
+      notify("정규강의 등록 취소 실패 · "+(e?.message||e));
     }
   };
 
@@ -1942,6 +1988,7 @@
       if($("parentTrialClassMeta"))$("parentTrialClassMeta").textContent="";
       $("parentTrialJoinedBadge")?.classList.add("hide");
       $("parentTrialJoinAction")?.classList.add("hide");
+      $("parentTrialCancelAction")?.classList.add("hide");
       $("parentTrialPhotoLock")?.classList.add("hide");
       if($("parentTrialPhotos"))$("parentTrialPhotos").innerHTML='<div class="photo-empty">등록된 특강을 기다리고 있어요.</div>';
       qAll('input[name="trialSurveyChoice"]',$("parentTrialSurveyOptions")).forEach(x=>x.disabled=true);
@@ -1987,6 +2034,7 @@
 
     $("parentTrialJoinedBadge")?.classList.toggle("hide",!c.joined);
     $("parentTrialJoinAction")?.classList.toggle("hide",!!c.joined);
+    $("parentTrialCancelAction")?.classList.toggle("hide",!c.joined);
     $("parentTrialPhotoLock")?.classList.toggle("hide",!!c.joined);
 
     if($("parentTrialPhotoCaption")){
@@ -2021,6 +2069,7 @@
       parentTrialEnrollments.push({
         class_id:c.class_id,
         active:true,
+        parent_self_registered:true,
         classes:{id:c.class_id,term:"일일특강",centers:{is_trial:true}}
       });
 
@@ -2034,6 +2083,44 @@
       notify("일일특강 연결 실패 · "+(e?.message||e));
     }finally{
       if(btn){btn.disabled=false;btn.textContent="이 수업을 들었어요";}
+    }
+  };
+
+  window.cancelSelectedTrialClass=async function(){
+    const c=parentTrialClasses.find(x=>x.class_id===parentTrialActiveClassId);
+    if(!c || !activeChild || !c.joined)return;
+
+    const label=`${c.center_name||""} · ${c.program||""}`;
+    if(!confirm(`${label}\n\n이 일일특강 선택을 취소할까요?\n취소 후 다른 수업을 다시 선택할 수 있어요.`))return;
+
+    const btn=$("parentTrialCancelBtn");
+    if(btn){btn.disabled=true;btn.textContent="취소 중...";}
+
+    try{
+      const {error}=await db.rpc("parent_cancel_trial_class",{
+        p_child_id:activeChild.id,
+        p_class_id:c.class_id
+      });
+      if(error)throw error;
+
+      c.joined=false;
+      parentTrialEnrollments=(parentTrialEnrollments||[]).filter(e=>e.class_id!==c.class_id || !e.active);
+
+      // 선택 취소 후에는 특강 목록에서 바로 다시 선택할 수 있게 유지합니다.
+      $("parentMainTabs")?.classList.remove("hide");
+      $("parentMainTrialTab")?.classList.remove("hide");
+
+      // 활성 특강 선택이 하나도 없으면 정규강의 등록은 잠시 숨김.
+      if(!(parentTrialEnrollments||[]).some(e=>e.active)){
+        $("parentMainRegisterTab")?.classList.add("hide");
+      }
+
+      notify("일일특강 선택을 취소했어요. 다른 수업을 다시 선택할 수 있어요.");
+      await renderParentTrialExperience(parentTrialEnrollments||[]);
+    }catch(e){
+      notify("일일특강 선택 취소 실패 · "+(e?.message||e));
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent="선택 취소";}
     }
   };
 
@@ -2174,7 +2261,7 @@
     const display=shortName(activeChild.name);
 
     const {data:enrollments,error:e1}=await db.from("enrollments")
-      .select("id,active,created_at,class_id,classes(id,term,program,weekday,class_time,start_date,end_date,status,class_amount,center_id,teacher_id,centers(name,is_trial))")
+      .select("id,active,created_at,class_id,parent_self_registered,classes(id,term,program,weekday,class_time,start_date,end_date,status,class_amount,center_id,teacher_id,centers(name,is_trial))")
       .eq("child_id",activeChild.id)
       .order("created_at",{ascending:false});
     if(e1) throw e1;

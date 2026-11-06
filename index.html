@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=58">
+<link rel="manifest" href="./manifest.webmanifest?v=59">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -5944,6 +5944,49 @@ body.admin-trial-editing #adminClassEditForm label[for="editClassTeacher"]::afte
 }
 </style>
 
+
+<style id="growlog-v59-reselect-cancel">
+.parent-trial-cancel-action{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:10px 0 14px;
+  padding:12px 14px;
+  border:1px solid #eadfd8;
+  border-radius:14px;
+  background:#fffaf7;
+}
+.parent-trial-cancel-action.hide{display:none!important}
+.parent-trial-cancel-action > div{
+  display:grid;
+  gap:3px;
+}
+.parent-trial-cancel-action b{font-size:12px}
+.parent-trial-cancel-action span{
+  color:#7b746f;
+  font-size:10px;
+  line-height:1.45;
+}
+.parent-regular-class-action{
+  gap:7px;
+  flex-wrap:wrap;
+}
+.parent-regular-class-action .btn.ghost{
+  border-color:#ddd9d5;
+  background:#fff;
+}
+@media(max-width:620px){
+  .parent-trial-cancel-action{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .parent-trial-cancel-action .btn{
+    width:100%;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -6237,6 +6280,14 @@ body.admin-trial-editing #adminClassEditForm label[for="editClassTeacher"]::afte
           <span>내가 참여한 반이 맞다면 선택해주세요. 선택 후 우리 아이의 활동사진을 확인할 수 있어요.</span>
         </div>
         <button id="parentTrialJoinBtn" class="btn" type="button" onclick="joinSelectedTrialClass()">이 수업을 들었어요</button>
+      </div>
+
+      <div id="parentTrialCancelAction" class="parent-trial-cancel-action hide">
+        <div>
+          <b>수업을 잘못 선택하셨나요?</b>
+          <span>선택을 취소한 뒤 다른 일일특강을 다시 선택할 수 있어요.</span>
+        </div>
+        <button id="parentTrialCancelBtn" class="btn ghost" type="button" onclick="cancelSelectedTrialClass()">선택 취소</button>
       </div>
 
       <div id="parentTrialPhotoLock" class="parent-trial-photo-lock hide">
@@ -9078,7 +9129,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=58"></script>
+<script src="./app.js?v=59"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
