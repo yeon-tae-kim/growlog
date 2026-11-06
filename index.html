@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=61">
+<link rel="manifest" href="./manifest.webmanifest?v=62">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -6045,6 +6045,17 @@ body.admin-trial-editing #adminClassEditForm label[for="editClassTeacher"]::afte
 }
 </style>
 
+
+<style id="growlog-v62-vote-cancel">
+#parentTrialSurveyCancel{
+  border-color:#ded9d5;
+  background:#fff;
+}
+#parentTrialSurveyCancel.hide{
+  display:none!important;
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -6423,6 +6434,7 @@ body.admin-trial-editing #adminClassEditForm label[for="editClassTeacher"]::afte
 
       <div class="parent-trial-survey-actions">
         <button id="parentTrialSurveySubmit" class="btn" type="button" onclick="submitParentTrialSurvey()">선택 저장하기</button>
+        <button id="parentTrialSurveyCancel" class="btn ghost hide" type="button" onclick="cancelParentTrialSurveyVote()">투표 취소</button>
         <span id="parentTrialSurveyStatus" class="muted"></span>
       </div>
     </div>
@@ -9257,7 +9269,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=61"></script>
+<script src="./app.js?v=62"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

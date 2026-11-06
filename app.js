@@ -1997,6 +1997,7 @@
       if($("parentTrialPhotos"))$("parentTrialPhotos").innerHTML='<div class="photo-empty">등록된 특강을 기다리고 있어요.</div>';
       qAll('input[name="trialSurveyChoice"]',$("parentTrialSurveyOptions")).forEach(x=>x.disabled=true);
       if($("parentTrialSurveySubmit"))$("parentTrialSurveySubmit").disabled=true;
+      if($("parentTrialSurveyCancel"))$("parentTrialSurveyCancel").classList.add("hide");
       if($("parentTrialSurveyStatus"))$("parentTrialSurveyStatus").textContent="일일특강을 선택하면 설문에 답할 수 있어요.";
       return true;
     }
@@ -2311,9 +2312,14 @@
     renderParentTrialSurveyOptions(survey,!c.joined);
 
     const options=qAll('input[name="trialSurveyChoice"]',$("parentTrialSurveyOptions"));
+    const cancelButton=$("parentTrialSurveyCancel");
     if(button){
       button.disabled=!c.joined;
       button.textContent="선택 저장하기";
+    }
+    if(cancelButton){
+      cancelButton.classList.add("hide");
+      cancelButton.disabled=!c.joined;
     }
 
     if(!c.joined){
@@ -2339,8 +2345,12 @@
     if(data?.choice){
       const radio=options.find(x=>x.value===data.choice);
       if(radio)radio.checked=true;
-      if(status)status.textContent="이전에 저장한 응답이에요. 다른 답을 선택하고 다시 저장하면 수정됩니다.";
+      if(status)status.textContent="이전에 저장한 응답이에요. 다른 답을 선택하고 다시 저장하면 수정할 수 있고, 투표 자체를 취소할 수도 있어요.";
       if(button)button.textContent="응답 수정 저장";
+      if(cancelButton){
+        cancelButton.classList.remove("hide");
+        cancelButton.disabled=false;
+      }
     }
   }
 
@@ -2372,14 +2382,71 @@
         .upsert(payload,{onConflict:"parent_id,child_id,trial_class_id,survey_id"});
       if(error)throw error;
 
-      if(status)status.textContent="✓ 응답이 저장되었어요. 언제든 다시 선택해서 수정할 수 있어요.";
+      if(status)status.textContent="✓ 응답이 저장되었어요. 수정하거나 투표를 취소할 수 있어요.";
       if(button)button.textContent="응답 수정 저장";
+      const cancelButton=$("parentTrialSurveyCancel");
+      if(cancelButton){
+        cancelButton.classList.remove("hide");
+        cancelButton.disabled=false;
+      }
       notify("설문 응답이 저장되었습니다. 감사합니다 😊");
     }catch(e){
       if(status)status.textContent="저장하지 못했어요. 다시 눌러주세요.";
       notify("설문 저장 실패 · "+(e?.message||e));
     }finally{
       if(button)button.disabled=false;
+    }
+  };
+
+  window.cancelParentTrialSurveyVote=async function(){
+    const c=parentTrialClasses.find(x=>x.class_id===parentTrialActiveClassId);
+    if(!c?.joined || !activeChild)return notify("먼저 참여한 일일특강을 선택해주세요.");
+
+    const survey=activeTrialSurvey || await loadActiveTrialSurvey();
+    if(!survey)return notify("현재 진행 중인 설문이 없습니다.");
+
+    if(!confirm("현재 설문 응답을 취소할까요?\n취소하면 관리자 통계에서도 빠지고, 나중에 다시 투표할 수 있어요."))return;
+
+    const cancelButton=$("parentTrialSurveyCancel");
+    const submitButton=$("parentTrialSurveySubmit");
+    const status=$("parentTrialSurveyStatus");
+
+    if(cancelButton){
+      cancelButton.disabled=true;
+      cancelButton.textContent="취소 중...";
+    }
+
+    try{
+      const {error}=await db.from("trial_survey_responses")
+        .delete()
+        .eq("parent_id",profile.id)
+        .eq("child_id",activeChild.id)
+        .eq("trial_class_id",c.class_id)
+        .eq("survey_id",survey.id);
+
+      if(error)throw error;
+
+      qAll('input[name="trialSurveyChoice"]',$("parentTrialSurveyOptions")).forEach(x=>x.checked=false);
+
+      if(submitButton){
+        submitButton.disabled=false;
+        submitButton.textContent="선택 저장하기";
+      }
+      if(cancelButton){
+        cancelButton.classList.add("hide");
+      }
+      if(status){
+        status.textContent="투표를 취소했어요. 원하면 다시 선택해서 투표할 수 있어요.";
+      }
+
+      notify("투표를 취소했어요. 관리자 통계에서도 제외됩니다.");
+    }catch(e){
+      notify("투표 취소 실패 · "+(e?.message||e));
+    }finally{
+      if(cancelButton){
+        cancelButton.disabled=false;
+        cancelButton.textContent="투표 취소";
+      }
     }
   };
 
