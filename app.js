@@ -5490,7 +5490,7 @@
     if(checked){
       if(term)term.value="일일특강";
       if(status)status.value="예정";
-      ["newClassTime","newClassStartDate","newClassEndDate","newClassTeacher","newClassStudents","newClassAmount"]
+      ["newClassTime","newClassStartDate","newClassEndDate","newClassStudents","newClassAmount"]
         .forEach(id=>{const el=$(id);if(el)el.value="";});
     }else{
       if(term && term.value==="일일특강")term.value="";
@@ -5615,8 +5615,11 @@
       let payload;
 
       if(isTrial){
-        // 일일특강은 센터 + 프로그램만 사용자가 입력합니다.
-        // DB 필수값은 내부 전용 기본값으로 처리하며 화면에는 노출하지 않습니다.
+        // 일일특강은 센터 + 프로그램 + 강사(선택)만 입력합니다.
+        // 강사가 미정이면 teacher_id=null로 등록하고, 이후 반 수정에서 연결할 수 있습니다.
+        const teacherName=String($("newClassTeacher")?.value||"").trim();
+        const teacher=teacherName ? await resolveTeacherByName(teacherName) : null;
+
         payload={
           center_id:center.id,
           term:"일일특강",
@@ -5625,7 +5628,7 @@
           class_time:"00:00:00",
           start_date:null,
           end_date:null,
-          teacher_id:null,
+          teacher_id:teacher?.id||null,
           student_capacity:0,
           class_amount:0,
           status:"예정"

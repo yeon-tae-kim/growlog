@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=55">
+<link rel="manifest" href="./manifest.webmanifest?v=56">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -5868,6 +5868,19 @@ body.parent-main-view-trial #parentRegularRegistration{
 }
 </style>
 
+
+<style id="growlog-v56-trial-teacher">
+body.admin-trial-registering #adminClassForm #newClassTeacher{
+  background:#fff;
+}
+body.admin-trial-registering #adminClassForm label[for="newClassTeacher"]::after{
+  content:" · 나중에 지정 가능";
+  color:#7a8495;
+  font-size:10px;
+  font-weight:700;
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -6678,7 +6691,7 @@ body.parent-main-view-trial #parentRegularRegistration{
             <div class="auth-field admin-trial-center-field">
               <label class="admin-trial-center-check" for="newClassTrialCenter">
                 <input id="newClassTrialCenter" type="checkbox" onchange="syncNewClassTrialCenter()">
-                <span><b>일일특강 센터</b><small>체크하면 센터명과 프로그램만 입력하면 됩니다.</small></span>
+                <span><b>일일특강 센터</b><small>체크하면 센터명 · 프로그램 · 강사(선택)만 입력하면 됩니다.</small></span>
               </label>
             </div>
             <div class="auth-field trial-regular-only"><label for="newClassTerm">학기</label><input id="newClassTerm" placeholder="예: 가을학기"></div>
@@ -6693,14 +6706,17 @@ body.parent-main-view-trial #parentRegularRegistration{
             <div class="auth-field trial-regular-only"><label for="newClassTime">요일/시간</label><input id="newClassTime" placeholder="예: 수 15:30"></div>
             <div class="auth-field trial-regular-only"><label for="newClassStartDate">수업 시작일</label><input id="newClassStartDate" type="date"></div>
             <div class="auth-field trial-regular-only"><label for="newClassEndDate">수업 종료일</label><input id="newClassEndDate" type="date"></div>
-            <div class="auth-field trial-regular-only">
+            <div class="auth-field">
               <label for="newClassTeacher">강사 <span class="muted">(선택사항)</span></label>
-              <input id="newClassTeacher" list="adminTeacherNameOptions" placeholder="미지정 가능 · 강사 이름">
-              <div class="auth-help">강사가 아직 없어도 반부터 등록할 수 있어요.</div>
+              <input id="newClassTeacher" list="adminTeacherNameOptions" placeholder="강사 미정이면 비워두세요">
+              <div class="auth-help">강사가 아직 정해지지 않았다면 비워둔 채 등록하고, 나중에 반 수정에서 추가할 수 있어요.</div>
             </div>
             <div class="auth-field trial-regular-only"><label for="newClassStudents">학생 수</label><input id="newClassStudents" inputmode="numeric" type="number" min="0" placeholder="예: 8"></div>
             <div class="auth-field trial-regular-only"><label for="newClassAmount">수업 금액</label><input id="newClassAmount" inputmode="numeric" placeholder="예: 168000"><div class="auth-help">원 단위로 입력해주세요.</div></div>
             <div class="auth-field trial-regular-only"><label for="newClassStatus">상태</label><select id="newClassStatus"><option>운영중</option><option>예정</option><option>종료</option></select></div>
+          </div>
+          <div id="trialTeacherOptionalNote" class="auth-help" style="margin-top:8px">
+            일일특강은 강사 미지정 상태로도 등록할 수 있으며, 강사가 정해지면 해당 반을 수정해 연결할 수 있습니다.
           </div>
           <div class="admin-inline-form-actions">
             <button class="btn ghost" type="button" onclick="toggleAdminClassForm(false)">취소</button>
@@ -8999,7 +9015,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=55"></script>
+<script src="./app.js?v=56"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
