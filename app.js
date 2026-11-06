@@ -49,6 +49,11 @@
   let parentTrialEnrollments = [];
   let parentTrialClasses = [];
   let parentTrialActiveClassId = null;
+  let activeTrialSurvey = null;
+  let adminTrialSurveys = [];
+  let adminSurveyResponses = [];
+  let adminSurveyTrialClassMap = new Map();
+  let adminSurveyEditingId = null;
   let parentRegularRegistrationClasses = [];
   let adminChildClassChildren = [];
   let adminChildClassClasses = [];
@@ -2250,13 +2255,66 @@
     if(!count)pool.innerHTML='<div class="photo-empty">사진을 다시 불러오지 못했어요. 화면을 새로고침해주세요.</div>';
   }
 
+  async function loadActiveTrialSurvey(){
+    const {data,error}=await db.from("trial_surveys")
+      .select("id,question,description,options,active,archived,updated_at")
+      .eq("active",true)
+      .eq("archived",false)
+      .maybeSingle();
+
+    if(error){
+      console.warn("active trial survey",error.message);
+      activeTrialSurvey=null;
+      return null;
+    }
+
+    activeTrialSurvey=data||null;
+    return activeTrialSurvey;
+  }
+
+  function renderParentTrialSurveyOptions(survey,disabled=false){
+    const root=$("parentTrialSurveyOptions");
+    if(!root)return;
+
+    const options=Array.isArray(survey?.options)?survey.options:[];
+    if(!options.length){
+      root.innerHTML='<div class="photo-empty">현재 진행 중인 설문 선택지가 없습니다.</div>';
+      return;
+    }
+
+    root.innerHTML=options.map((opt,i)=>{
+      const icon=String(opt?.icon||"💬").trim()||"💬";
+      const label=String(opt?.label||"").trim();
+      const desc=String(opt?.description||"").trim();
+      return `
+        <label>
+          <input type="radio" name="trialSurveyChoice" value="${escape(label)}" ${disabled?"disabled":""}>
+          <span><b>${escape(icon)} ${escape(label)}</b>${desc?`<small>${escape(desc)}</small>`:""}</span>
+        </label>`;
+    }).join("");
+  }
+
   async function loadParentTrialSurvey(c){
-    const options=qAll('input[name="trialSurveyChoice"]',$("parentTrialSurveyOptions"));
+    const card=$("parentTrialSurveyCard");
     const button=$("parentTrialSurveySubmit");
     const status=$("parentTrialSurveyStatus");
 
-    options.forEach(x=>{x.checked=false;x.disabled=!c.joined;});
-    if(button)button.disabled=!c.joined;
+    const survey=await loadActiveTrialSurvey();
+    if(!survey){
+      card?.classList.add("hide");
+      return;
+    }
+
+    card?.classList.remove("hide");
+    if($("parentTrialSurveyQuestion"))$("parentTrialSurveyQuestion").textContent=survey.question||"1분 설문";
+    if($("parentTrialSurveyDescription"))$("parentTrialSurveyDescription").textContent=survey.description||"";
+    renderParentTrialSurveyOptions(survey,!c.joined);
+
+    const options=qAll('input[name="trialSurveyChoice"]',$("parentTrialSurveyOptions"));
+    if(button){
+      button.disabled=!c.joined;
+      button.textContent="선택 저장하기";
+    }
 
     if(!c.joined){
       if(status)status.textContent="내가 참여한 수업을 선택한 뒤 설문에 답할 수 있어요.";
@@ -2264,21 +2322,25 @@
     }
 
     if(status)status.textContent="선택 후 저장해주세요.";
+
     const {data,error}=await db.from("trial_survey_responses")
-      .select("choice")
+      .select("choice,updated_at")
       .eq("parent_id",profile.id)
       .eq("child_id",activeChild.id)
       .eq("trial_class_id",c.class_id)
+      .eq("survey_id",survey.id)
       .maybeSingle();
 
     if(error){
       console.warn("trial survey load",error.message);
       return;
     }
+
     if(data?.choice){
       const radio=options.find(x=>x.value===data.choice);
       if(radio)radio.checked=true;
-      if(status)status.textContent="이전에 선택한 답변이에요. 바꾼 뒤 다시 저장할 수 있어요.";
+      if(status)status.textContent="이전에 저장한 응답이에요. 다른 답을 선택하고 다시 저장하면 수정됩니다.";
+      if(button)button.textContent="응답 수정 저장";
     }
   }
 
@@ -2286,8 +2348,11 @@
     const c=parentTrialClasses.find(x=>x.class_id===parentTrialActiveClassId);
     if(!c?.joined)return notify("먼저 내가 참여한 일일특강을 선택해주세요.");
 
+    const survey=activeTrialSurvey || await loadActiveTrialSurvey();
+    if(!survey)return notify("현재 진행 중인 설문이 없습니다.");
+
     const selected=q('input[name="trialSurveyChoice"]:checked',$("parentTrialSurveyOptions"));
-    if(!selected)return notify("수강해보고 싶은 강의를 하나 선택해주세요.");
+    if(!selected)return notify("답변을 하나 선택해주세요.");
 
     const button=$("parentTrialSurveySubmit");
     const status=$("parentTrialSurveyStatus");
@@ -2298,19 +2363,23 @@
         parent_id:profile.id,
         child_id:activeChild.id,
         trial_class_id:c.class_id,
+        survey_id:survey.id,
         choice:selected.value,
         updated_at:new Date().toISOString()
       };
+
       const {error}=await db.from("trial_survey_responses")
-        .upsert(payload,{onConflict:"parent_id,child_id,trial_class_id"});
+        .upsert(payload,{onConflict:"parent_id,child_id,trial_class_id,survey_id"});
       if(error)throw error;
-      if(status)status.textContent="✓ 응답이 저장되었어요. 감사합니다!";
+
+      if(status)status.textContent="✓ 응답이 저장되었어요. 언제든 다시 선택해서 수정할 수 있어요.";
+      if(button)button.textContent="응답 수정 저장";
       notify("설문 응답이 저장되었습니다. 감사합니다 😊");
     }catch(e){
       if(status)status.textContent="저장하지 못했어요. 다시 눌러주세요.";
       notify("설문 저장 실패 · "+(e?.message||e));
     }finally{
-      if(button){button.disabled=false;button.textContent="선택 저장하기";}
+      if(button)button.disabled=false;
     }
   };
 
@@ -5377,6 +5446,325 @@
     finally{if(current()){adminGalleryBusy=false;more.disabled=false;}}
   };
 
+  function surveyOptionsArray(survey){
+    return Array.isArray(survey?.options)?survey.options:[];
+  }
+
+  function adminSurveyFormatDate(value){
+    const s=String(value||"");
+    return s ? s.slice(0,10) : "";
+  }
+
+  function addAdminSurveyOptionRowData(opt={}){
+    const root=$("adminSurveyOptionsEditor");
+    if(!root)return;
+
+    const row=document.createElement("div");
+    row.className="admin-survey-option-row";
+    row.innerHTML=`
+      <input class="admin-survey-option-icon" maxlength="4" placeholder="💬" value="${escape(opt.icon||"")}">
+      <input class="admin-survey-option-label" placeholder="선택지 이름" value="${escape(opt.label||"")}">
+      <input class="admin-survey-option-desc" placeholder="짧은 설명 (선택)" value="${escape(opt.description||"")}">
+      <button class="btn ghost small admin-survey-option-remove" type="button" aria-label="선택지 삭제">×</button>
+    `;
+    row.querySelector(".admin-survey-option-remove").onclick=()=>{
+      row.remove();
+    };
+    root.appendChild(row);
+  }
+
+  window.addAdminSurveyOption=function(){
+    addAdminSurveyOptionRowData({icon:"💬",label:"",description:""});
+  };
+
+  function adminSurveyCollectOptions(){
+    return qAll(".admin-survey-option-row",$("adminSurveyOptionsEditor")).map(row=>({
+      icon:String(q(".admin-survey-option-icon",row)?.value||"💬").trim()||"💬",
+      label:String(q(".admin-survey-option-label",row)?.value||"").trim(),
+      description:String(q(".admin-survey-option-desc",row)?.value||"").trim()
+    }));
+  }
+
+  function adminSurveySelected(){
+    return adminTrialSurveys.find(s=>s.id===adminSurveyEditingId)||null;
+  }
+
+  function renderAdminSurveyHistory(){
+    const select=$("adminSurveyHistory");
+    if(!select)return;
+
+    select.innerHTML="";
+    if(!adminTrialSurveys.length){
+      const opt=document.createElement("option");
+      opt.value="";
+      opt.textContent="등록된 설문 없음";
+      select.appendChild(opt);
+      return;
+    }
+
+    adminTrialSurveys.forEach(s=>{
+      const opt=document.createElement("option");
+      opt.value=s.id;
+      const state=s.archived?"보관":(s.active?"진행중":"종료");
+      opt.textContent=`[${state}] ${s.question} · ${adminSurveyFormatDate(s.created_at)}`;
+      select.appendChild(opt);
+    });
+
+    if(adminSurveyEditingId && adminTrialSurveys.some(s=>s.id===adminSurveyEditingId)){
+      select.value=adminSurveyEditingId;
+    }
+  }
+
+  function renderAdminSurveyEditor(survey){
+    const root=$("adminSurveyOptionsEditor");
+    if(root)root.innerHTML="";
+
+    if(!survey){
+      adminSurveyEditingId=null;
+      if($("adminSurveyEditorBadge"))$("adminSurveyEditorBadge").textContent="새 설문";
+      if($("adminSurveyEditorTitle"))$("adminSurveyEditorTitle").textContent="새 설문 만들기";
+      if($("adminSurveyQuestion"))$("adminSurveyQuestion").value="";
+      if($("adminSurveyDescription"))$("adminSurveyDescription").value="";
+      addAdminSurveyOptionRowData({icon:"💬",label:"",description:""});
+      addAdminSurveyOptionRowData({icon:"💬",label:"",description:""});
+      if($("adminSurveyArchiveBtn"))$("adminSurveyArchiveBtn").classList.add("hide");
+      if($("adminSurveySaveBtn")){
+        $("adminSurveySaveBtn").disabled=false;
+        $("adminSurveySaveBtn").textContent="새 설문 시작";
+      }
+      if($("adminSurveyEditorStatus")){
+        $("adminSurveyEditorStatus").innerHTML="새 설문을 저장하면 기존 진행 중 설문은 종료되고, 새 설문이 학부모 화면에 표시됩니다.";
+      }
+      renderAdminSurveyStats(null);
+      return;
+    }
+
+    adminSurveyEditingId=survey.id;
+    if($("adminSurveyEditorBadge")){
+      $("adminSurveyEditorBadge").textContent=survey.archived?"보관된 설문":(survey.active?"진행 중":"종료된 설문");
+    }
+    if($("adminSurveyEditorTitle"))$("adminSurveyEditorTitle").textContent=survey.archived?"설문 기록":"설문 수정";
+    if($("adminSurveyQuestion"))$("adminSurveyQuestion").value=survey.question||"";
+    if($("adminSurveyDescription"))$("adminSurveyDescription").value=survey.description||"";
+
+    surveyOptionsArray(survey).forEach(addAdminSurveyOptionRowData);
+
+    const archived=!!survey.archived;
+    qAll("input,textarea,button",$("adminSurveyOptionsEditor")).forEach(el=>el.disabled=archived);
+    if($("adminSurveyQuestion"))$("adminSurveyQuestion").disabled=archived;
+    if($("adminSurveyDescription"))$("adminSurveyDescription").disabled=archived;
+
+    if($("adminSurveyArchiveBtn")){
+      $("adminSurveyArchiveBtn").classList.toggle("hide",archived);
+      $("adminSurveyArchiveBtn").disabled=archived;
+    }
+    if($("adminSurveySaveBtn")){
+      $("adminSurveySaveBtn").disabled=archived;
+      $("adminSurveySaveBtn").textContent=archived?"보관됨":"수정 저장";
+    }
+    if($("adminSurveyEditorStatus")){
+      $("adminSurveyEditorStatus").innerHTML=archived
+        ? '<span class="admin-survey-archived-note">삭제(보관)된 설문입니다. 과거 응답 통계는 계속 확인할 수 있어요.</span>'
+        : (survey.active
+            ?"현재 학부모 일일특강 화면에 표시되는 설문입니다."
+            :"종료된 설문입니다. 응답 통계는 보존됩니다.");
+    }
+
+    renderAdminSurveyStats(survey.id);
+  }
+
+  window.selectAdminTrialSurvey=function(id){
+    const survey=adminTrialSurveys.find(s=>s.id===id);
+    if(!survey)return;
+    adminSurveyEditingId=survey.id;
+    renderAdminSurveyHistory();
+    renderAdminSurveyEditor(survey);
+  };
+
+  window.newAdminTrialSurvey=function(){
+    if($("adminSurveyHistory"))$("adminSurveyHistory").value="";
+    renderAdminSurveyEditor(null);
+  };
+
+  function adminSurveyResponseRows(surveyId){
+    return adminSurveyResponses.filter(r=>r.survey_id===surveyId);
+  }
+
+  function renderAdminSurveyStats(surveyId){
+    const survey=adminTrialSurveys.find(s=>s.id===surveyId)||null;
+    const rows=survey ? adminSurveyResponseRows(survey.id) : [];
+    const options=surveyOptionsArray(survey);
+
+    if($("adminSurveyResponseTotal"))$("adminSurveyResponseTotal").textContent=String(rows.length);
+    if($("adminSurveyOptionTotal"))$("adminSurveyOptionTotal").textContent=String(options.length);
+    if($("adminSurveyActiveState")){
+      $("adminSurveyActiveState").textContent=!survey?"-":(survey.archived?"보관":(survey.active?"진행중":"종료"));
+    }
+    if($("adminSurveyResultTitle")){
+      $("adminSurveyResultTitle").textContent=survey?.question||"설문 결과";
+    }
+
+    const counts=new Map();
+    rows.forEach(r=>{
+      const key=String(r.choice||"").trim()||"(빈 응답)";
+      counts.set(key,(counts.get(key)||0)+1);
+    });
+
+    // 현재 선택지 + 과거 응답에만 남은 선택지를 모두 통계에 보존
+    const labels=[];
+    options.forEach(o=>{
+      const label=String(o?.label||"").trim();
+      if(label && !labels.includes(label))labels.push(label);
+    });
+    counts.forEach((_,label)=>{
+      if(label && !labels.includes(label))labels.push(label);
+    });
+
+    const bars=$("adminSurveyResultBars");
+    if(bars){
+      if(!survey){
+        bars.innerHTML='<div class="photo-empty">설문을 선택하면 결과가 표시됩니다.</div>';
+      }else if(!rows.length){
+        bars.innerHTML='<div class="photo-empty">아직 들어온 응답이 없습니다.</div>';
+      }else{
+        bars.innerHTML=labels.map(label=>{
+          const count=counts.get(label)||0;
+          const pct=rows.length?Math.round(count/rows.length*100):0;
+          return `
+            <div class="admin-survey-result-row">
+              <div class="admin-survey-result-label">${escape(label)}</div>
+              <div class="admin-survey-result-track"><div class="admin-survey-result-fill" style="--pct:${pct}%"></div></div>
+              <div class="admin-survey-result-value">${count}명 · ${pct}%</div>
+            </div>`;
+        }).join("");
+      }
+    }
+
+    const centerBody=$("adminSurveyCenterBody");
+    if(centerBody){
+      centerBody.innerHTML="";
+      if(!survey || !rows.length){
+        centerBody.innerHTML='<tr class="admin-empty-row"><td colspan="4">아직 센터별 응답이 없습니다.</td></tr>';
+      }else{
+        const groups=new Map();
+        rows.forEach(r=>{
+          const meta=adminSurveyTrialClassMap.get(r.trial_class_id)||{};
+          const center=meta.center_name||"센터 미확인";
+          if(!groups.has(center))groups.set(center,[]);
+          groups.get(center).push(r);
+        });
+
+        [...groups.entries()].sort((a,b)=>b[1].length-a[1].length).forEach(([center,list])=>{
+          const local=new Map();
+          list.forEach(r=>local.set(r.choice,(local.get(r.choice)||0)+1));
+          const top=[...local.entries()].sort((a,b)=>b[1]-a[1])[0]||["-",0];
+          const pct=list.length?Math.round(top[1]/list.length*100):0;
+          const tr=document.createElement("tr");
+          tr.innerHTML=`
+            <td>${escape(center)}</td>
+            <td>${list.length}명</td>
+            <td>${escape(top[0]||"-")}</td>
+            <td>${pct}%</td>`;
+          centerBody.appendChild(tr);
+        });
+      }
+    }
+  }
+
+  window.saveAdminTrialSurvey=async function(){
+    const question=String($("adminSurveyQuestion")?.value||"").trim();
+    const description=String($("adminSurveyDescription")?.value||"").trim();
+    const options=adminSurveyCollectOptions();
+    const status=$("adminSurveyEditorStatus");
+    const button=$("adminSurveySaveBtn");
+
+    if(!question)return notify("설문 질문을 입력해주세요.");
+    if(options.length<2)return notify("선택지는 2개 이상 필요합니다.");
+    if(options.some(o=>!o.label))return notify("모든 선택지 이름을 입력해주세요.");
+
+    if(button){button.disabled=true;button.textContent="저장 중...";}
+    if(status)status.textContent="설문을 저장하고 있어요...";
+
+    try{
+      const {data,error}=await db.rpc("admin_save_trial_survey",{
+        p_survey_id:adminSurveyEditingId||null,
+        p_question:question,
+        p_description:description,
+        p_options:options
+      });
+      if(error)throw error;
+
+      adminSurveyEditingId=data||adminSurveyEditingId;
+      notify(adminSurveyEditingId?"설문을 저장했습니다.":"새 설문을 시작했습니다.");
+      await renderAdminSurveys();
+    }catch(e){
+      if(status)status.textContent="설문 저장 실패 · "+(e?.message||e);
+      notify("설문 저장 실패 · "+(e?.message||e));
+    }finally{
+      if(button)button.disabled=false;
+    }
+  };
+
+  window.archiveAdminTrialSurvey=async function(){
+    const survey=adminSurveySelected();
+    if(!survey)return;
+    if(!confirm(`“${survey.question}”\n\n이 설문을 삭제(보관)할까요?\n학부모 화면에서는 사라지지만 기존 응답 통계는 보존됩니다.`))return;
+
+    try{
+      const {error}=await db.rpc("admin_archive_trial_survey",{p_survey_id:survey.id});
+      if(error)throw error;
+      notify("설문을 삭제(보관)했습니다. 기존 응답 통계는 유지됩니다.");
+      adminSurveyEditingId=survey.id;
+      await renderAdminSurveys();
+    }catch(e){
+      notify("설문 삭제 실패 · "+(e?.message||e));
+    }
+  };
+
+  async function renderAdminSurveys(){
+    if(profile?.role!=="admin")return;
+
+    const status=$("adminSurveyEditorStatus");
+    try{
+      const [surveyRes,responseRes,classRes]=await Promise.all([
+        db.from("trial_surveys").select("*").order("created_at",{ascending:false}),
+        db.from("trial_survey_responses").select("survey_id,choice,trial_class_id,updated_at"),
+        db.from("classes").select("id,program,centers(name,is_trial)")
+      ]);
+
+      if(surveyRes.error)throw surveyRes.error;
+      if(responseRes.error)throw responseRes.error;
+      if(classRes.error)throw classRes.error;
+
+      adminTrialSurveys=surveyRes.data||[];
+      adminSurveyResponses=responseRes.data||[];
+      adminSurveyTrialClassMap=new Map(
+        (classRes.data||[])
+          .filter(c=>c?.centers?.is_trial)
+          .map(c=>[c.id,{center_name:c.centers?.name||"",program:c.program||""}])
+      );
+
+      if(!adminTrialSurveys.length){
+        renderAdminSurveyHistory();
+        renderAdminSurveyEditor(null);
+        return;
+      }
+
+      const preferred=adminTrialSurveys.find(s=>s.id===adminSurveyEditingId)
+        || adminTrialSurveys.find(s=>s.active && !s.archived)
+        || adminTrialSurveys[0];
+
+      adminSurveyEditingId=preferred?.id||null;
+      renderAdminSurveyHistory();
+      renderAdminSurveyEditor(preferred||null);
+    }catch(e){
+      console.warn("admin survey:",e?.message||e);
+      if(status)status.textContent="설문 정보를 불러오지 못했습니다 · "+(e?.message||e);
+    }
+  }
+
+  window.refreshAdminTrialSurveys=renderAdminSurveys;
+
   // ---------- Admin ----------
   async function loadAdminDashboard(){
     $("adminLessonVideos")?.remove();
@@ -5393,7 +5781,8 @@
       renderAdminFees(),
       renderAdminInquiries(),
       renderAdminTodayTomorrow(),
-      renderAdminMonthlyProd()
+      renderAdminMonthlyProd(),
+      renderAdminSurveys()
     ]);
     await renderAdminTopStats();
     await refreshAdminTeacherNameOptions();
@@ -7375,6 +7764,8 @@
       .on("postgres_changes",{event:"*",schema:"public",table:"photo_assignments"},refreshVisible)
       .on("postgres_changes",{event:"*",schema:"public",table:"fees"},refreshVisible)
       .on("postgres_changes",{event:"*",schema:"public",table:"inquiries"},refreshVisible)
+      .on("postgres_changes",{event:"*",schema:"public",table:"trial_surveys"},refreshVisible)
+      .on("postgres_changes",{event:"*",schema:"public",table:"trial_survey_responses"},refreshVisible)
       .subscribe();
   }
   let refreshTimer=null;
