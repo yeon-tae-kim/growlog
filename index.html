@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=63">
+<link rel="manifest" href="./manifest.webmanifest?v=64">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -6111,6 +6111,66 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+
+<style id="growlog-v64-parent-login-stats">
+.admin-parent-login-section{
+  background:linear-gradient(145deg,#fbfdff,#fff);
+}
+.admin-parent-login-search{
+  display:grid;
+  grid-template-columns:auto minmax(220px,320px);
+  gap:8px;
+  align-items:center;
+}
+.admin-parent-login-search label{
+  font-size:11px;
+  font-weight:900;
+  color:#647086;
+}
+.admin-parent-login-search input{
+  min-height:38px!important;
+}
+.admin-parent-login-summary{
+  margin:12px 0;
+}
+#adminParentLoginTable td,
+#adminParentLoginTable th{
+  vertical-align:middle;
+}
+.admin-login-count{
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+.admin-login-date{
+  display:grid;
+  gap:2px;
+  min-width:135px;
+}
+.admin-login-date b{
+  font-size:11px;
+}
+.admin-login-date span{
+  font-size:9.5px;
+  color:var(--muted);
+}
+.admin-login-id{
+  font-size:11px;
+  word-break:break-all;
+}
+.admin-login-zero{
+  color:#9aa4b2;
+}
+@media(max-width:760px){
+  .admin-parent-login-search{
+    grid-template-columns:1fr;
+    width:100%;
+  }
+  .admin-parent-login-summary{
+    grid-template-columns:1fr!important;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -7183,6 +7243,43 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
         <table id="parentMemberTable">
           <thead><tr><th>학부모</th><th>휴대폰 번호</th><th>아이</th><th>센터</th><th>반</th><th>요일/시간</th><th>담당강사</th><th>출석현황</th><th>상태</th><th>로그인 허용</th><th>관리</th></tr></thead>
           <tbody id="parentMemberBody"></tbody>
+        </table>
+      </div>
+
+
+      <div class="admin-member-section admin-parent-login-section">
+        <div class="admin-section-toolbar">
+          <div>
+            <h3>학부모 로그인 현황</h3>
+            <div class="muted">로그인 횟수는 v64 적용 이후부터 누적됩니다. 기존 계정의 마지막 로그인 시각은 Supabase 기록을 함께 표시합니다.</div>
+          </div>
+          <div class="admin-parent-login-search">
+            <label for="adminParentLoginSearch">검색</label>
+            <input id="adminParentLoginSearch" type="search" placeholder="이메일 · 학부모 · 아이 · 센터" oninput="filterAdminParentLoginStats(this.value)">
+          </div>
+        </div>
+
+        <div class="grid three admin-parent-login-summary">
+          <div class="stat"><b id="adminParentLoginTrackedParents">0</b><span>로그인 집계 부모</span></div>
+          <div class="stat"><b id="adminParentLogin30dParents">0</b><span>최근 30일 로그인</span></div>
+          <div class="stat"><b id="adminParentLoginTotalCount">0</b><span>누적 로그인 횟수</span></div>
+        </div>
+
+        <table id="adminParentLoginTable">
+          <thead>
+            <tr>
+              <th>로그인 아이디</th>
+              <th>학부모</th>
+              <th>아이</th>
+              <th>센터</th>
+              <th>누적 로그인</th>
+              <th>최근 30일</th>
+              <th>최근 로그인</th>
+            </tr>
+          </thead>
+          <tbody id="adminParentLoginBody">
+            <tr class="admin-empty-row"><td colspan="7">로그인 현황을 불러오는 중입니다.</td></tr>
+          </tbody>
         </table>
       </div>
 
@@ -9335,7 +9432,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=63"></script>
+<script src="./app.js?v=64"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

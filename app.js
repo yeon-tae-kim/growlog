@@ -695,6 +695,18 @@
       session = data.session;
       await finishPendingParentRegistration();
       await routeAuthenticated();
+
+      // 명시적으로 로그인 버튼을 눌러 인증에 성공한 부모만 1회 집계합니다.
+      // 자동 로그인/새로고침은 집계하지 않아 실제 로그인 횟수가 부풀려지지 않게 합니다.
+      if(profile?.role==="parent"){
+        try{
+          const {error:loginTrackError}=await db.rpc("record_parent_login");
+          if(loginTrackError)console.warn("parent login tracking:",loginTrackError.message);
+        }catch(trackError){
+          console.warn("parent login tracking:",trackError?.message||trackError);
+        }
+      }
+
       notify("로그인했습니다.");
     }catch(e){
       notify(friendlyAuthError(e,"login"));
@@ -6867,6 +6879,90 @@
     }
   };
 
+  let adminParentLoginRows=[];
+
+  function formatAdminLoginDate(value){
+    if(!value)return "-";
+    const d=new Date(value);
+    if(Number.isNaN(d.getTime()))return "-";
+    return d.toLocaleString("ko-KR",{
+      year:"numeric",month:"2-digit",day:"2-digit",
+      hour:"2-digit",minute:"2-digit",hour12:false
+    });
+  }
+
+  function renderAdminParentLoginStatsRows(rows=adminParentLoginRows){
+    const body=$("adminParentLoginBody");
+    if(!body)return;
+
+    body.innerHTML="";
+    if(!rows.length){
+      body.innerHTML='<tr class="admin-empty-row"><td colspan="7">조건에 맞는 학부모가 없습니다.</td></tr>';
+      return;
+    }
+
+    rows.forEach(row=>{
+      const tr=document.createElement("tr");
+      const latest=row.auth_last_sign_in_at || row.last_tracked_login_at;
+      tr.dataset.search=[
+        row.email,row.parent_name,row.phone,row.child_names,row.center_names
+      ].filter(Boolean).join(" ").toLowerCase();
+
+      tr.innerHTML=`
+        <td><span class="admin-login-id">${escape(row.email||"-")}</span></td>
+        <td>${escape(row.parent_name||"-")}</td>
+        <td>${escape(row.child_names||"-")}</td>
+        <td>${escape(row.center_names||"-")}</td>
+        <td><span class="admin-login-count ${Number(row.total_login_count||0)===0?"admin-login-zero":""}">${Number(row.total_login_count||0)}회</span></td>
+        <td><span class="admin-login-count ${Number(row.logins_30d||0)===0?"admin-login-zero":""}">${Number(row.logins_30d||0)}회</span></td>
+        <td>
+          <div class="admin-login-date">
+            <b>${escape(formatAdminLoginDate(latest))}</b>
+            <span>${row.last_tracked_login_at?"v64 집계 포함":"기존 Supabase 로그인 기록"}</span>
+          </div>
+        </td>`;
+      body.appendChild(tr);
+    });
+  }
+
+  window.filterAdminParentLoginStats=function(value){
+    const q=String(value||"").trim().toLowerCase();
+    if(!q)return renderAdminParentLoginStatsRows(adminParentLoginRows);
+    renderAdminParentLoginStatsRows(
+      adminParentLoginRows.filter(row=>[
+        row.email,row.parent_name,row.phone,row.child_names,row.center_names
+      ].filter(Boolean).join(" ").toLowerCase().includes(q))
+    );
+  };
+
+  async function renderAdminParentLoginStats(){
+    if(profile?.role!=="admin")return;
+
+    const body=$("adminParentLoginBody");
+    try{
+      const {data,error}=await db.rpc("admin_parent_login_stats");
+      if(error)throw error;
+
+      adminParentLoginRows=data||[];
+
+      const trackedParents=adminParentLoginRows.filter(r=>Number(r.total_login_count||0)>0).length;
+      const active30=adminParentLoginRows.filter(r=>Number(r.logins_30d||0)>0).length;
+      const total=adminParentLoginRows.reduce((sum,r)=>sum+Number(r.total_login_count||0),0);
+
+      if($("adminParentLoginTrackedParents"))$("adminParentLoginTrackedParents").textContent=String(trackedParents);
+      if($("adminParentLogin30dParents"))$("adminParentLogin30dParents").textContent=String(active30);
+      if($("adminParentLoginTotalCount"))$("adminParentLoginTotalCount").textContent=String(total);
+
+      const search=$("adminParentLoginSearch");
+      window.filterAdminParentLoginStats(search?.value||"");
+    }catch(e){
+      console.warn("admin parent login stats:",e?.message||e);
+      if(body){
+        body.innerHTML=`<tr class="admin-empty-row"><td colspan="7">로그인 현황을 불러오지 못했습니다. ${escape(e?.message||"")}</td></tr>`;
+      }
+    }
+  }
+
   async function renderAdminMembers(){
     const {data:profiles,error}=await db.from("profiles")
       .select("id,role,name,phone,active")
@@ -7170,6 +7266,7 @@
     syncProgramFilterFromTable("parentMemberTable","adminParentCenterFilter","adminParentProgramFilter");
     syncTimeFilterFromTable("parentMemberTable","adminParentCenterFilter","adminParentProgramFilter","adminParentTimeFilter");
     window.filterAdminParentMembers();
+    await renderAdminParentLoginStats();
     prepareResponsiveTables();
   }
 
@@ -7951,6 +8048,7 @@
       .on("postgres_changes",{event:"*",schema:"public",table:"inquiries"},refreshVisible)
       .on("postgres_changes",{event:"*",schema:"public",table:"trial_surveys"},refreshVisible)
       .on("postgres_changes",{event:"*",schema:"public",table:"trial_survey_responses"},refreshVisible)
+      .on("postgres_changes",{event:"*",schema:"public",table:"parent_login_events"},refreshVisible)
       .subscribe();
   }
   let refreshTimer=null;
