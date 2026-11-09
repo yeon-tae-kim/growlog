@@ -3518,7 +3518,11 @@
     if(adminPreview){
       const {data:teachers,error}=await db.from("profiles").select("id,name").eq("role","teacher").eq("active",true).order("name");
       if(error) throw error;
-      if(!teachers?.length){ renderTeacherClassCards([]); return; }
+      if(!teachers?.length){
+        renderTeacherClassCards([]);
+        renderTeacherTrialClassCards([]);
+        return;
+      }
       activeTeacherProfile=teachers[0];
       ensureAdminPreviewSelector("teacher",teachers.map(t=>({id:t.id,label:t.name+" 강사"})),async id=>{
         activeTeacherProfile=teachers.find(t=>t.id===id);
@@ -3540,13 +3544,15 @@
   async function loadTeacherClasses(){
     if(!activeTeacherProfile) return;
     const {data,error}=await db.from("classes")
-      .select("id,term,program,weekday,class_time,status,student_capacity,center_id,start_date,end_date,created_at,centers(name)")
+      .select("id,term,program,weekday,class_time,status,student_capacity,center_id,start_date,end_date,created_at,centers(name,is_trial)")
       .eq("teacher_id",activeTeacherProfile.id)
       .order("created_at",{ascending:false});
     if(error) throw error;
 
-    const classes=data||[];
-    window.__prodTeacherClasses=classes;
+    const allClasses=data||[];
+    const trialClasses=allClasses.filter(c=>c?.centers?.is_trial===true);
+    const classes=allClasses.filter(c=>c?.centers?.is_trial!==true);
+    window.__prodTeacherClasses=allClasses;
 
     const pastDates=pastSeoulDates(7);
     const today=todayISO();
@@ -3580,6 +3586,7 @@
     }
 
     renderTeacherClassCards(classes,sessions);
+    renderTeacherTrialClassCards(trialClasses);
     prewarmTodayTeacherThumbnails(classes,sessions);
   }
 
@@ -3702,9 +3709,118 @@
     if(!ended.length) pastList.innerHTML='<div class="teacher-class-empty">종료된 이전 수업이 없습니다.</div>';
   }
 
+  function renderTeacherTrialClassCards(trialClasses=[]){
+    const root=$("teacherTrialClassList");
+    const badge=$("teacherTrialCountBadge");
+    if(!root)return;
+
+    const rows=[...(trialClasses||[])].sort((a,b)=>{
+      const aEnded=a.status==="종료"?1:0;
+      const bEnded=b.status==="종료"?1:0;
+      if(aEnded!==bEnded)return aEnded-bEnded;
+      return String(b.created_at||"").localeCompare(String(a.created_at||""));
+    });
+
+    if(badge)badge.textContent=`${rows.length}개`;
+    root.innerHTML="";
+
+    if(!rows.length){
+      root.innerHTML='<div class="teacher-class-empty">현재 배정된 일일특강이 없습니다.</div>';
+      return;
+    }
+
+    rows.forEach(c=>{
+      const card=document.createElement("div");
+      card.className="teacher-class-card compact teacher-trial-card";
+
+      const ended=c.status==="종료";
+      card.innerHTML=`
+        <div>
+          <b style="font-size:17px">🎈 ${escape(c.centers?.name||"")} · ${escape(c.program||"")}</b>
+          <div class="teacher-class-meta">
+            <span class="badge">일일특강</span>
+            <span class="badge gray">${ended?"종료":"배정됨"}</span>
+            <span class="badge gray teacher-trial-student-count">참여 학생 확인 중...</span>
+          </div>
+          <div class="trial-card-note">
+            ${ended
+              ?"종료된 일일특강입니다. 기존 기록을 확인할 수 있어요."
+              :"학부모가 이 특강을 선택하면 해당 아이의 사진·오늘 발견한 모습을 기록할 수 있어요."}
+          </div>
+        </div>
+        <button class="btn ${ended?"ghost":""} small" type="button">
+          ${ended?"특강 기록 보기":"특강 기록하기"}
+        </button>`;
+
+      q("button",card).onclick=()=>openTeacherTrialClassProd(c);
+      root.appendChild(card);
+
+      // 카드가 먼저 보이도록 하고, 학생 수는 뒤에서 채웁니다.
+      db.from("enrollments")
+        .select("*",{count:"exact",head:true})
+        .eq("class_id",c.id)
+        .eq("active",true)
+        .then(({count,error})=>{
+          if(error)return;
+          const el=q(".teacher-trial-student-count",card);
+          if(el)el.textContent=`참여 학생 ${count||0}명`;
+        })
+        .catch(()=>{});
+    });
+  }
+
+  async function openTeacherTrialClassProd(c){
+    activeClass=c;
+    activeLessonDate=todayISO();
+    teacherSessionCache=[];
+
+    document.body.classList.add("teacher-trial-work");
+    $("teacherClassSelectView")?.classList.add("hide");
+    $("teacherClassWorkView")?.classList.remove("hide");
+    $("teacherScheduleManager")?.classList.add("hide");
+    $("teacherNoRecordDate")?.classList.add("hide");
+
+    if($("activeTeacherClassLabel")){
+      $("activeTeacherClassLabel").textContent=`🎈 일일특강 · ${c.centers?.name||""} · ${c.program||""}`;
+    }
+    if($("activeTeacherRecordDateBadge")){
+      $("activeTeacherRecordDateBadge").textContent=`일일특강 기록 · ${displaySessionDate(activeLessonDate)}`;
+      $("activeTeacherRecordDateBadge").classList.remove("teacher-record-date-old");
+    }
+
+    const firstPhotoTab=$("lessonTabPhotos");
+    if(firstPhotoTab && typeof window.showLessonWork==="function"){
+      window.showLessonWork("photos",firstPhotoTab);
+    }
+
+    try{
+      const children=await fetchTeacherRoster(c.id,{force:true});
+      if(activeClass?.id===c.id){
+        renderTeacherStudentNamesFast(children,{loadingRecords:true});
+      }
+    }catch(e){
+      console.warn("trial teacher roster:",e?.message||e);
+    }
+
+    await Promise.allSettled([
+      loadTeacherStudentsForClass(),
+      loadTeacherPhotos()
+    ]);
+
+    const photoTab=$("lessonTabPhotos");
+    if(photoTab && typeof window.showLessonWork==="function"){
+      window.showLessonWork("photos",photoTab);
+    }
+  }
+
   window.renderTeacherClassSelection = async function(){ await loadTeacherClasses(); };
 
   async function openTeacherClassProd(c,preferredDate=null){
+    if(c?.centers?.is_trial===true)return openTeacherTrialClassProd(c);
+
+    document.body.classList.remove("teacher-trial-work");
+    $("teacherScheduleManager")?.classList.remove("hide");
+
     activeClass=c;
     activeLessonDate=preferredDate;
     $("teacherClassSelectView")?.classList.add("hide");
@@ -3753,6 +3869,8 @@
     activeClass=null;
     activeLessonDate=null;
     teacherSessionCache=[];
+    document.body.classList.remove("teacher-trial-work");
+    $("teacherScheduleManager")?.classList.remove("hide");
     $("teacherClassWorkView")?.classList.add("hide");
     $("teacherClassSelectView")?.classList.remove("hide");
     loadTeacherClasses();

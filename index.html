@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=62">
+<link rel="manifest" href="./manifest.webmanifest?v=63">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -6056,6 +6056,61 @@ body.admin-trial-editing #adminClassEditForm label[for="editClassTeacher"]::afte
 }
 </style>
 
+
+<style id="growlog-v63-teacher-trial">
+.teacher-trial-section{
+  margin-top:34px;
+  padding-top:24px;
+  border-top:2px dashed #eadfd4;
+}
+.teacher-trial-section-title{
+  align-items:flex-end;
+}
+.teacher-trial-section-title > div{
+  display:grid;
+  gap:7px;
+}
+.teacher-trial-section-title h2{
+  margin:0;
+}
+.teacher-trial-class-list{
+  margin-top:12px;
+}
+.teacher-trial-card{
+  border:1px solid #eadfd4!important;
+  background:linear-gradient(145deg,#fffaf5,#fff)!important;
+}
+.teacher-trial-card .teacher-class-meta{
+  margin-top:8px;
+}
+.teacher-trial-card .trial-card-note{
+  color:#7c7067;
+  font-size:10px;
+  line-height:1.45;
+  margin-top:4px;
+}
+body.teacher-trial-work #teacherScheduleManager{
+  display:none!important;
+}
+body.teacher-trial-work #teacherNoRecordDate{
+  display:none!important;
+}
+body.teacher-trial-work #activeTeacherRecordDateBadge{
+  background:#fff2e6;
+  border-color:#f1d5bd;
+  color:#8a5b36;
+}
+@media(max-width:720px){
+  .teacher-trial-section{
+    margin-top:26px;
+    padding-top:20px;
+  }
+  .teacher-trial-section-title{
+    align-items:flex-start;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -6587,6 +6642,17 @@ body.admin-trial-editing #adminClassEditForm label[for="editClassTeacher"]::afte
     <div id="teacherOtherClassList" class="teacher-class-list" style="margin-top:12px"></div>
     <div id="teacherPastClassList" class="teacher-class-list" style="margin-top:10px"></div>
   </details>
+
+  <section class="teacher-trial-section">
+    <div class="teacher-class-section-title teacher-trial-section-title">
+      <div>
+        <span class="badge">🎈 일일특강</span>
+        <h2>담당 일일특강 <span id="teacherTrialCountBadge" class="badge gray">0개</span></h2>
+      </div>
+      <span class="muted">정규수업과 별도로 표시됩니다.</span>
+    </div>
+    <div id="teacherTrialClassList" class="teacher-class-list teacher-trial-class-list"></div>
+  </section>
 </div>
 
 <div id="teacherClassWorkView" class="hide">
@@ -9269,7 +9335,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=62"></script>
+<script src="./app.js?v=63"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
