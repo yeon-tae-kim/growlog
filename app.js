@@ -4785,35 +4785,162 @@
     return `${activeClass.id}/${uploadDate}/${uid}.${allowedExt||mimeExt}`;
   }
 
-  function setTeacherUploadProgress(done,total){
-    const pool=$("uploadPreview");
-    if(!pool)return;
-    let banner=$("teacherUploadProgressBanner");
-    if(!banner){
-      banner=document.createElement("div");
-      banner.id="teacherUploadProgressBanner";
-      banner.className="photo-empty";
-      banner.style.cssText="margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#f6f9ff;border:1px solid #dce6f8;text-align:left";
-      pool.parentElement?.insertBefore(banner,pool);
+  let teacherUploadProgressState=null;
+  let teacherUploadHideTimer=null;
+
+  function teacherUploadDisplayName(file,index){
+    const name=String(file?.name||"").trim();
+    if(name)return name.length>34?name.slice(0,31)+"…":name;
+    return `자료 ${index+1}`;
+  }
+
+  function initTeacherUploadProgress(files){
+    if(teacherUploadHideTimer){
+      clearTimeout(teacherUploadHideTimer);
+      teacherUploadHideTimer=null;
     }
-    banner.style.display="block";
-    const pct=total?Math.round((done/total)*100):0;
-    banner.innerHTML=`<b>📤 사진·동영상 업로드 ${done}/${total}장 · ${pct}%</b><br><span style="font-size:12px">선택한 자료는 먼저 화면에 보여드리고, 뒤에서 안정적으로 저장하고 있어요.</span>`;
+
+    const rows=(files||[]).map((file,index)=>({
+      index,
+      file,
+      size:Math.max(Number(file?.size||0),1),
+      ratio:0,
+      phase:"대기 중"
+    }));
+
+    teacherUploadProgressState={
+      total:rows.length,
+      totalBytes:rows.reduce((sum,row)=>sum+row.size,0),
+      rows,
+      currentIndex:0,
+      complete:false,
+      error:false
+    };
+
+    const panel=$("teacherUploadProgressPanel");
+    panel?.classList.remove("hide","is-complete","is-error");
+    panel?.classList.add("is-working");
+    renderTeacherUploadProgress();
+  }
+
+  function updateTeacherUploadFileProgress(index,ratio,phase){
+    const state=teacherUploadProgressState;
+    if(!state)return;
+
+    const row=state.rows[index];
+    if(!row)return;
+
+    row.ratio=Math.max(row.ratio,Math.min(1,Math.max(0,Number(ratio)||0)));
+    if(phase)row.phase=phase;
+    state.currentIndex=index;
+    renderTeacherUploadProgress();
+  }
+
+  function renderTeacherUploadProgress(){
+    const state=teacherUploadProgressState;
+    const panel=$("teacherUploadProgressPanel");
+    if(!state||!panel)return;
+
+    const weighted=state.rows.reduce((sum,row)=>sum+(row.size*row.ratio),0);
+    const pct=state.totalBytes
+      ? Math.max(0,Math.min(100,Math.round((weighted/state.totalBytes)*100)))
+      : 0;
+    const done=state.rows.filter(row=>row.ratio>=1).length;
+    const current=state.rows[state.currentIndex] || state.rows.find(row=>row.ratio<1) || state.rows[state.rows.length-1];
+
+    panel.classList.remove("hide");
+    panel.classList.toggle("is-working",!state.complete&&!state.error);
+    panel.classList.toggle("is-complete",!!state.complete);
+    panel.classList.toggle("is-error",!!state.error);
+
+    if($("teacherUploadProgressTitle")){
+      $("teacherUploadProgressTitle").textContent=state.error
+        ?"⚠️ 일부 자료 업로드 확인이 필요해요"
+        : state.complete
+          ?"✅ 사진·영상 업로드 완료"
+          :"📤 사진·영상 업로드 중";
+    }
+    if($("teacherUploadProgressCount")){
+      $("teacherUploadProgressCount").textContent=`${done} / ${state.total}개 완료`;
+    }
+    if($("teacherUploadProgressPercent")){
+      $("teacherUploadProgressPercent").textContent=`${state.complete?100:pct}%`;
+    }
+    if($("teacherUploadProgressBar")){
+      $("teacherUploadProgressBar").style.width=`${state.complete?100:pct}%`;
+    }
+    if($("teacherUploadProgressTrack")){
+      $("teacherUploadProgressTrack").setAttribute("aria-valuenow",String(state.complete?100:pct));
+    }
+    if($("teacherUploadProgressCurrent")){
+      if(state.complete){
+        $("teacherUploadProgressCurrent").textContent=`총 ${state.total}개의 자료가 저장되었어요.`;
+      }else if(state.error){
+        $("teacherUploadProgressCurrent").textContent=current
+          ? `${teacherUploadDisplayName(current.file,current.index)} · ${current.phase||"업로드 확인 필요"}`
+          :"업로드 중 오류가 발생했어요.";
+      }else if(current){
+        const kind=isVideoMedia(current.file)?"영상":"사진";
+        $("teacherUploadProgressCurrent").textContent=
+          `${kind} ${current.index+1}/${state.total} · ${teacherUploadDisplayName(current.file,current.index)} · ${current.phase}`;
+      }
+    }
+    if($("teacherUploadProgressHint")){
+      $("teacherUploadProgressHint").textContent=state.complete
+        ?"이제 아이별 사진·영상을 선택할 수 있어요."
+        : state.error
+          ?"저장된 자료는 유지됩니다. 오류 안내를 확인해주세요."
+          :"완료 메시지가 뜰 때까지 이 화면을 유지해주세요.";
+    }
+  }
+
+  function finishTeacherUploadProgress(){
+    const state=teacherUploadProgressState;
+    if(!state)return;
+    state.rows.forEach(row=>row.ratio=1);
+    state.complete=true;
+    state.error=false;
+    renderTeacherUploadProgress();
+
+    if(teacherUploadHideTimer)clearTimeout(teacherUploadHideTimer);
+    teacherUploadHideTimer=setTimeout(()=>{
+      $("teacherUploadProgressPanel")?.classList.add("hide");
+      teacherUploadProgressState=null;
+      teacherUploadHideTimer=null;
+    },3500);
+  }
+
+  function failTeacherUploadProgress(message){
+    const state=teacherUploadProgressState;
+    if(!state)return;
+    state.error=true;
+    state.complete=false;
+    const current=state.rows[state.currentIndex];
+    if(current && message)current.phase=String(message);
+    renderTeacherUploadProgress();
   }
 
   function clearTeacherUploadProgress(){
-    const banner=$("teacherUploadProgressBanner");
-    if(banner)banner.remove();
+    const panel=$("teacherUploadProgressPanel");
+    panel?.classList.add("hide");
+    panel?.classList.remove("is-working","is-complete","is-error");
+    teacherUploadProgressState=null;
+    if(teacherUploadHideTimer){
+      clearTimeout(teacherUploadHideTimer);
+      teacherUploadHideTimer=null;
+    }
   }
 
-  async function uploadTeacherMediaToStorage(path,file){
+  async function uploadTeacherMediaToStorage(path,file,onProgress){
     const isVideo=isVideoMedia(file);
     const useTus=isVideo && file.size>6*1024*1024 && window.tus?.Upload;
     if(!useTus){
+      onProgress?.(0.08,"서버로 전송 중");
       const {error}=await db.storage.from("activity-photos").upload(
         path,file,{upsert:false,contentType:file.type||undefined,cacheControl:"31536000"}
       );
       if(error)throw error;
+      onProgress?.(1,"파일 전송 완료");
       return;
     }
 
@@ -4835,7 +4962,14 @@
         },
         chunkSize:6*1024*1024,
         onError:error=>reject(error),
-        onSuccess:()=>resolve()
+        onProgress:(bytesUploaded,bytesTotal)=>{
+          const ratio=bytesTotal?bytesUploaded/bytesTotal:0;
+          onProgress?.(ratio,`영상 전송 중 · ${Math.round(ratio*100)}%`);
+        },
+        onSuccess:()=>{
+          onProgress?.(1,"영상 전송 완료");
+          resolve();
+        }
       });
       upload.findPreviousUploads().then(previous=>{
         if(previous?.length)upload.resumeFromPreviousUpload(previous[0]);
@@ -4898,21 +5032,44 @@
       const committedPaths=[];
       let done=0;
       let reloadSucceeded=false;
-      setTeacherUploadProgress(0,files.length);
+      initTeacherUploadProgress(files);
 
-      const uploadOne=async original=>{
+      const uploadOne=async (original,originalIndex)=>{
         const ownPaths=[];
         try{
           const video=isVideoMedia(original);
+
+          updateTeacherUploadFileProgress(
+            originalIndex,
+            video?0.03:0.02,
+            video?"영상 업로드 준비 중":"사진 최적화 중"
+          );
+
           const file=video ? original : await optimizeTeacherPhotoFile(original);
+
+          if(!video){
+            updateTeacherUploadFileProgress(originalIndex,0.08,"사진 최적화 완료");
+          }
+
           const path=teacherPhotoStoragePath(file,uploadDate);
 
           try{
-            await uploadTeacherMediaToStorage(path,file);
+            await uploadTeacherMediaToStorage(path,file,(storageRatio,storagePhase)=>{
+              // 실제 파일 전송은 전체 파일 작업의 약 80% 구간으로 반영합니다.
+              // 큰 영상(TUS)은 Supabase가 주는 실제 byte 진행률을 그대로 사용합니다.
+              const mapped=0.10+(Math.max(0,Math.min(1,storageRatio||0))*0.72);
+              updateTeacherUploadFileProgress(originalIndex,mapped,storagePhase||"서버로 전송 중");
+            });
           }catch(uploadErr){
             throw new Error((video?"동영상":"사진")+" 파일 저장: "+(uploadErr?.message||uploadErr));
           }
           ownPaths.push(path);
+
+          updateTeacherUploadFileProgress(
+            originalIndex,
+            0.84,
+            video?"영상 미리보기 만드는 중":"사진 미리보기 만드는 중"
+          );
 
           let thumbnailPath=null;
           const thumbnailFile=video
@@ -4928,6 +5085,8 @@
             if(!thumbErr){thumbnailPath=candidate;ownPaths.push(candidate);}
             else console.warn("thumbnail upload:",thumbErr.message);
           }
+
+          updateTeacherUploadFileProgress(originalIndex,0.94,"수업 기록에 연결 중");
 
           return {
             path,
@@ -4954,7 +5113,9 @@
         const batchSize=files.some(isVideoMedia)?2:4;
         for(let i=0;i<files.length;i+=batchSize){
           const batch=files.slice(i,i+batchSize);
-          const settled=await Promise.allSettled(batch.map(uploadOne));
+          const settled=await Promise.allSettled(
+            batch.map((file,batchIndex)=>uploadOne(file,i+batchIndex))
+          );
           const batchResults=settled.filter(x=>x.status==="fulfilled").map(x=>x.value);
           const failed=settled.find(x=>x.status==="rejected");
 
@@ -4967,6 +5128,9 @@
           }
 
           const batchRows=batchResults.map(x=>x.row);
+          batchResults.forEach((_,j)=>{
+            updateTeacherUploadFileProgress(i+j,0.97,"최종 저장 중");
+          });
           const {data:inserted,error:dbErr}=await db.from("photos").insert(batchRows).select("*");
           if(dbErr){
             const batchPaths=batchResults.flatMap(x=>x.paths||[]);
@@ -4984,13 +5148,13 @@
               if(row)Object.assign(preview,row);
               preview.uploading=false;
             }
+            updateTeacherUploadFileProgress(i+j,1,"업로드 완료");
           });
 
           done+=batchResults.length;
           uploadedActivityPhotos.splice(0,uploadedActivityPhotos.length,...prodPhotos);
           renderTeacherUploadPreviewProd();
           renderChildPhotoPickerProd();
-          setTeacherUploadProgress(done,files.length);
         }
 
         e.target.value="";
@@ -4998,11 +5162,11 @@
 
         await loadTeacherPhotos();
         reloadSucceeded=true;
-        clearTeacherUploadProgress();
+        finishTeacherUploadProgress();
         notify(`${files.length}개의 사진·동영상 업로드가 완료되었습니다.`);
       }catch(err){
         e.target.value="";
-        clearTeacherUploadProgress();
+        failTeacherUploadProgress(err?.message||"업로드 중 오류");
         try{
           await loadTeacherPhotos();
           reloadSucceeded=true;
@@ -7003,7 +7167,7 @@
         <td>
           <div class="admin-login-date">
             <b>${escape(formatAdminLoginDate(latest))}</b>
-            <span>${row.last_tracked_login_at?"v66 이후 횟수 집계 중":"Supabase 최근 로그인 기록"}</span>
+            <span>${row.last_tracked_login_at?"11.10 이후 횟수 집계 중":"Supabase 최근 로그인 기록"}</span>
           </div>
         </td>`;
       body.appendChild(tr);

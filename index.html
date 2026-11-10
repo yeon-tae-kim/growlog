@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=66">
+<link rel="manifest" href="./manifest.webmanifest?v=67">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -6316,6 +6316,128 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+
+<style id="growlog-v67-upload-progress">
+.teacher-upload-progress-panel{
+  margin:12px 0 14px;
+  padding:13px 14px;
+  border:1px solid #d9e5f7;
+  border-radius:14px;
+  background:linear-gradient(145deg,#f7faff,#fff);
+  box-shadow:0 4px 15px rgba(71,101,151,.07);
+}
+.teacher-upload-progress-panel.hide{
+  display:none!important;
+}
+.teacher-upload-progress-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.teacher-upload-progress-head > div{
+  display:grid;
+  gap:3px;
+}
+.teacher-upload-progress-head b{
+  font-size:13px;
+  color:#334a70;
+}
+.teacher-upload-progress-head span{
+  font-size:10.5px;
+  color:#758198;
+}
+#teacherUploadProgressPercent{
+  min-width:52px;
+  text-align:right;
+  font-size:20px;
+  line-height:1;
+  color:#476cc1;
+  font-variant-numeric:tabular-nums;
+}
+.teacher-upload-progress-track{
+  position:relative;
+  height:13px;
+  margin:11px 0 8px;
+  overflow:hidden;
+  border-radius:999px;
+  background:#e8eef8;
+  box-shadow:inset 0 1px 2px rgba(50,70,105,.08);
+}
+.teacher-upload-progress-bar{
+  width:0%;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#6b8de3,#82a6f7);
+  transition:width .22s ease;
+}
+.teacher-upload-progress-panel.is-working .teacher-upload-progress-bar{
+  position:relative;
+}
+.teacher-upload-progress-panel.is-working .teacher-upload-progress-bar::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(
+    110deg,
+    transparent 0%,
+    rgba(255,255,255,.08) 35%,
+    rgba(255,255,255,.45) 50%,
+    rgba(255,255,255,.08) 65%,
+    transparent 100%
+  );
+  transform:translateX(-100%);
+  animation:teacherUploadShine 1.4s linear infinite;
+}
+.teacher-upload-progress-panel.is-complete{
+  border-color:#cfe8d8;
+  background:#f5fcf7;
+}
+.teacher-upload-progress-panel.is-complete #teacherUploadProgressPercent,
+.teacher-upload-progress-panel.is-complete .teacher-upload-progress-head b{
+  color:#33724c;
+}
+.teacher-upload-progress-panel.is-error{
+  border-color:#f0d4d4;
+  background:#fff8f8;
+}
+.teacher-upload-progress-panel.is-error #teacherUploadProgressPercent,
+.teacher-upload-progress-panel.is-error .teacher-upload-progress-head b{
+  color:#a84d4d;
+}
+.teacher-upload-progress-foot{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  color:#68758a;
+  font-size:10.5px;
+  line-height:1.4;
+}
+#teacherUploadProgressCurrent{
+  font-weight:800;
+  color:#536176;
+}
+#teacherUploadProgressHint{
+  color:#8b94a4;
+}
+@keyframes teacherUploadShine{
+  to{transform:translateX(100%)}
+}
+@media(max-width:620px){
+  .teacher-upload-progress-panel{
+    padding:12px;
+  }
+  #teacherUploadProgressPercent{
+    font-size:18px;
+  }
+  .teacher-upload-progress-foot{
+    display:grid;
+    gap:3px;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -6930,6 +7052,26 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
           <h2>1. 전체 활동사진·동영상 올리기</h2>
           <input id="bulk" type="file" multiple accept="image/*,video/*">
           <p class="muted" style="font-size:12px">수업 사진·동영상은 합쳐서 한 번에 최대 30개까지 올릴 수 있어요. 선택하면 미리보기가 먼저 뜨고, 사진은 가볍게 최적화하고 동영상은 안정적으로 저장합니다. 업로드한 자료는 모든 아이 이름 탭에서 동일하게 확인하고 아이별로 선택할 수 있습니다.</p>
+
+          <div id="teacherUploadProgressPanel" class="teacher-upload-progress-panel hide" aria-live="polite">
+            <div class="teacher-upload-progress-head">
+              <div>
+                <b id="teacherUploadProgressTitle">📤 업로드 준비 중...</b>
+                <span id="teacherUploadProgressCount">0 / 0개 완료</span>
+              </div>
+              <strong id="teacherUploadProgressPercent">0%</strong>
+            </div>
+            <div id="teacherUploadProgressTrack" class="teacher-upload-progress-track"
+                 role="progressbar" aria-label="사진·영상 업로드 진행률"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div id="teacherUploadProgressBar" class="teacher-upload-progress-bar"></div>
+            </div>
+            <div class="teacher-upload-progress-foot">
+              <span id="teacherUploadProgressCurrent">선택한 자료를 확인하고 있어요.</span>
+              <span id="teacherUploadProgressHint">이 화면을 닫지 말고 완료 메시지까지 기다려주세요.</span>
+            </div>
+          </div>
+
           <div id="uploadPreview" class="photos">
             <div class="photo-empty">아직 업로드된 사진·동영상이 없습니다.<br>위에서 오늘 수업 자료를 여러 개 선택해주세요.</div>
           </div>
@@ -7464,13 +7606,13 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
       <div class="admin-login-accuracy-note">
         <b>집계 기준</b>
         <span><strong>최근 30일 접속</strong>은 Supabase의 실제 마지막 로그인 시각으로 계산합니다.</span>
-        <span><strong>로그인 횟수</strong>는 v66 적용 이후 로그인 버튼으로 인증에 성공한 횟수부터 정확히 누적됩니다.</span>
+        <span><strong>로그인 횟수</strong>는 11.10 이후 로그인 버튼으로 인증에 성공한 횟수부터 정확히 누적됩니다.</span>
       </div>
 <div class="admin-member-section admin-parent-login-section">
         <div class="admin-section-toolbar">
           <div>
             <h3>아이디별 접속 현황</h3>
-            <div class="muted">최근 30일 접속 여부는 Supabase 실제 로그인 시각으로 계산합니다. 정확한 로그인 횟수는 v66 적용 이후부터 누적됩니다.</div>
+            <div class="muted">최근 30일 접속 여부는 Supabase 실제 로그인 시각으로 계산합니다. 정확한 로그인 횟수는 11.10 이후부터 누적됩니다.</div>
           </div>
           <div class="admin-parent-login-search">
             <label for="adminParentLoginSearch">검색</label>
@@ -7481,7 +7623,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
         <div class="grid three admin-parent-login-summary">
           <div class="stat"><b id="adminParentLoginParentTotal">0</b><span>전체 학부모</span></div>
           <div class="stat"><b id="adminParentLogin30dParents">0</b><span>최근 30일 접속</span></div>
-          <div class="stat"><b id="adminParentLoginTotalCount">0</b><span>v66 이후 로그인</span></div>
+          <div class="stat"><b id="adminParentLoginTotalCount">0</b><span>11.10 이후 로그인</span></div>
         </div>
 
         <table id="adminParentLoginTable">
@@ -7492,7 +7634,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
               <th>아이</th>
               <th>센터</th>
               <th>최근 30일 접속</th>
-              <th>v66 이후 로그인</th>
+              <th>11.10 이후 로그인</th>
               <th>최근 로그인</th>
             </tr>
           </thead>
@@ -9612,7 +9754,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=66"></script>
+<script src="./app.js?v=67"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
