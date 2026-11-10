@@ -640,6 +640,13 @@
 
   window.selectGrowlogPublicVenue=selectGrowlogPublicVenue;
 
+  window.scrollToGrowlogClassMap=function(){
+    const target=$("publicClassMapTitle")?.closest(".public-class-map-section") || $("publicClassMapTitle");
+    if(!target)return;
+    target.scrollIntoView({behavior:"smooth",block:"start"});
+    setTimeout(()=>$("growlogPublicMapSearch")?.focus?.({preventScroll:true}),700);
+  };
+
   window.filterGrowlogPublicMap=function(program,button){
     growlogPublicMapFilter=program||"all";
     qa("#publicClassMapFilters button").forEach(b=>b.classList.remove("on"));
@@ -3027,6 +3034,12 @@
     }
   }
 
+  function markParentRecordViewedForPwa(){
+    if(profile?.role!=="parent")return;
+    try{localStorage.setItem("growlog-parent-record-viewed-v76","1");}catch(e){}
+    try{window.markGrowlogParentRecordViewed?.();}catch(e){}
+  }
+
   async function renderParentToday(){
     if(!activeChild || !activeClass){
       $("parentTodayContent")?.classList.add("hide");
@@ -3061,6 +3074,7 @@
       .select("*").eq("child_id",activeChild.id).eq("class_id",activeClass.id).eq("lesson_date",date).maybeSingle();
 
     if(record){
+      markParentRecordViewedForPwa();
       if($("parentGrowthArea")){
         const canonicalArea=canonicalGrowthArea(record.area,record.behavior);
         $("parentGrowthArea").textContent=`${parentGrowthIcon(canonicalArea)} ${canonicalArea}`;
@@ -3561,6 +3575,8 @@
       return;
     }
 
+    markParentRecordViewedForPwa();
+
     // 목록에서는 가벼운 썸네일 주소를 한 번에 받아 빠르게 보여주고, 원본은 보기/저장할 때만 불러옵니다.
     const fastRows=await signedThumbnailListFast(rows.map(x=>x.photos));
     const fastById=new Map(fastRows.map(x=>[x.id,x]));
@@ -3720,6 +3736,8 @@
       ...(records||[]).map(rec=>rec.lesson_date),
       ...classAssignments.map(a=>a.photos.lesson_date)
     ])].filter(Boolean).sort((a,b)=>String(b).localeCompare(String(a)));
+
+    if(dates.length)markParentRecordViewedForPwa();
 
     box.innerHTML="";
     for(const lessonDate of dates){
