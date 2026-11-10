@@ -1,8 +1,8 @@
-const GROWLOG_CACHE = "growlog-pwa-v67";
+const GROWLOG_CACHE = "growlog-pwa-v68";
 const PRECACHE = [
   "./",
   "./index.html",
-  "./app.js?v=67",
+  "./app.js?v=68",
   "./lesson-videos.css?v=46",
   "./manifest.webmanifest",
   "./growlog-icon-192-v39.png",

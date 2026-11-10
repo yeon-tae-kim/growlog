@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=67">
+<link rel="manifest" href="./manifest.webmanifest?v=68">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -6438,6 +6438,465 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+
+<style id="growlog-v68-public-class-map">
+.public-class-map-section{
+  position:relative;
+  width:100%;
+  background:#fff;
+  color:#253248;
+  border-top:1px solid #edf0f4;
+}
+.public-class-map-inner{
+  width:min(1180px,100%);
+  margin:0 auto;
+  padding:76px 34px 64px;
+}
+.public-class-map-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:28px;
+  margin-bottom:24px;
+}
+.public-class-map-kicker{
+  display:block;
+  margin-bottom:10px;
+  color:#7080a4;
+  font-size:10px;
+  font-weight:950;
+  letter-spacing:.13em;
+}
+.public-class-map-head h2{
+  margin:0;
+  font-size:clamp(30px,4vw,48px);
+  line-height:1.12;
+  letter-spacing:-.052em;
+  color:#202d43;
+}
+.public-class-map-head p{
+  margin:13px 0 0;
+  color:#788396;
+  font-size:14px;
+  line-height:1.6;
+}
+.public-class-map-counts{
+  display:flex;
+  gap:8px;
+  flex:0 0 auto;
+}
+.public-class-map-counts > div{
+  min-width:82px;
+  padding:13px 14px 11px;
+  border:1px solid #e6eaf0;
+  border-radius:16px;
+  background:#fafbfd;
+  text-align:center;
+}
+.public-class-map-counts b{
+  display:block;
+  color:#315ebd;
+  font-size:23px;
+  line-height:1;
+}
+.public-class-map-counts span{
+  display:block;
+  margin-top:5px;
+  color:#8a93a1;
+  font-size:9.5px;
+  font-weight:800;
+}
+.public-class-map-filters{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-bottom:18px;
+}
+.public-class-map-filters button{
+  min-height:37px;
+  padding:7px 13px;
+  border:1px solid #e2e6ec;
+  border-radius:999px;
+  background:#fff;
+  color:#697487;
+  font:inherit;
+  font-size:10.5px;
+  font-weight:900;
+  cursor:pointer;
+}
+.public-class-map-filters button.on{
+  border-color:#bed0f3;
+  background:#eef4ff;
+  color:#315db9;
+  box-shadow:0 5px 14px rgba(63,91,151,.08);
+}
+.public-class-map-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1.65fr) minmax(300px,.75fr);
+  gap:18px;
+  align-items:stretch;
+}
+.public-class-map-board{
+  min-width:0;
+}
+.public-class-map-surface{
+  position:relative;
+  min-height:610px;
+  overflow:hidden;
+  border:1px solid #e4e9ee;
+  border-radius:24px;
+  background:
+    radial-gradient(circle at 50% 38%,rgba(95,133,198,.07),transparent 42%),
+    linear-gradient(180deg,#f9fbfd,#f7faf8);
+  box-shadow:0 18px 44px rgba(36,54,79,.07);
+}
+.public-class-map-bg{
+  position:absolute;
+  inset:18px;
+  width:calc(100% - 36px);
+  height:calc(100% - 36px);
+}
+.public-class-map-bg .map-region{
+  fill:url(#growlogMapRegion);
+  stroke:#d9e2e8;
+  stroke-width:2;
+}
+.public-class-map-bg .seoul{
+  fill:#f9fbff;
+  stroke:#cdd9e8;
+  stroke-width:2.2;
+}
+.public-class-map-bg .incheon{
+  fill:#f4f7fb;
+}
+.public-class-map-bg .map-river{
+  fill:none;
+  stroke:#c9dff0;
+  stroke-width:8;
+  stroke-linecap:round;
+  opacity:.78;
+}
+.public-class-map-bg .map-city-dot{
+  fill:#7c93c4;
+}
+.public-class-map-bg .map-region-label{
+  fill:#75849b;
+  font-size:20px;
+  font-weight:900;
+  text-anchor:middle;
+}
+.public-class-map-bg .map-region-label.small{
+  fill:#9aa6b4;
+  font-size:13px;
+  font-weight:800;
+}
+.public-class-map-bg .map-water-label{
+  fill:#a0bdd1;
+  font-size:11px;
+  font-weight:800;
+  text-anchor:middle;
+}
+.public-class-map-pins{
+  position:absolute;
+  inset:0;
+}
+.public-class-pin{
+  --pin:#4d79d8;
+  position:absolute;
+  left:var(--x);
+  top:var(--y);
+  width:28px;
+  height:28px;
+  transform:translate(-50%,-50%);
+  border:3px solid #fff;
+  border-radius:50% 50% 50% 8px;
+  background:var(--pin);
+  color:#fff;
+  box-shadow:0 5px 13px rgba(36,52,79,.22);
+  rotate:-45deg;
+  cursor:pointer;
+  z-index:3;
+  transition:transform .17s ease,box-shadow .17s ease,opacity .17s ease;
+}
+.public-class-pin > span{
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  rotate:45deg;
+  font-size:8.5px;
+  font-weight:950;
+}
+.public-class-pin:hover,
+.public-class-pin.on,
+.public-class-pin:focus-visible{
+  transform:translate(-50%,-50%) scale(1.23);
+  box-shadow:0 7px 18px rgba(36,52,79,.30);
+  z-index:8;
+}
+.public-class-pin.is-hidden{
+  display:none;
+}
+.public-class-pin.multi::after{
+  content:"";
+  position:absolute;
+  right:-3px;
+  top:-3px;
+  width:8px;
+  height:8px;
+  border:2px solid #fff;
+  border-radius:50%;
+  background:#f5b34e;
+}
+.public-class-map-detail{
+  position:absolute;
+  left:20px;
+  bottom:20px;
+  z-index:10;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  width:min(430px,calc(100% - 40px));
+  padding:13px 14px;
+  border:1px solid rgba(217,224,232,.96);
+  border-radius:16px;
+  background:rgba(255,255,255,.94);
+  box-shadow:0 12px 30px rgba(44,57,75,.11);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+}
+.public-class-map-detail-num{
+  display:grid;
+  place-items:center;
+  flex:0 0 28px;
+  height:28px;
+  border-radius:9px;
+  background:#eef4ff;
+  color:#315db9;
+  font-size:11px;
+  font-weight:950;
+}
+.public-class-map-detail b{
+  display:block;
+  color:#273349;
+  font-size:12px;
+  line-height:1.4;
+}
+.public-class-map-detail-programs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:6px;
+}
+.public-program-badge{
+  --program:#4d79d8;
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--program) 11%,white);
+  color:color-mix(in srgb,var(--program) 88%,#263245);
+  border:1px solid color-mix(in srgb,var(--program) 25%,white);
+  font-size:9px;
+  font-weight:900;
+}
+.public-class-map-note{
+  margin:8px 4px 0;
+  color:#9aa3af;
+  font-size:9.5px;
+  line-height:1.5;
+}
+.public-class-map-list-wrap{
+  display:flex;
+  flex-direction:column;
+  min-height:610px;
+  max-height:610px;
+  overflow:hidden;
+  border:1px solid #e5e9ee;
+  border-radius:22px;
+  background:#fbfcfd;
+}
+.public-class-map-list-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:16px 16px 12px;
+  border-bottom:1px solid #edf0f3;
+}
+.public-class-map-list-head b{
+  color:#303c50;
+  font-size:12px;
+}
+.public-class-map-list-head span{
+  color:#778398;
+  font-size:10px;
+  font-weight:900;
+}
+.public-class-map-list{
+  overflow:auto;
+  padding:8px;
+  scrollbar-width:thin;
+}
+.public-venue-card{
+  display:grid;
+  grid-template-columns:31px 1fr;
+  gap:9px;
+  width:100%;
+  padding:10px;
+  border:1px solid transparent;
+  border-radius:13px;
+  background:transparent;
+  color:inherit;
+  text-align:left;
+  font:inherit;
+  cursor:pointer;
+  transition:background .16s ease,border-color .16s ease;
+}
+.public-venue-card:hover,
+.public-venue-card.on{
+  border-color:#dce5f5;
+  background:#fff;
+}
+.public-venue-num{
+  display:grid;
+  place-items:center;
+  width:29px;
+  height:29px;
+  border-radius:9px;
+  background:#edf3fd;
+  color:#3d65ba;
+  font-size:10px;
+  font-weight:950;
+}
+.public-venue-card b{
+  display:block;
+  color:#334054;
+  font-size:10.5px;
+  line-height:1.45;
+}
+.public-venue-region{
+  display:block;
+  margin-top:2px;
+  color:#a0a8b2;
+  font-size:8.8px;
+}
+.public-venue-programs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  margin-top:5px;
+}
+.public-venue-programs span{
+  --program:#4d79d8;
+  padding:3px 6px;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--program) 9%,white);
+  color:color-mix(in srgb,var(--program) 80%,#344056);
+  font-size:8px;
+  font-weight:900;
+}
+.public-class-map-legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:13px;
+  margin-top:15px;
+  padding:0 3px;
+  color:#778396;
+  font-size:9.5px;
+  font-weight:800;
+}
+.public-class-map-legend span{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+.public-class-map-legend i{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--legend);
+}
+@media(max-width:900px){
+  .public-class-map-inner{
+    padding:58px 22px 50px;
+  }
+  .public-class-map-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .public-class-map-layout{
+    grid-template-columns:1fr;
+  }
+  .public-class-map-list-wrap{
+    min-height:0;
+    max-height:none;
+  }
+  .public-class-map-list{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    max-height:360px;
+  }
+}
+@media(max-width:600px){
+  .public-class-map-inner{
+    padding:46px 14px 42px;
+  }
+  .public-class-map-head h2{
+    font-size:30px;
+  }
+  .public-class-map-head p{
+    font-size:12px;
+  }
+  .public-class-map-counts{
+    width:100%;
+  }
+  .public-class-map-counts > div{
+    min-width:0;
+    flex:1;
+  }
+  .public-class-map-filters{
+    flex-wrap:nowrap;
+    overflow:auto;
+    padding-bottom:4px;
+    margin-right:-14px;
+    padding-right:14px;
+    scrollbar-width:none;
+  }
+  .public-class-map-filters::-webkit-scrollbar{display:none}
+  .public-class-map-filters button{
+    flex:0 0 auto;
+  }
+  .public-class-map-surface{
+    min-height:500px;
+    border-radius:19px;
+  }
+  .public-class-map-bg{
+    inset:8px;
+    width:calc(100% - 16px);
+    height:calc(100% - 16px);
+  }
+  .public-class-pin{
+    width:25px;
+    height:25px;
+  }
+  .public-class-map-detail{
+    left:10px;
+    bottom:10px;
+    width:calc(100% - 20px);
+    padding:11px;
+  }
+  .public-class-map-list{
+    display:block;
+    max-height:340px;
+  }
+  .public-class-map-legend{
+    gap:9px;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -6592,6 +7051,90 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
       </div>
     </div>
   </div>
+
+
+  <section class="public-class-map-section" aria-labelledby="publicClassMapTitle">
+    <div class="public-class-map-inner">
+      <div class="public-class-map-head">
+        <div>
+          <span class="public-class-map-kicker">ROLL EDU CLASS MAP</span>
+          <h2 id="publicClassMapTitle">서울·경기·인천 곳곳에서<br>아이들을 만나고 있어요.</h2>
+          <p>현재 운영 중인 지점과 프로그램을 한눈에 확인해보세요.</p>
+        </div>
+        <div class="public-class-map-counts" aria-label="수업 운영 현황">
+          <div><b>23</b><span>운영 지점</span></div>
+          <div><b>28</b><span>수업</span></div>
+          <div><b>5</b><span>프로그램</span></div>
+        </div>
+      </div>
+
+      <div id="publicClassMapFilters" class="public-class-map-filters" aria-label="프로그램 필터">
+        <button class="on" type="button" data-program="all" onclick="filterGrowlogPublicMap('all',this)">전체</button>
+        <button type="button" data-program="블럭동화" onclick="filterGrowlogPublicMap('블럭동화',this)">🧱 블럭동화</button>
+        <button type="button" data-program="블럭과학" onclick="filterGrowlogPublicMap('블럭과학',this)">🔬 블럭과학</button>
+        <button type="button" data-program="영어뮤지컬인형극" onclick="filterGrowlogPublicMap('영어뮤지컬인형극',this)">🎭 영어뮤지컬인형극</button>
+        <button type="button" data-program="스토리보드게임" onclick="filterGrowlogPublicMap('스토리보드게임',this)">🎲 스토리보드게임</button>
+        <button type="button" data-program="스토리텔링도예" onclick="filterGrowlogPublicMap('스토리텔링도예',this)">🏺 스토리텔링도예</button>
+      </div>
+
+      <div class="public-class-map-layout">
+        <div class="public-class-map-board">
+          <div class="public-class-map-surface" aria-label="수도권 수업 운영 지도">
+            <svg class="public-class-map-bg" viewBox="0 0 900 650" aria-hidden="true">
+              <defs>
+                <linearGradient id="growlogMapRegion" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#f2f6fb"/>
+                  <stop offset="100%" stop-color="#edf4ef"/>
+                </linearGradient>
+              </defs>
+
+              <!-- 보기 쉬운 수도권 개념 지도 -->
+              <path class="map-region gyeonggi" d="M135 82 C230 28 350 30 440 64 C534 15 692 40 773 123 C843 195 846 303 802 371 C851 444 810 559 710 603 C615 644 506 615 441 584 C360 626 235 590 187 522 C127 484 99 405 121 338 C73 260 79 156 135 82Z"/>
+              <path class="map-region incheon" d="M81 333 C115 298 165 285 206 311 C221 345 205 391 168 418 C128 425 94 400 75 369Z"/>
+              <path class="map-region seoul" d="M314 245 C363 207 444 201 510 225 C568 244 607 281 594 328 C578 375 509 395 439 386 C372 378 321 345 304 303 C295 281 299 260 314 245Z"/>
+              <path class="map-river" d="M296 302 C355 287 389 311 440 306 C497 299 522 281 603 302"/>
+              <circle class="map-city-dot" cx="426" cy="289" r="4"/>
+
+              <text class="map-region-label" x="430" y="276">서울</text>
+              <text class="map-region-label" x="123" y="357">인천</text>
+              <text class="map-region-label small" x="203" y="147">고양 · 일산</text>
+              <text class="map-region-label small" x="677" y="505">성남 · 분당</text>
+              <text class="map-region-label small" x="707" y="579">용인</text>
+              <text class="map-water-label" x="445" y="326">한강</text>
+            </svg>
+
+            <div id="growlogPublicMapPins" class="public-class-map-pins"></div>
+
+            <div id="growlogPublicMapDetail" class="public-class-map-detail" aria-live="polite">
+              <span class="public-class-map-detail-num">1</span>
+              <div>
+                <b>현대백화점 일산킨텍스점</b>
+                <div class="public-class-map-detail-programs"></div>
+              </div>
+            </div>
+          </div>
+
+          <p class="public-class-map-note">* 운영 지역을 보기 쉽게 단순화한 수도권 지도입니다. 실제 수업 운영은 시즌·지점 사정에 따라 달라질 수 있어요.</p>
+        </div>
+
+        <aside class="public-class-map-list-wrap" aria-label="수업 지점 목록">
+          <div class="public-class-map-list-head">
+            <b id="growlogVenueListTitle">전체 운영 지점</b>
+            <span id="growlogVenueListCount">23곳</span>
+          </div>
+          <div id="growlogVenueList" class="public-class-map-list"></div>
+        </aside>
+      </div>
+
+      <div class="public-class-map-legend" aria-label="프로그램 색상 안내">
+        <span><i style="--legend:#4d79d8"></i>블럭동화</span>
+        <span><i style="--legend:#7466c8"></i>블럭과학</span>
+        <span><i style="--legend:#e58a5e"></i>영어뮤지컬인형극</span>
+        <span><i style="--legend:#5b9d72"></i>스토리보드게임</span>
+        <span><i style="--legend:#b78561"></i>스토리텔링도예</span>
+      </div>
+    </div>
+  </section>
 
   <div class="simple-landing-bottom split-landing-bottom">
     <p><b>수업에서 발견하고</b><span>·</span><b>집에서 이야기하고</b><span>·</span><b>함께 성장합니다</b></p>
@@ -9754,7 +10297,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=67"></script>
+<script src="./app.js?v=68"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

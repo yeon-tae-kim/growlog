@@ -413,8 +413,158 @@
     closeAccountSettings();
     setRoleClass(null);
     setTimeout(startGrowlogLandingSlides,0);
+    setTimeout(renderGrowlogPublicMap,0);
     window.growlogPromoLandingReady?.();
   }
+
+  const GROWLOG_PUBLIC_PROGRAM_STYLE={
+    "블럭동화":{color:"#4d79d8",icon:"🧱"},
+    "블럭과학":{color:"#7466c8",icon:"🔬"},
+    "영어뮤지컬인형극":{color:"#e58a5e",icon:"🎭"},
+    "스토리보드게임":{color:"#5b9d72",icon:"🎲"},
+    "스토리텔링도예":{color:"#b78561",icon:"🏺"}
+  };
+
+  const GROWLOG_PUBLIC_VENUES=[
+    {name:"현대백화점 일산킨텍스점",region:"경기 고양",x:20,y:18,programs:["블럭동화"]},
+    {name:"이마트 일산트레이더스점",region:"경기 고양",x:16,y:23,programs:["블럭동화"]},
+    {name:"이마트 풍산점",region:"경기 고양",x:25,y:25,programs:["블럭동화"]},
+    {name:"이마트 가든파이브점",region:"서울 송파",x:81,y:66,programs:["블럭동화"]},
+    {name:"신세계백화점 경기점",region:"경기 용인",x:82,y:91,programs:["블럭동화"]},
+    {name:"AK 분당점",region:"경기 성남",x:77,y:83,programs:["블럭동화"]},
+    {name:"송파어린이문화회관",region:"서울 송파",x:78,y:58,programs:["블럭동화"]},
+    {name:"시립성동청소년센터",region:"서울 성동",x:61,y:47,programs:["블럭동화"]},
+    {name:"이마트 월계점",region:"서울 노원",x:66,y:29,programs:["블럭동화","스토리텔링도예"]},
+    {name:"롯데백화점 건대점",region:"서울 광진",x:70,y:48,programs:["블럭동화","블럭과학"]},
+    {name:"NC백화점 야탑점",region:"경기 성남",x:78,y:76,programs:["블럭동화"]},
+    {name:"롯데마트 송도점",region:"인천 송도",x:13,y:80,programs:["블럭동화"]},
+    {name:"CLS 영어유치원",region:"서울 여의도",x:43,y:54,programs:["영어뮤지컬인형극"]},
+    {name:"이마트 은평점",region:"서울 은평",x:37,y:38,programs:["블럭동화"]},
+    {name:"현대백화점 천호점",region:"서울 강동",x:80,y:51,programs:["블럭동화","스토리보드게임","영어뮤지컬인형극"]},
+    {name:"롯데백화점 관악점",region:"서울 관악",x:49,y:68,programs:["블럭동화","영어뮤지컬인형극"]},
+    {name:"공릉청소년문화정보센터",region:"서울 노원",x:72,y:26,programs:["스토리텔링도예"]},
+    {name:"현대백화점 미아점",region:"서울 성북",x:57,y:30,programs:["블럭동화"]},
+    {name:"이마트 청계천점",region:"서울 중구",x:57,y:43,programs:["블럭동화"]},
+    {name:"성북청소년문화의집",region:"서울 성북",x:55,y:35,programs:["블럭동화"]},
+    {name:"롯데마트 중계점",region:"서울 노원",x:68,y:21,programs:["블럭동화"]},
+    {name:"이마트 신도림점",region:"서울 구로",x:37,y:62,programs:["블럭동화"]},
+    {name:"이마트 묵동점",region:"서울 중랑",x:73,y:34,programs:["영어뮤지컬인형극"]}
+  ];
+
+  let growlogPublicMapFilter="all";
+  let growlogPublicMapSelectedIndex=0;
+
+  function publicProgramStyle(program){
+    return GROWLOG_PUBLIC_PROGRAM_STYLE[program]||{color:"#6e7d90",icon:"•"};
+  }
+
+  function publicProgramBadge(program,small=false){
+    const meta=publicProgramStyle(program);
+    return `<span class="${small?"":"public-program-badge"}" style="--program:${meta.color}">${escape(meta.icon)} ${escape(program)}</span>`;
+  }
+
+  function growlogPublicMapVisibleVenues(){
+    return GROWLOG_PUBLIC_VENUES
+      .map((venue,index)=>({...venue,index}))
+      .filter(venue=>growlogPublicMapFilter==="all" || venue.programs.includes(growlogPublicMapFilter));
+  }
+
+  function selectGrowlogPublicVenue(index,scrollCard=false){
+    const venue=GROWLOG_PUBLIC_VENUES[index];
+    if(!venue)return;
+    growlogPublicMapSelectedIndex=index;
+
+    qa(".public-class-pin").forEach(pin=>{
+      pin.classList.toggle("on",Number(pin.dataset.index)===index);
+    });
+    qa(".public-venue-card").forEach(card=>{
+      card.classList.toggle("on",Number(card.dataset.index)===index);
+    });
+
+    const detail=$("growlogPublicMapDetail");
+    if(detail){
+      const num=detail.querySelector(".public-class-map-detail-num");
+      const name=detail.querySelector("b");
+      const programs=detail.querySelector(".public-class-map-detail-programs");
+      if(num)num.textContent=String(index+1);
+      if(name)name.textContent=venue.name;
+      if(programs)programs.innerHTML=venue.programs.map(p=>publicProgramBadge(p)).join("");
+    }
+
+    if(scrollCard){
+      const card=q(`.public-venue-card[data-index="${index}"]`);
+      card?.scrollIntoView?.({block:"nearest",behavior:"smooth"});
+    }
+  }
+
+  function renderGrowlogPublicMap(){
+    const pins=$("growlogPublicMapPins");
+    const list=$("growlogVenueList");
+    if(!pins||!list)return;
+
+    const visible=growlogPublicMapVisibleVenues();
+    const visibleSet=new Set(visible.map(v=>v.index));
+
+    pins.innerHTML=GROWLOG_PUBLIC_VENUES.map((venue,index)=>{
+      const primary=publicProgramStyle(
+        growlogPublicMapFilter!=="all" && venue.programs.includes(growlogPublicMapFilter)
+          ? growlogPublicMapFilter
+          : venue.programs[0]
+      );
+      const hidden=!visibleSet.has(index);
+      const multi=venue.programs.length>1;
+      return `<button
+        class="public-class-pin ${multi?"multi":""} ${hidden?"is-hidden":""}"
+        style="--x:${venue.x}%;--y:${venue.y}%;--pin:${primary.color}"
+        data-index="${index}"
+        type="button"
+        aria-label="${escape(venue.name)} · ${escape(venue.programs.join(", "))}"
+        onclick="selectGrowlogPublicVenue(${index},true)"
+        onmouseenter="selectGrowlogPublicVenue(${index},false)"
+        onfocus="selectGrowlogPublicVenue(${index},false)"
+      ><span>${index+1}</span></button>`;
+    }).join("");
+
+    list.innerHTML=visible.map(venue=>{
+      return `<button class="public-venue-card" type="button" data-index="${venue.index}"
+        onclick="selectGrowlogPublicVenue(${venue.index},false)"
+        onmouseenter="selectGrowlogPublicVenue(${venue.index},false)"
+        onfocus="selectGrowlogPublicVenue(${venue.index},false)">
+          <span class="public-venue-num">${venue.index+1}</span>
+          <span>
+            <b>${escape(venue.name)}</b>
+            <span class="public-venue-region">${escape(venue.region)}</span>
+            <span class="public-venue-programs">
+              ${venue.programs.map(program=>{
+                const meta=publicProgramStyle(program);
+                return `<span style="--program:${meta.color}">${escape(meta.icon)} ${escape(program)}</span>`;
+              }).join("")}
+            </span>
+          </span>
+        </button>`;
+    }).join("");
+
+    if($("growlogVenueListTitle")){
+      $("growlogVenueListTitle").textContent=growlogPublicMapFilter==="all"
+        ?"전체 운영 지점"
+        :growlogPublicMapFilter;
+    }
+    if($("growlogVenueListCount"))$("growlogVenueListCount").textContent=`${visible.length}곳`;
+
+    const selectedVisible=visibleSet.has(growlogPublicMapSelectedIndex)
+      ?growlogPublicMapSelectedIndex
+      :(visible[0]?.index??0);
+    selectGrowlogPublicVenue(selectedVisible,false);
+  }
+
+  window.selectGrowlogPublicVenue=selectGrowlogPublicVenue;
+
+  window.filterGrowlogPublicMap=function(program,button){
+    growlogPublicMapFilter=program||"all";
+    qa("#publicClassMapFilters button").forEach(b=>b.classList.remove("on"));
+    button?.classList.add("on");
+    renderGrowlogPublicMap();
+  };
 
   let growlogLandingSlideTimer=null;
   let growlogLandingSlideIndex=0;
