@@ -10,7 +10,7 @@
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Growlog" name="apple-mobile-web-app-title"/>
 <meta content="yes" name="mobile-web-app-capable"/>
-<link href="./manifest.webmanifest?v=70" rel="manifest"/>
+<link href="./manifest.webmanifest?v=71" rel="manifest"/>
 <link href="./apple-touch-icon-v39.png" rel="apple-touch-icon" sizes="180x180"/>
 <link href="./growlog-icon-192-v39.png" rel="icon" sizes="192x192" type="image/png"/>
 <title>Growlog | 아이 성장 한줄</title>
@@ -7027,6 +7027,57 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+
+<style id="growlog-v71-fullscreen-hero">
+/* 헤더 아래 첫 화면을 사진/영상으로 완전히 채웁니다. */
+.split-landing-photo-pane{
+  height:calc(100svh - 76px)!important;
+  min-height:620px!important;
+  max-height:none!important;
+}
+.growlog-landing-slides{
+  inset:0!important;
+}
+.growlog-landing-slide{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+}
+
+/* 사진 아래 흰 틈 없이 바로 다음 소개 영역으로 이어짐 */
+.split-landing-copy-pane{
+  margin-top:0!important;
+}
+.split-landing-shell{
+  gap:0!important;
+}
+
+/* 화면 높이가 낮은 노트북에서도 첫 화면을 꽉 채움 */
+@media(max-height:760px) and (min-width:761px){
+  .split-landing-photo-pane{
+    height:calc(100svh - 76px)!important;
+    min-height:520px!important;
+  }
+}
+
+/* 모바일 헤더가 조금 더 낮아지는 것을 고려 */
+@media(max-width:760px){
+  .split-landing-photo-pane{
+    height:calc(100svh - 68px)!important;
+    min-height:480px!important;
+  }
+}
+
+/* 아주 작은 모바일 화면 */
+@media(max-width:430px){
+  .split-landing-photo-pane{
+    height:calc(100svh - 64px)!important;
+    min-height:430px!important;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -10295,7 +10346,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=70"></script>
+<script src="./app.js?v=71"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
