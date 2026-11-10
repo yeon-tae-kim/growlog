@@ -10,7 +10,7 @@
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Growlog" name="apple-mobile-web-app-title"/>
 <meta content="yes" name="mobile-web-app-capable"/>
-<link href="./manifest.webmanifest?v=77" rel="manifest"/>
+<link href="./manifest.webmanifest?v=78" rel="manifest"/>
 <link href="./apple-touch-icon-v39.png" rel="apple-touch-icon" sizes="180x180"/>
 <link href="./growlog-icon-192-v39.png" rel="icon" sizes="192x192" type="image/png"/>
 <title>Growlog | 아이 성장 한줄</title>
@@ -7326,6 +7326,48 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+
+<style id="growlog-v78-mobile-hero-flush">
+/* 모바일 첫 사진: 좌우/상단 여백 없이 헤더 바로 아래부터 화면 끝까지 */
+@media(max-width:760px){
+  .split-landing-photo-pane{
+    width:100%!important;
+    margin:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    background:#ece9e1!important;
+
+    /* v77의 짧은 모바일 사진 높이는 그대로 유지 */
+    height:54svh!important;
+    min-height:390px!important;
+    max-height:520px!important;
+  }
+
+  .growlog-landing-slides,
+  .growlog-landing-slide{
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    border-radius:0!important;
+  }
+
+  .split-landing-shell{
+    padding:0!important;
+    margin:0!important;
+    width:100%!important;
+    max-width:none!important;
+  }
+}
+
+@media(max-width:430px){
+  .split-landing-photo-pane{
+    height:52svh!important;
+    min-height:360px!important;
+    max-height:470px!important;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -10674,7 +10716,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=77"></script>
+<script src="./app.js?v=78"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
