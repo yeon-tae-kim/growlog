@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=68">
+<link rel="manifest" href="./manifest.webmanifest?v=69">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -6897,6 +6897,17 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+<style id="growlog-v69-map-search-apply-links">
+.public-class-map-tools{display:grid;gap:10px;margin-bottom:18px}
+.public-class-map-search{position:relative;display:flex;align-items:center;gap:8px;width:min(520px,100%);min-height:44px;padding:0 12px;border:1px solid #dde4ec;border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(44,57,75,.04)}
+.public-class-map-search>span{flex:0 0 auto;font-size:14px}.public-class-map-search input{min-width:0;flex:1;min-height:40px;padding:0;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;color:#334055;font-size:12px}.public-class-map-search input::placeholder{color:#9aa4b1}.public-class-map-search button{flex:0 0 28px;height:28px;border:0;border-radius:50%;background:#f1f4f7;color:#7b8694;font-size:18px;line-height:1;cursor:pointer}.public-class-map-search button.hide{display:none!important}
+.public-class-map-search-empty{padding:22px 14px;color:#8d97a4;font-size:11px;text-align:center}
+.public-class-apply-section{margin-top:32px;padding:24px;border:1px solid #e4e9ef;border-radius:22px;background:linear-gradient(145deg,#fbfcff,#f8fbf9)}
+.public-class-apply-head h3{margin:2px 0 5px;color:#26344a;font-size:22px;letter-spacing:-.035em}.public-class-apply-head p{margin:0;color:#7d8797;font-size:11px;line-height:1.55}
+.public-class-apply-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:16px}.public-class-apply-card{display:flex;align-items:center;gap:10px;min-width:0;padding:12px;border:1px solid #e6eaf0;border-radius:14px;background:#fff;color:inherit;text-decoration:none;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}.public-class-apply-card:hover{transform:translateY(-2px);border-color:#cfd9e8;box-shadow:0 8px 20px rgba(44,57,75,.07)}
+.public-class-apply-logo{display:grid;place-items:center;flex:0 0 38px;height:38px;border-radius:11px;background:#eef3fb;color:#4666a8;font-size:10px;font-weight:950}.public-class-apply-card>span:last-child{min-width:0}.public-class-apply-card b{display:block;overflow:hidden;color:#344156;font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}.public-class-apply-card small{display:block;margin-top:4px;color:#8b95a3;font-size:8.8px;font-weight:800}.public-class-apply-note{margin:12px 2px 0;color:#98a1ad;font-size:9px;line-height:1.5}
+@media(max-width:900px){.public-class-apply-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.public-class-map-search{width:100%}.public-class-apply-section{margin-top:24px;padding:16px;border-radius:18px}.public-class-apply-grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -7068,13 +7079,20 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
         </div>
       </div>
 
-      <div id="publicClassMapFilters" class="public-class-map-filters" aria-label="프로그램 필터">
-        <button class="on" type="button" data-program="all" onclick="filterGrowlogPublicMap('all',this)">전체</button>
-        <button type="button" data-program="블럭동화" onclick="filterGrowlogPublicMap('블럭동화',this)">🧱 블럭동화</button>
-        <button type="button" data-program="블럭과학" onclick="filterGrowlogPublicMap('블럭과학',this)">🔬 블럭과학</button>
-        <button type="button" data-program="영어뮤지컬인형극" onclick="filterGrowlogPublicMap('영어뮤지컬인형극',this)">🎭 영어뮤지컬인형극</button>
-        <button type="button" data-program="스토리보드게임" onclick="filterGrowlogPublicMap('스토리보드게임',this)">🎲 스토리보드게임</button>
-        <button type="button" data-program="스토리텔링도예" onclick="filterGrowlogPublicMap('스토리텔링도예',this)">🏺 스토리텔링도예</button>
+      <div class="public-class-map-tools">
+        <div class="public-class-map-search">
+          <span aria-hidden="true">🔎</span>
+          <input id="growlogPublicMapSearch" type="search" placeholder="지점명 또는 프로그램명 검색" aria-label="지점명 또는 프로그램명 검색" oninput="searchGrowlogPublicMap(this.value)">
+          <button id="growlogPublicMapSearchClear" class="hide" type="button" onclick="clearGrowlogPublicMapSearch()" aria-label="검색어 지우기">×</button>
+        </div>
+        <div id="publicClassMapFilters" class="public-class-map-filters" aria-label="프로그램 필터">
+          <button class="on" type="button" data-program="all" onclick="filterGrowlogPublicMap('all',this)">전체</button>
+          <button type="button" data-program="블럭동화" onclick="filterGrowlogPublicMap('블럭동화',this)">🧱 블럭동화</button>
+          <button type="button" data-program="블럭과학" onclick="filterGrowlogPublicMap('블럭과학',this)">🔬 블럭과학</button>
+          <button type="button" data-program="영어뮤지컬인형극" onclick="filterGrowlogPublicMap('영어뮤지컬인형극',this)">🎭 영어뮤지컬인형극</button>
+          <button type="button" data-program="스토리보드게임" onclick="filterGrowlogPublicMap('스토리보드게임',this)">🎲 스토리보드게임</button>
+          <button type="button" data-program="스토리텔링도예" onclick="filterGrowlogPublicMap('스토리텔링도예',this)">🏺 스토리텔링도예</button>
+        </div>
       </div>
 
       <div class="public-class-map-layout">
@@ -7124,6 +7142,24 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
           </div>
           <div id="growlogVenueList" class="public-class-map-list"></div>
         </aside>
+      </div>
+
+      <div class="public-class-apply-section">
+        <div class="public-class-apply-head">
+          <div><span class="public-class-map-kicker">CLASS REGISTRATION</span><h3>수강 신청 바로가기</h3><p>수강을 원하는 지점의 문화센터 페이지에서 프로그램명을 검색해주세요.</p></div>
+        </div>
+        <div class="public-class-apply-grid">
+          <a href="https://www.cultureclub.emart.com/enrolment" target="_blank" rel="noopener noreferrer" class="public-class-apply-card"><span class="public-class-apply-logo">E</span><span><b>이마트 문화센터</b><small>신청 페이지 열기 ↗</small></span></a>
+          <a href="https://www.ehyundai.com/newCulture/CT/CT010100_L.do" target="_blank" rel="noopener noreferrer" class="public-class-apply-card"><span class="public-class-apply-logo">H</span><span><b>현대백화점 문화센터</b><small>신청 페이지 열기 ↗</small></span></a>
+          <a href="https://culture.lotteshopping.com/index.do" target="_blank" rel="noopener noreferrer" class="public-class-apply-card"><span class="public-class-apply-logo">L</span><span><b>롯데백화점 문화센터</b><small>신청 페이지 열기 ↗</small></span></a>
+          <a href="https://culture.akplaza.com/course/list01" target="_blank" rel="noopener noreferrer" class="public-class-apply-card"><span class="public-class-apply-logo">AK</span><span><b>AK PLAZA 문화아카데미</b><small>신청 페이지 열기 ↗</small></span></a>
+          <a href="https://culture.lottemart.com/cu/common/main.do" target="_blank" rel="noopener noreferrer" class="public-class-apply-card"><span class="public-class-apply-logo">LM</span><span><b>롯데마트 문화센터</b><small>신청 페이지 열기 ↗</small></span></a>
+          <a href="https://www.elandretail.com/m/culture/culture02.do?lang=000600KO" target="_blank" rel="noopener noreferrer" class="public-class-apply-card"><span class="public-class-apply-logo">NC</span><span><b>NC백화점 문화센터</b><small>신청 페이지 열기 ↗</small></span></a>
+          <a href="https://www.songpakids.com/site/main/edu/TALENT/list" target="_blank" rel="noopener noreferrer" class="public-class-apply-card"><span class="public-class-apply-logo">송파</span><span><b>송파어린이문화회관</b><small>신청 페이지 열기 ↗</small></span></a>
+          <a href="https://www.shinsegae.com/culture/academy/lecture.do" target="_blank" rel="noopener noreferrer" class="public-class-apply-card"><span class="public-class-apply-logo">S</span><span><b>신세계백화점 아카데미</b><small>신청 페이지 열기 ↗</small></span></a>
+          <a href="https://online.youth.seoul.kr/center_index.php?center_id=522" target="_blank" rel="noopener noreferrer" class="public-class-apply-card"><span class="public-class-apply-logo">공릉</span><span><b>공릉청소년문화정보센터</b><small>신청 페이지 열기 ↗</small></span></a>
+        </div>
+        <p class="public-class-apply-note">※ 센터별 모집 일정과 강좌 운영 여부는 각 기관 사정에 따라 달라질 수 있습니다.</p>
       </div>
 
       <div class="public-class-map-legend" aria-label="프로그램 색상 안내">
@@ -10297,7 +10333,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=68"></script>
+<script src="./app.js?v=69"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

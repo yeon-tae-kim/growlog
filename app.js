@@ -452,6 +452,7 @@
   ];
 
   let growlogPublicMapFilter="all";
+  let growlogPublicMapSearch="";
   let growlogPublicMapSelectedIndex=0;
 
   function publicProgramStyle(program){
@@ -464,9 +465,16 @@
   }
 
   function growlogPublicMapVisibleVenues(){
+    const keyword=String(growlogPublicMapSearch||"").trim().toLowerCase();
     return GROWLOG_PUBLIC_VENUES
       .map((venue,index)=>({...venue,index}))
-      .filter(venue=>growlogPublicMapFilter==="all" || venue.programs.includes(growlogPublicMapFilter));
+      .filter(venue=>{
+        const matchesProgram=growlogPublicMapFilter==="all" || venue.programs.includes(growlogPublicMapFilter);
+        if(!matchesProgram)return false;
+        if(!keyword)return true;
+        const haystack=[venue.name,venue.region,...(venue.programs||[])].filter(Boolean).join(" ").toLowerCase();
+        return haystack.includes(keyword);
+      });
   }
 
   function selectGrowlogPublicVenue(index,scrollCard=false){
@@ -525,36 +533,49 @@
       ><span>${index+1}</span></button>`;
     }).join("");
 
-    list.innerHTML=visible.map(venue=>{
-      return `<button class="public-venue-card" type="button" data-index="${venue.index}"
-        onclick="selectGrowlogPublicVenue(${venue.index},false)"
-        onmouseenter="selectGrowlogPublicVenue(${venue.index},false)"
-        onfocus="selectGrowlogPublicVenue(${venue.index},false)">
-          <span class="public-venue-num">${venue.index+1}</span>
-          <span>
-            <b>${escape(venue.name)}</b>
-            <span class="public-venue-region">${escape(venue.region)}</span>
-            <span class="public-venue-programs">
-              ${venue.programs.map(program=>{
-                const meta=publicProgramStyle(program);
-                return `<span style="--program:${meta.color}">${escape(meta.icon)} ${escape(program)}</span>`;
-              }).join("")}
+    if(!visible.length){
+      list.innerHTML='<div class="public-class-map-search-empty">검색 조건에 맞는 지점이 없어요.<br>다른 지점명이나 프로그램명을 입력해보세요.</div>';
+    }else{
+      list.innerHTML=visible.map(venue=>{
+        return `<button class="public-venue-card" type="button" data-index="${venue.index}"
+          onclick="selectGrowlogPublicVenue(${venue.index},false)"
+          onmouseenter="selectGrowlogPublicVenue(${venue.index},false)"
+          onfocus="selectGrowlogPublicVenue(${venue.index},false)">
+            <span class="public-venue-num">${venue.index+1}</span>
+            <span>
+              <b>${escape(venue.name)}</b>
+              <span class="public-venue-region">${escape(venue.region)}</span>
+              <span class="public-venue-programs">
+                ${venue.programs.map(program=>{
+                  const meta=publicProgramStyle(program);
+                  return `<span style="--program:${meta.color}">${escape(meta.icon)} ${escape(program)}</span>`;
+                }).join("")}
+              </span>
             </span>
-          </span>
-        </button>`;
-    }).join("");
+          </button>`;
+      }).join("");
+    }
 
     if($("growlogVenueListTitle")){
-      $("growlogVenueListTitle").textContent=growlogPublicMapFilter==="all"
-        ?"전체 운영 지점"
-        :growlogPublicMapFilter;
+      const label=growlogPublicMapFilter==="all"?"전체 운영 지점":growlogPublicMapFilter;
+      $("growlogVenueListTitle").textContent=growlogPublicMapSearch?`${label} · 검색 결과`:label;
     }
     if($("growlogVenueListCount"))$("growlogVenueListCount").textContent=`${visible.length}곳`;
 
-    const selectedVisible=visibleSet.has(growlogPublicMapSelectedIndex)
-      ?growlogPublicMapSelectedIndex
-      :(visible[0]?.index??0);
-    selectGrowlogPublicVenue(selectedVisible,false);
+    if(visible.length){
+      const selectedVisible=visibleSet.has(growlogPublicMapSelectedIndex)?growlogPublicMapSelectedIndex:visible[0].index;
+      selectGrowlogPublicVenue(selectedVisible,false);
+    }else{
+      const detail=$("growlogPublicMapDetail");
+      if(detail){
+        const num=detail.querySelector(".public-class-map-detail-num");
+        const name=detail.querySelector("b");
+        const programs=detail.querySelector(".public-class-map-detail-programs");
+        if(num)num.textContent="0";
+        if(name)name.textContent="검색 결과가 없습니다.";
+        if(programs)programs.innerHTML="";
+      }
+    }
   }
 
   window.selectGrowlogPublicVenue=selectGrowlogPublicVenue;
@@ -564,6 +585,21 @@
     qa("#publicClassMapFilters button").forEach(b=>b.classList.remove("on"));
     button?.classList.add("on");
     renderGrowlogPublicMap();
+  };
+
+  window.searchGrowlogPublicMap=function(value){
+    growlogPublicMapSearch=String(value||"").trim();
+    $("growlogPublicMapSearchClear")?.classList.toggle("hide",!growlogPublicMapSearch);
+    renderGrowlogPublicMap();
+  };
+
+  window.clearGrowlogPublicMapSearch=function(){
+    growlogPublicMapSearch="";
+    const input=$("growlogPublicMapSearch");
+    if(input)input.value="";
+    $("growlogPublicMapSearchClear")?.classList.add("hide");
+    renderGrowlogPublicMap();
+    input?.focus();
   };
 
   let growlogLandingSlideTimer=null;
