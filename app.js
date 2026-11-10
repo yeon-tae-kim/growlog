@@ -5500,6 +5500,9 @@
   let adminGalleryBusy=false;
   let adminGalleryDone=false;
   let adminGalleryCount=0;
+  let adminGalleryPhotoCount=0;
+  let adminGalleryVideoCount=0;
+  let adminGalleryMediaFilter="all";
   let adminGallerySeen=new Set();
   const adminGalleryPageSize=80;
 
@@ -5508,13 +5511,28 @@
   let adminGallerySaving=false;
   function syncAdminGallerySelection(){
     const count=$('adminGallerySelectedCount'),save=$('adminGallerySave');
-    if(count)count.textContent=adminGallerySelected.size+'장 선택';
-    if(save){save.disabled=adminGallerySaving||!adminGallerySelected.size;if(!adminGallerySaving)save.textContent='선택 사진 저장';}
+    if(count)count.textContent=adminGallerySelected.size+'개 선택';
+    if(save){save.disabled=adminGallerySaving||!adminGallerySelected.size;if(!adminGallerySaving)save.textContent='선택 자료 저장';}
     for(const input of document.querySelectorAll('#adminGalleryGrid .ag-check')){
       input.checked=adminGallerySelected.has(input.dataset.photoId);
       input.closest('.ag-item')?.classList.toggle('ag-selected',input.checked);
     }
   }
+  window.setAdminGalleryMediaFilter=function(filter,button){
+    if(profile?.role!=="admin")return;
+    if(!["all","photo","video"].includes(filter))filter="all";
+    adminGalleryMediaFilter=filter;
+
+    qAll("#adminphotos .ag-media-tabs button").forEach(b=>b.classList.remove("on"));
+    if(button)button.classList.add("on");
+    else{
+      const id=filter==="video"?"adminGalleryFilterVideo":filter==="photo"?"adminGalleryFilterPhoto":"adminGalleryFilterAll";
+      $(id)?.classList.add("on");
+    }
+
+    loadAdminPhotoGallery(true);
+  };
+
   window.selectAllAdminGalleryPhotos=function(selected){
     if(profile?.role!=='admin')return;
     adminGallerySelected.clear();
@@ -5535,24 +5553,24 @@
         const p=items[i];btn.textContent=`준비 ${i+1}/${items.length}`;
         const url=await signedUrl(p.storage_path);
         if(!current())return;
-        const res=await fetch(url);if(!res.ok)throw new Error((i+1)+'번째 사진을 불러오지 못했습니다. 다시 시도해주세요.');
+        const res=await fetch(url);if(!res.ok)throw new Error((i+1)+'번째 자료를 불러오지 못했습니다. 다시 시도해주세요.');
         const blob=await res.blob();
         const ext=mediaFileExtension(blob.type,p.storage_path);
         const name=[p.lesson_date||'날짜미정',...p.caption].map(sanitizePhotoFilenamePart).join('_')+'_'+String(i+1).padStart(3,'0')+'.'+ext;
         files.push(new File([blob],name,{type:blob.type||'image/jpeg'}));
       }
       if(!current())return;
-      if(parentPhotoMobileLike())openParentPhotoBatchDialog(files,'Growlog 관리자 선택 사진');
+      if(parentPhotoMobileLike())openParentPhotoBatchDialog(files,'Growlog 관리자 선택 자료');
       else{
         if(files.length===1)downloadBlob(files[0],files[0].name);
         else{
           btn.textContent='ZIP 만드는 중…';
           const zip=await makeStoredZip(files);if(!current())return;
-          downloadBlob(zip,`Growlog_선택사진_${todayISO()}_${files.length}장.zip`);
+          downloadBlob(zip,`Growlog_선택자료_${todayISO()}_${files.length}개.zip`);
         }
-        notify(files.length+'장 다운로드를 시작했습니다. 다운로드 폴더를 확인해주세요.');
+        notify(files.length+'개 자료 다운로드를 시작했습니다. 다운로드 폴더를 확인해주세요.');
       }
-    }catch(e){if(current())notify(e?.message||'사진 저장을 준비하지 못했습니다. 다시 시도해주세요.');}
+    }catch(e){if(current())notify(e?.message||'자료 저장을 준비하지 못했습니다. 다시 시도해주세요.');}
     finally{adminGallerySaving=false;syncAdminGallerySelection();}
   };
 
@@ -5569,21 +5587,31 @@
     if(!root||!status||!more)return;
     if(reset){
       adminGalleryVersion++;adminGalleryOffset=0;adminGalleryDone=false;
-      adminGalleryBusy=false;adminGalleryCount=0;adminGallerySeen=new Set();root.replaceChildren();
+      adminGalleryBusy=false;adminGalleryCount=0;adminGalleryPhotoCount=0;adminGalleryVideoCount=0;
+      adminGallerySeen=new Set();root.replaceChildren();
       adminGalleryItems.clear();adminGallerySelected.clear();syncAdminGallerySelection();
     }
     if(adminGalleryBusy||adminGalleryDone)return;
     const version=adminGalleryVersion;
     const current=()=>version===adminGalleryVersion&&profile?.role==='admin';
-    adminGalleryBusy=true;more.disabled=true;status.textContent='사진을 불러오는 중…';
+    adminGalleryBusy=true;more.disabled=true;status.textContent='사진·영상을 불러오는 중…';
     try{
       let query=db.from('photos').select('*').order('lesson_date',{ascending:false,nullsFirst:false})
         .order('created_at',{ascending:false}).order('id',{ascending:false});
+
       const date=$('adminGalleryDate').value;
       if(date)query=query.eq('lesson_date',date);
+
+      const videoExts=["mp4","mov","m4v","webm","3gp","3gpp","ogv","ogg"];
+      if(adminGalleryMediaFilter==="video"){
+        query=query.or(videoExts.map(ext=>`storage_path.ilike.%.${ext}`).join(","));
+      }else if(adminGalleryMediaFilter==="photo"){
+        videoExts.forEach(ext=>{query=query.not("storage_path","ilike",`%.${ext}`);});
+      }
+
       const {data,error}=await query.range(adminGalleryOffset,adminGalleryOffset+adminGalleryPageSize-1);
       if(error)throw error;if(!current())return;
-      const raw=data||[],photos=raw.filter(p=>!isVideoMedia(p)&&!adminGallerySeen.has(p.id));
+      const raw=data||[],photos=raw.filter(p=>!adminGallerySeen.has(p.id));
       const classIds=[...new Set(photos.map(p=>p.class_id).filter(Boolean))];
       const uploaderIds=[...new Set(photos.map(p=>p.uploaded_by).filter(Boolean))];
       const [classResult,userResult,thumbs]=await Promise.all([
@@ -5605,41 +5633,95 @@
           group.append(title,grid);root.append(group);
         }
         const caption=adminGalleryCaption(p,classes,uploaders);
-        const card=document.createElement('button');card.type='button';card.className='ag-photo';
-        card.setAttribute('aria-label',day+' '+caption.join(' · ')+' 사진 크게 보기');
-        const frame=document.createElement('span');frame.className='ag-frame';
+        const videoKind=isVideoMedia(p);
+
+        const card=document.createElement('button');
+        card.type='button';
+        card.className='ag-photo'+(videoKind?' ag-video':' ag-image');
+        card.setAttribute('aria-label',day+' '+caption.join(' · ')+' '+(videoKind?'영상 재생':'사진 크게 보기'));
+
+        const frame=document.createElement('span');
+        frame.className='ag-frame';
+
         if(p.url){
-          const img=document.createElement('img');img.src=p.url;img.alt='수업 활동 사진';img.loading='lazy';img.decoding='async';
-          img.onerror=()=>{frame.textContent='미리보기 없음';};frame.append(img);
-        }else frame.textContent='미리보기 없음';
+          // 영상도 thumbnail_path가 있으면 이미지 썸네일을 사용합니다.
+          // 구형 영상처럼 썸네일이 없는 경우에는 video 태그로 첫 화면을 보여줍니다.
+          if(videoKind && !p.thumbnail_path){
+            const video=document.createElement('video');
+            video.src=p.url;
+            video.muted=true;
+            video.playsInline=true;
+            video.preload='metadata';
+            frame.append(video);
+          }else{
+            const img=document.createElement('img');
+            img.src=p.url;
+            img.alt=videoKind?'수업 활동 영상 미리보기':'수업 활동 사진';
+            img.loading='lazy';
+            img.decoding='async';
+            img.onerror=()=>{frame.textContent='미리보기 없음';};
+            frame.append(img);
+          }
+        }else{
+          frame.textContent='미리보기 없음';
+        }
+
+        const kind=document.createElement('span');
+        kind.className=videoKind?'ag-media-kind':'ag-photo-kind';
+        kind.textContent=videoKind?'▶ 영상':'📷 사진';
+        frame.append(kind);
+
         const info=document.createElement('span');info.className='ag-caption';
         caption.forEach(value=>{const line=document.createElement('span');line.textContent=value;info.append(line);});
         card.append(frame,info);
+
         card.onclick=async()=>{
           if(profile?.role!=='admin')return;
           card.disabled=true;
           try{
             const url=await signedUrl(p.storage_path);
             if(!current())return;
-            await window.openParentPhotoViewer(url,p.storage_path.split('/').pop(),day+' · '+caption.join(' · '));
-          }catch(e){if(current())status.textContent='사진을 열지 못했습니다. 다시 눌러주세요.';}
-          finally{card.disabled=false;}
+            await window.openParentPhotoViewer(
+              url,
+              p.storage_path.split('/').pop(),
+              day+' · '+caption.join(' · '),
+              videoKind?'video':'image'
+            );
+          }catch(e){
+            if(current())status.textContent=(videoKind?'영상을':'사진을')+' 열지 못했습니다. 다시 눌러주세요.';
+          }finally{
+            card.disabled=false;
+          }
         };
-        const item=document.createElement('div');item.className='ag-item';
+
+        const item=document.createElement('div');item.className='ag-item'+(videoKind?' ag-video-item':' ag-photo-item');
         const label=document.createElement('label');label.className='ag-select-label';
         const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.className='ag-check';checkbox.dataset.photoId=String(p.id);
-        checkbox.setAttribute('aria-label',day+' '+caption.join(' · ')+' 사진 선택');
+        checkbox.setAttribute('aria-label',day+' '+caption.join(' · ')+' '+(videoKind?'영상 선택':'사진 선택'));
         checkbox.onchange=()=>{if(checkbox.checked)adminGallerySelected.add(p.id);else adminGallerySelected.delete(p.id);syncAdminGallerySelection();};
         label.append(checkbox);item.append(card,label);
-        adminGalleryItems.set(p.id,{...p,caption});
-        group.querySelector('.ag-grid').append(item);adminGallerySeen.add(p.id);adminGalleryCount++;
+        adminGalleryItems.set(p.id,{...p,caption,mediaKind:videoKind?"video":"image"});
+        group.querySelector('.ag-grid').append(item);
+        adminGallerySeen.add(p.id);
+        adminGalleryCount++;
+        if(videoKind)adminGalleryVideoCount++;
+        else adminGalleryPhotoCount++;
       }
       syncAdminGallerySelection();
       adminGalleryOffset+=raw.length;adminGalleryDone=raw.length<adminGalleryPageSize;
-      status.textContent=adminGalleryCount?adminGalleryCount+'장 표시'+(adminGalleryDone?' · 마지막 사진입니다.':' · 아래에서 더 불러올 수 있어요.'):
-        (adminGalleryDone?'해당 기간에 등록된 사진이 없습니다.':'이 구간에는 사진이 없습니다. 더 보기를 눌러주세요.');
+      const filterLabel=adminGalleryMediaFilter==="video"?"영상":adminGalleryMediaFilter==="photo"?"사진":"자료";
+      if(adminGalleryCount){
+        status.textContent=adminGalleryMediaFilter==="all"
+          ? `전체 ${adminGalleryCount}개 표시 · 📷 사진 ${adminGalleryPhotoCount} · ▶ 영상 ${adminGalleryVideoCount}${adminGalleryDone?" · 마지막 자료입니다.":" · 아래에서 더 불러올 수 있어요."}`
+          : `${filterLabel} ${adminGalleryCount}개 표시${adminGalleryDone?` · 마지막 ${filterLabel}입니다.`:" · 아래에서 더 불러올 수 있어요."}`;
+      }else{
+        status.textContent=adminGalleryDone
+          ? `해당 기간에 등록된 ${filterLabel}이 없습니다.`
+          : `이 구간에는 ${filterLabel}이 없습니다. 더 보기를 눌러주세요.`;
+      }
+      more.textContent=filterLabel+" 더 보기";
       more.hidden=adminGalleryDone;
-    }catch(e){if(current()){status.textContent='사진을 불러오지 못했습니다: '+(e?.message||'다시 시도해주세요.');more.hidden=false;}}
+    }catch(e){if(current()){status.textContent='사진·영상을 불러오지 못했습니다: '+(e?.message||'다시 시도해주세요.');more.hidden=false;}}
     finally{if(current()){adminGalleryBusy=false;more.disabled=false;}}
   };
 
