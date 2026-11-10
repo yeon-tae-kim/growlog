@@ -10,7 +10,7 @@
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Growlog" name="apple-mobile-web-app-title"/>
 <meta content="yes" name="mobile-web-app-capable"/>
-<link href="./manifest.webmanifest?v=73" rel="manifest"/>
+<link href="./manifest.webmanifest?v=75" rel="manifest"/>
 <link href="./apple-touch-icon-v39.png" rel="apple-touch-icon" sizes="180x180"/>
 <link href="./growlog-icon-192-v39.png" rel="icon" sizes="192x192" type="image/png"/>
 <title>Growlog | 아이 성장 한줄</title>
@@ -7127,6 +7127,101 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+
+<style id="growlog-v75-account-recovery">
+#recoveryPanel .recovery-security-note{
+  margin-bottom:12px;
+}
+.recovery-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.recovery-actions .auth-submit{
+  margin-top:0!important;
+}
+.recovery-result{
+  margin:14px 0 4px;
+  padding:14px;
+  border:1px solid #dce7e1;
+  border-radius:14px;
+  background:#f7fbf9;
+  color:#405148;
+  text-align:left;
+}
+.recovery-result.hide{
+  display:none!important;
+}
+.recovery-result.is-error{
+  border-color:#f0d7d7;
+  background:#fff8f8;
+  color:#8f4e4e;
+}
+.recovery-result.is-success{
+  border-color:#cfe7d8;
+  background:#f5fbf7;
+}
+.recovery-result-title{
+  display:block;
+  margin-bottom:7px;
+  color:#2c4538;
+  font-size:12px;
+  font-weight:950;
+}
+.recovery-result-row{
+  display:grid;
+  grid-template-columns:100px minmax(0,1fr);
+  gap:8px;
+  align-items:center;
+  margin-top:7px;
+}
+.recovery-result-row > span:first-child{
+  color:#7d8a82;
+  font-size:10px;
+  font-weight:800;
+}
+.recovery-result-value{
+  min-width:0;
+  padding:9px 10px;
+  border:1px solid #dfe7e2;
+  border-radius:10px;
+  background:#fff;
+  color:#263a31;
+  font-size:12px;
+  font-weight:900;
+  word-break:break-all;
+}
+.recovery-temp-password{
+  letter-spacing:.04em;
+}
+.recovery-result-buttons{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-top:12px;
+}
+.recovery-result-buttons button{
+  min-height:34px;
+  padding:6px 10px;
+  border-radius:9px;
+  font-size:10px;
+  font-weight:900;
+}
+.recovery-help{
+  margin-top:10px;
+  line-height:1.55;
+}
+@media(max-width:540px){
+  .recovery-actions{
+    grid-template-columns:1fr;
+  }
+  .recovery-result-row{
+    grid-template-columns:1fr;
+    gap:3px;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -7404,7 +7499,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="auth-field"><label for="parentPassword">비밀번호</label><input autocomplete="current-password" id="parentPassword" placeholder="비밀번호를 입력해주세요" type="password"/></div>
 <button class="btn auth-submit" onclick="demoParentLogin()" type="button">로그인</button>
 </div>
-<div class="auth-links"><span>처음 이용하시나요?</span><button onclick="showAuthPanel('signup')" type="button">첫 회원가입</button><span>·</span><button onclick="toast('비밀번호를 잊으셨다면 관리자에게 문의해주세요.')" type="button">비밀번호 찾기</button></div>
+<div class="auth-links"><span>처음 이용하시나요?</span><button onclick="showAuthPanel('signup')" type="button">첫 회원가입</button><span>·</span><button onclick="showAuthPanel('recovery')" type="button">아이디·비밀번호 찾기</button></div>
 </div>
 <div class="auth-panel" id="signupPanel">
 <h2>첫 회원가입</h2>
@@ -7422,6 +7517,51 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 </div>
 <div class="auth-msg" id="signupMessage">회원가입이 완료되었습니다. 학부모 페이지로 이동합니다.</div>
 <div class="auth-links"><span>이미 가입하셨나요?</span><button onclick="showAuthPanel('login')" type="button">로그인하기</button></div>
+</div>
+
+<div class="auth-panel" id="recoveryPanel">
+<h2>아이디·비밀번호 찾기</h2>
+<p class="auth-sub">가입할 때 입력한 보호자·아이 정보를 확인해 계정을 찾아드려요.</p>
+
+<div class="auth-context recovery-security-note">
+  <b>🔐 본인확인 정보</b>
+  <span>보호자 이름 + 아이 이름 + 아이 생년월일 + 보호자 휴대폰 번호가 모두 일치해야 합니다.</span>
+</div>
+
+<div class="auth-form">
+  <div class="auth-field">
+    <label for="recoveryGuardianName">보호자 이름</label>
+    <input id="recoveryGuardianName" autocomplete="name" placeholder="보호자 이름">
+  </div>
+  <div class="auth-field">
+    <label for="recoveryChildName">아이 이름</label>
+    <input id="recoveryChildName" placeholder="아이 이름">
+  </div>
+  <div class="auth-field">
+    <label for="recoveryChildBirth">아이 생년월일</label>
+    <input id="recoveryChildBirth" type="date">
+  </div>
+  <div class="auth-field">
+    <label for="recoveryPhone">보호자 휴대폰 번호</label>
+    <input id="recoveryPhone" autocomplete="tel" inputmode="numeric" maxlength="13" placeholder="010-1234-5678" type="tel">
+  </div>
+
+  <div class="recovery-actions">
+    <button class="btn ghost auth-submit recovery-find-btn" onclick="findGrowlogAccountId()" type="button">아이디 찾기</button>
+    <button class="btn auth-submit recovery-reset-btn" onclick="resetGrowlogAccountPassword()" type="button">임시 비밀번호 발급</button>
+  </div>
+</div>
+
+<div id="recoveryResult" class="recovery-result hide" aria-live="polite"></div>
+
+<div class="auth-help recovery-help">
+  이메일을 잘못 입력해 가입했더라도 현재 등록된 로그인 이메일을 확인할 수 있어요.
+  임시 비밀번호는 계정마다 다르게 발급되며, 로그인 후 새 비밀번호로 변경해주세요.
+</div>
+
+<div class="auth-links">
+  <button onclick="showAuthPanel('login')" type="button">← 로그인으로 돌아가기</button>
+</div>
 </div>
 </div>
 </div>
@@ -8495,12 +8635,25 @@ document.querySelectorAll(".tabbtn").forEach(b=>b.onclick=()=>{
 
 function showAuthPanel(mode){
   const login=mode==="login";
-  document.getElementById("loginPanel").classList.toggle("on",login);
-  document.getElementById("signupPanel").classList.toggle("on",!login);
-  document.getElementById("loginTab").classList.toggle("on",login);
-  document.getElementById("signupTab").classList.toggle("on",!login);
+  const signup=mode==="signup";
+  const recovery=mode==="recovery";
+
+  document.getElementById("loginPanel")?.classList.toggle("on",login);
+  document.getElementById("signupPanel")?.classList.toggle("on",signup);
+  document.getElementById("recoveryPanel")?.classList.toggle("on",recovery);
+
+  document.getElementById("loginTab")?.classList.toggle("on",login);
+  document.getElementById("signupTab")?.classList.toggle("on",signup);
+
   const shell=document.querySelector("#parentAuth .auth-shell");
   if(shell) shell.scrollTop=0;
+
+  const target=recovery
+    ? document.getElementById("recoveryGuardianName")
+    : signup
+      ? document.getElementById("guardianName")
+      : document.getElementById("parentPhone");
+  setTimeout(()=>target?.focus?.({preventScroll:true}),60);
 }
 function enterParentPage(message){
   parentLoggedIn=true;
@@ -10427,7 +10580,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=73"></script>
+<script src="./app.js?v=75"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

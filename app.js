@@ -699,7 +699,11 @@
     document.body.classList.add("auth-modal-open");
     setRoleClass(null);
     if(typeof window.showAuthPanel==="function") window.showAuthPanel(mode);
-    const target=mode==="signup" ? $("guardianName") : $("parentPhone");
+    const target=mode==="signup"
+      ? $("guardianName")
+      : mode==="recovery"
+        ? $("recoveryGuardianName")
+        : $("parentPhone");
     setTimeout(()=>target?.focus?.({preventScroll:true}),80);
   };
 
@@ -884,6 +888,21 @@
       });
     }
 
+    const recoveryPhone=$("recoveryPhone");
+    if(recoveryPhone && recoveryPhone.dataset.growlogValidation!=="1"){
+      recoveryPhone.dataset.growlogValidation="1";
+      recoveryPhone.addEventListener("input",()=>{
+        const digits=String(recoveryPhone.value||"").replace(/\D/g,"");
+        recoveryPhone.value=formatGuardianPhoneDigits(digits);
+      });
+      recoveryPhone.addEventListener("blur",()=>{
+        const digits=String(recoveryPhone.value||"").replace(/\D/g,"");
+        if(digits && (digits.length!==11 || !digits.startsWith("010"))){
+          notify("휴대폰 번호 11자리를 정확히 입력해주세요. 예: 010-1234-5678");
+        }
+      });
+    }
+
     const password=$("newPassword");
     if(password && password.dataset.growlogValidation!=="1"){
       password.dataset.growlogValidation="1";
@@ -924,6 +943,174 @@
     return (mode==="signup"?"회원가입 오류: ":"로그인 오류: ")+(msg||"잠시 후 다시 시도해주세요.");
   }
 
+  function recoveryInputPayload(){
+    return {
+      guardian_name:String($("recoveryGuardianName")?.value||"").trim(),
+      child_name:String($("recoveryChildName")?.value||"").trim(),
+      birth_date:String($("recoveryChildBirth")?.value||"").trim(),
+      phone:String($("recoveryPhone")?.value||"").trim()
+    };
+  }
+
+  function validateRecoveryPayload(payload){
+    const digits=String(payload.phone||"").replace(/\D/g,"");
+    if(!payload.guardian_name)return "보호자 이름을 입력해주세요.";
+    if(!payload.child_name)return "아이 이름을 입력해주세요.";
+    if(!payload.birth_date)return "아이 생년월일을 입력해주세요.";
+    if(digits.length!==11 || !digits.startsWith("010"))return "보호자 휴대폰 번호 11자리를 정확히 입력해주세요.";
+    return "";
+  }
+
+  function setRecoveryResult(htmlContent,{error=false}={}){
+    const box=$("recoveryResult");
+    if(!box)return;
+    box.classList.remove("hide","is-error","is-success");
+    box.classList.add(error?"is-error":"is-success");
+    box.innerHTML=htmlContent;
+  }
+
+  function setRecoveryButtonsBusy(busy){
+    const find=q("#recoveryPanel .recovery-find-btn");
+    const reset=q("#recoveryPanel .recovery-reset-btn");
+    if(find){
+      find.disabled=busy;
+      find.textContent=busy?"확인 중...":"아이디 찾기";
+    }
+    if(reset){
+      reset.disabled=busy;
+      reset.textContent=busy?"확인 중...":"임시 비밀번호 발급";
+    }
+  }
+
+  async function invokeAccountRecovery(action){
+    if(!db)throw new Error("서비스 연결이 아직 준비되지 않았습니다.");
+
+    const payload=recoveryInputPayload();
+    const validation=validateRecoveryPayload(payload);
+    if(validation)throw new Error(validation);
+
+    const {data,error}=await db.functions.invoke("account-recovery",{
+      body:{action,...payload}
+    });
+
+    if(error){
+      let message="계정 확인 중 오류가 발생했습니다.";
+      try{
+        const body=await error.context?.json?.();
+        if(body?.message)message=body.message;
+      }catch(_){}
+      throw new Error(message);
+    }
+    if(!data?.ok)throw new Error(data?.message||"계정 확인에 실패했습니다.");
+    return data;
+  }
+
+  window.findGrowlogAccountId=async function(){
+    setRecoveryButtonsBusy(true);
+    try{
+      const data=await invokeAccountRecovery("find_id");
+      const email=String(data.email||"");
+      setRecoveryResult(`
+        <span class="recovery-result-title">✅ 가입된 로그인 아이디를 찾았어요.</span>
+        <div class="recovery-result-row">
+          <span>로그인 이메일</span>
+          <div class="recovery-result-value">${escape(email)}</div>
+        </div>
+        <div class="recovery-result-buttons">
+          <button class="btn ghost small" type="button" onclick="useRecoveredGrowlogLogin('${escape(email)}','')">로그인 화면에 입력</button>
+        </div>
+      `);
+    }catch(e){
+      setRecoveryResult(
+        `<span class="recovery-result-title">계정을 확인하지 못했어요.</span><div>${escape(e?.message||e)}</div>`,
+        {error:true}
+      );
+    }finally{
+      setRecoveryButtonsBusy(false);
+    }
+  };
+
+  window.resetGrowlogAccountPassword=async function(){
+    const payload=recoveryInputPayload();
+    const validation=validateRecoveryPayload(payload);
+    if(validation)return setRecoveryResult(
+      `<span class="recovery-result-title">입력 내용을 확인해주세요.</span><div>${escape(validation)}</div>`,
+      {error:true}
+    );
+
+    if(!confirm("임시 비밀번호를 새로 발급하면 기존 비밀번호는 더 이상 사용할 수 없습니다.\n계속할까요?"))return;
+
+    setRecoveryButtonsBusy(true);
+    try{
+      const data=await invokeAccountRecovery("reset_password");
+      const email=String(data.email||"");
+      const temp=String(data.temporary_password||"");
+      setRecoveryResult(`
+        <span class="recovery-result-title">✅ 임시 비밀번호가 발급되었어요.</span>
+        <div class="recovery-result-row">
+          <span>로그인 이메일</span>
+          <div class="recovery-result-value">${escape(email)}</div>
+        </div>
+        <div class="recovery-result-row">
+          <span>임시 비밀번호</span>
+          <div class="recovery-result-value recovery-temp-password">${escape(temp)}</div>
+        </div>
+        <div class="recovery-result-buttons">
+          <button class="btn ghost small" type="button" onclick="copyGrowlogRecoveryPassword('${escape(temp)}')">임시 비밀번호 복사</button>
+          <button class="btn small" type="button" onclick="useRecoveredGrowlogLogin('${escape(email)}','${escape(temp)}')">로그인 화면에 입력</button>
+        </div>
+        <div class="auth-help" style="margin-top:10px">로그인 후 계정 설정에서 새 비밀번호로 꼭 변경해주세요.</div>
+      `);
+    }catch(e){
+      setRecoveryResult(
+        `<span class="recovery-result-title">임시 비밀번호를 발급하지 못했어요.</span><div>${escape(e?.message||e)}</div>`,
+        {error:true}
+      );
+    }finally{
+      setRecoveryButtonsBusy(false);
+    }
+  };
+
+  window.copyGrowlogRecoveryPassword=async function(password){
+    try{
+      await navigator.clipboard.writeText(String(password||""));
+      notify("임시 비밀번호를 복사했습니다.");
+    }catch(_){
+      notify("복사하지 못했습니다. 화면의 임시 비밀번호를 직접 입력해주세요.");
+    }
+  };
+
+  window.useRecoveredGrowlogLogin=function(email,password){
+    if($("parentPhone"))$("parentPhone").value=String(email||"");
+    if($("parentPassword"))$("parentPassword").value=String(password||"");
+    if(typeof window.showAuthPanel==="function")window.showAuthPanel("login");
+    setTimeout(()=>{
+      if(password)$("parentPassword")?.focus?.({preventScroll:true});
+      else $("parentPhone")?.focus?.({preventScroll:true});
+    },80);
+  };
+
+  async function maybePromptRecoveryPasswordChange(){
+    if(!session?.user?.id || profile?.role!=="parent")return;
+    try{
+      const {data,error}=await db.from("account_recovery_state")
+        .select("must_change_password,reset_at")
+        .eq("user_id",session.user.id)
+        .maybeSingle();
+      if(error)throw error;
+      if(!data?.must_change_password)return;
+
+      setTimeout(async()=>{
+        notify("임시 비밀번호로 로그인했습니다. 안전을 위해 새 비밀번호로 변경해주세요.");
+        try{
+          await window.openAccountSettings?.();
+        }catch(_){}
+      },250);
+    }catch(e){
+      console.warn("recovery password state:",e?.message||e);
+    }
+  }
+
   window.demoParentLogin = async function(){
     if (!db){
       notify("Supabase 연결이 아직 되지 않았어요. 화면 위쪽의 설정 오류 문구를 확인해주세요.");
@@ -952,6 +1139,7 @@
       }
 
       await routeAuthenticated();
+      await maybePromptRecoveryPasswordChange();
       notify("로그인했습니다.");
     }catch(e){
       notify(friendlyAuthError(e,"login"));
@@ -1291,6 +1479,18 @@
       if($("accountPasswordCurrent")) $("accountPasswordCurrent").value="";
       if($("accountNewPassword")) $("accountNewPassword").value="";
       if($("accountNewPasswordConfirm")) $("accountNewPasswordConfirm").value="";
+
+      try{
+        const {error:recoveryClearError}=await db.from("account_recovery_state")
+          .update({
+            must_change_password:false,
+            changed_at:new Date().toISOString()
+          })
+          .eq("user_id",session.user.id);
+        if(recoveryClearError)console.warn("recovery state clear:",recoveryClearError.message);
+      }catch(recoveryClearError){
+        console.warn("recovery state clear:",recoveryClearError?.message||recoveryClearError);
+      }
 
       notify("비밀번호가 변경되었습니다. 다음 로그인부터 새 비밀번호를 사용하세요.");
     }catch(e){
