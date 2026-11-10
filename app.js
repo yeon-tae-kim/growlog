@@ -176,6 +176,66 @@
     }));
   }
 
+  // V74: 기존 DB 스키마를 변경하지 않고 관찰문에 선택적 성장 메타데이터 저장
+  const V74_MARK="\\n[[GROWLOG_V74:";
+  const V74_CASES=[
+    ["친구의 놀이에 갑자기 끼어들었어요","함께 놀아도 되는지 먼저 물어보는 방법","친구와 함께 놀고 싶을 때 어떤 말을 하면 좋을까?"],
+    ["친구의 물건을 허락 없이 사용했어요","친구에게 먼저 사용해도 되는지 물어보는 방법","친구의 물건이 필요하면 어떻게 부탁할까?"],
+    ["친구가 싫다고 해도 행동을 계속했어요","친구의 거절을 존중하고 행동을 멈추는 방법","친구가 싫다고 말하면 어떻게 해야 할까?"],
+    ["친구의 말을 기다리기 어려워했어요","친구의 말이 끝난 후 이야기하는 방법","친구가 이야기할 때 어떻게 기다릴 수 있을까?"],
+    ["친구에게 너무 가까이 다가갔어요","친구가 편안한 거리를 확인하고 지키는 방법","친구가 조금 떨어져 달라고 하면 어떻게 할까?"],
+    ["친구의 표정이나 말을 알아차리기 어려워했어요","친구의 표정과 말을 살피고 직접 마음을 물어보는 방법","친구가 불편한지 어떻게 물어볼 수 있을까?"],
+    ["자신의 의견을 계속 주장했어요","친구의 생각도 물어보고 듣는 방법","친구는 어떤 생각을 하는지 어떻게 물어볼까?"],
+    ["순서를 기다리기 어려워했어요","차례를 확인하고 기다리는 방법","내 차례가 아닐 때 무엇을 하면 좋을까?"],
+    ["친구의 실수에 웃거나 놀렸어요","상대의 기분을 생각하고 배려하는 방법","친구가 실수하면 어떤 말을 해주면 좋을까?"],
+    ["친구가 원하지 않는 도움을 계속 주었어요","도움이 필요한지 먼저 물어보는 방법","친구를 돕기 전에 어떻게 물어볼까?"]
+  ];
+  function v74Decode(raw){
+    const str=String(raw||""), at=str.lastIndexOf(V74_MARK);
+    if(at<0 || !str.endsWith("]]"))return {text:str,meta:{}};
+    try{return {text:str.slice(0,at),meta:JSON.parse(str.slice(at+V74_MARK.length,-2))||{}};}
+    catch(_){return {text:str,meta:{}};}
+  }
+  function v74Encode(text,meta){
+    const clean=v74Decode(text).text;
+    if(!meta?.hint && !meta?.connection)return clean;
+    return clean+V74_MARK+JSON.stringify(meta)+"]]";
+  }
+  function v74RenderTeacher(st){
+    const hint=document.getElementById("v74Hint"),connection=document.getElementById("v74Connection");
+    if(!hint||!connection)return;
+    hint.value=st?.v74Hint||"";
+    connection.value=st?.v74Connection||"";
+    v74UpdatePreview();
+  }
+  function v74UpdatePreview(){
+    const hint=document.getElementById("v74Hint"),connection=document.getElementById("v74Connection");
+    const preview=document.getElementById("v74HintPreview");
+    if(preview){
+      const item=V74_CASES[Number(hint?.value)];
+      preview.textContent=hint?.value!=="" && item
+        ? "오늘의 성장 힌트: "+item[1]+"을 알려주거나 연습해 볼 수 있어요. 가정 질문: "+item[2]
+        : "선택하지 않으면 학부모에게 성장 힌트가 표시되지 않습니다.";
+    }
+    const st=studentRecordState[currentTeacherStudent];
+    if(st&&!loadingStudentRecord){
+      st.v74Hint=hint?.value||"";
+      st.v74Connection=connection?.value||"";
+      if(typeof markCurrentStudentDirty==="function")markCurrentStudentDirty();
+    }
+  }
+  window.v74UpdatePreview=v74UpdatePreview;
+  function v74RenderParent(raw){
+    const box=document.getElementById("parentV74Optional");
+    if(!box)return;
+    const meta=v74Decode(raw).meta||{};
+    const item=meta.hint!==undefined&&meta.hint!==""?V74_CASES[Number(meta.hint)]:null;
+    const hint=document.getElementById("parentV74Hint");
+    const conn=document.getElementById("parentV74Connection");
+    if(hint){hint.hidden=!item;hint.textContent=item?"🌱 오늘의 성장 힌트 · "+item[1]+"을 연습해 볼 수 있어요.":"";}
+    if(conn){conn.hidden=!meta.connection;conn.textContent=meta.connection?"🏠 가정에서 이어가기 · "+meta.connection:"";}
+    box.hidden=!item&&!meta.connection;
+  }
   function growthObservationText(program,behavior){
     const item=findBehaviorConfig(program,behavior);
     return item?.description || `수업 활동에서 ‘${behavior}’ 모습이 관찰되었어요.`;
@@ -2807,11 +2867,13 @@
         $("parentGrowthArea").classList.add("growth-area-badge");
       }
       if($("parentBehaviorText")) $("parentBehaviorText").textContent=record.behavior || "";
-      if($("parentBehaviorDesc")) $("parentBehaviorDesc").textContent=record.observation_text || "";
+      if($("parentBehaviorDesc")) $("parentBehaviorDesc").textContent=v74Decode(record.observation_text).text || "";
+      v74RenderParent(record.observation_text);
       if($("parentMissionText")) $("parentMissionText").textContent=record.mission || "";
       const ex=Array.isArray(record.expansion_questions)?record.expansion_questions:[];
       if($("parentExpansionList")) $("parentExpansionList").innerHTML=ex.map(x=>`<li>${escape(x)}</li>`).join("");
     }else{
+      v74RenderParent("");
       if($("parentBehaviorText")) $("parentBehaviorText").textContent="오늘의 성장기록을 기다리고 있어요.";
       if($("parentBehaviorDesc")) $("parentBehaviorDesc").textContent="강사님이 기록을 저장하면 이곳에 바로 보여요.";
       if($("parentMissionText")) $("parentMissionText").textContent="수업 기록이 등록되면 질문 미션도 함께 보여요.";
@@ -3470,7 +3532,7 @@
         const canonicalArea=canonicalGrowthArea(rec.area,rec.behavior);
         row.innerHTML=`<b>${escape(lessonDate)} · ${parentGrowthIcon(canonicalArea)} ${escape(canonicalArea)}</b>
           <div style="margin-top:4px">${escape(rec.behavior||"")}</div>
-          <div class="muted" style="margin-top:4px">${escape(rec.observation_text||"")}</div>`;
+          <div class="muted" style="margin-top:4px">${escape(v74Decode(rec.observation_text).text)}</div>`;
       }else{
         row.innerHTML=`<b>${escape(lessonDate)} · 📷 활동사진·동영상</b>
           <div class="muted" style="margin-top:4px">이 수업은 연결된 활동사진·동영상이 있습니다.</div>`;
@@ -4464,6 +4526,7 @@
         mission:0,
         missionText:"",
         expansionQuestions:[],
+        v74Hint:"",v74Connection:"",
         photos:new Set(),
         complete:false,
         dirty:false,
@@ -4575,6 +4638,8 @@
         mission:0,
         missionText:rec?.mission||"",
         expansionQuestions:Array.isArray(rec?.expansion_questions)?rec.expansion_questions:[],
+        v74Hint:v74Decode(rec?.observation_text).meta.hint??"",
+        v74Connection:v74Decode(rec?.observation_text).meta.connection||"",
         photos:new Set(),
         complete:Boolean(rec||att?.status==="absent"),
         dirty:false,
@@ -5452,6 +5517,7 @@
       st.mission=Number(mission.value||0);
     }
 
+    v74RenderTeacher(st);
     loadingStudentRecord=false;
     window.previewExpansion?.();
     renderChildPhotoPickerProd();
@@ -5531,7 +5597,7 @@
         class_id:activeClass.id,child_id:st.childId,lesson_date:activeLessonDate,
         teacher_id:activeTeacherProfile.id,area:selectedGrowthArea,
         behavior,mission:m?.q||"",expansion_questions:m?.ex||[],
-        observation_text:growthObservationText(activeClass.program,behavior)
+        observation_text:v74Encode(growthObservationText(activeClass.program,behavior),{hint:$("v74Hint")?.value||"",connection:$("v74Connection")?.value||""})
       };
       const {error}=await db.from("growth_records").upsert(payload,{onConflict:"class_id,child_id,lesson_date"});
       if(error) throw error;

@@ -7602,6 +7602,10 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="row between"><h2>🌱 오늘 발견한 모습</h2><span class="badge" id="parentGrowthArea">-</span></div>
 <b id="parentBehaviorText">성장기록을 불러오고 있어요.</b>
 <p class="muted" id="parentBehaviorDesc">기록이 저장되면 이곳에 표시됩니다.</p>
+<div id="parentV74Optional" hidden style="margin:12px 0;padding:12px;border-radius:12px;background:#eff6ff">
+  <p id="parentV74Hint" hidden style="margin:0 0 8px"></p>
+  <p id="parentV74Connection" hidden style="margin:0"></p>
+</div>
 <div class="question">
 <b>💬 오늘의 질문 미션</b>
 <p id="parentMissionText" style="font-size:18px;font-weight:800">질문 미션을 불러오고 있어요.</p>
@@ -7825,6 +7829,34 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <select id="mission" onchange="previewExpansion()"></select>
 </div>
 <div class="question" id="expansion"></div>
+<div class="card" style="margin-top:14px;padding:14px;border:1px solid #dbeafe">
+  <h3 style="margin:0 0 8px">🌱 오늘의 성장 힌트 <small style="font-weight:400">(선택사항)</small></h3>
+  <p class="muted" style="font-size:12px">실제로 지도할 상황을 발견한 날에만 선택해 주세요. 선택하지 않으면 학부모 화면에 나타나지 않습니다.</p>
+  <select id="v74Hint" onchange="v74UpdatePreview()">
+    <option value="">없음 · 오늘은 전달하지 않기</option>
+    <option value="0">친구의 놀이에 갑자기 끼어듦</option>
+    <option value="1">친구 물건을 허락 없이 사용함</option>
+    <option value="2">친구의 거절에도 행동을 계속함</option>
+    <option value="3">친구의 말을 기다리기 어려움</option>
+    <option value="4">친구에게 너무 가까이 다가감</option>
+    <option value="5">친구의 표정이나 말을 알아차리기 어려움</option>
+    <option value="6">자신의 의견만 계속 주장함</option>
+    <option value="7">차례를 기다리기 어려움</option>
+    <option value="8">친구의 실수에 웃거나 놀림</option>
+    <option value="9">친구가 원하지 않는 도움을 계속 줌</option>
+  </select>
+  <p class="muted" id="v74HintPreview" style="font-size:12px;margin:8px 0 12px"></p>
+  <label for="v74Connection">🏠 가정 연결 <small style="font-weight:400">(선택사항)</small></label>
+  <p class="muted" style="font-size:12px">강사님이 상황에 따라 필요하지 않다고 판단하면 '없음'을 선택해 주세요.</p>
+  <select id="v74Connection" onchange="v74UpdatePreview()">
+    <option value="">없음 · 가정 연결 표시하지 않기</option>
+    <option value="오늘 배운 내용을 아이와 이야기해 보세요.">오늘 배운 내용 이야기하기</option>
+    <option value="친구의 마음을 물어보는 말을 함께 연습해 보세요.">친구의 마음 물어보기</option>
+    <option value="먼저 허락을 구하는 말을 함께 연습해 보세요.">먼저 허락 구하기</option>
+    <option value="친구의 거절을 존중하는 방법을 이야기해 보세요.">거절 존중하기</option>
+    <option value="서로의 차례를 기다리는 놀이를 해보세요.">차례 기다리기</option>
+  </select>
+</div>
 <h3>오늘 사진 선택</h3>
 <p class="muted" style="font-size:12px;margin-top:-5px">전체 사진 탭에서 올린 사진·동영상 중 이 아이의 자료를 선택해주세요.</p>
 <div class="photos" id="childPhotoPicker">
