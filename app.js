@@ -694,19 +694,18 @@
       if (error) throw error;
       session = data.session;
       await finishPendingParentRegistration();
-      await routeAuthenticated();
 
-      // 명시적으로 로그인 버튼을 눌러 인증에 성공한 부모만 1회 집계합니다.
-      // 자동 로그인/새로고침은 집계하지 않아 실제 로그인 횟수가 부풀려지지 않게 합니다.
-      if(profile?.role==="parent"){
-        try{
-          const {error:loginTrackError}=await db.rpc("record_parent_login");
-          if(loginTrackError)console.warn("parent login tracking:",loginTrackError.message);
-        }catch(trackError){
-          console.warn("parent login tracking:",trackError?.message||trackError);
-        }
+      // 로그인 인증 성공 직후 기록합니다.
+      // RPC 내부에서 parent 계정인지 확인하므로 관리자/강사 로그인은 집계되지 않습니다.
+      // 화면 렌더 중 오류가 생겨도 로그인 성공 자체는 놓치지 않도록 routeAuthenticated보다 먼저 기록합니다.
+      try{
+        const {error:loginTrackError}=await db.rpc("record_parent_login");
+        if(loginTrackError)console.warn("parent login tracking:",loginTrackError.message);
+      }catch(trackError){
+        console.warn("parent login tracking:",trackError?.message||trackError);
       }
 
+      await routeAuthenticated();
       notify("로그인했습니다.");
     }catch(e){
       notify(friendlyAuthError(e,"login"));
@@ -6986,6 +6985,10 @@
     rows.forEach(row=>{
       const tr=document.createElement("tr");
       const latest=row.auth_last_sign_in_at || row.last_tracked_login_at;
+      const authLast=row.auth_last_sign_in_at?new Date(row.auth_last_sign_in_at):null;
+      const recentCutoff=Date.now()-(30*24*60*60*1000);
+      const signedIn30=!!(authLast && !Number.isNaN(authLast.getTime()) && authLast.getTime()>=recentCutoff);
+
       tr.dataset.search=[
         row.email,row.parent_name,row.phone,row.child_names,row.center_names
       ].filter(Boolean).join(" ").toLowerCase();
@@ -6995,12 +6998,12 @@
         <td>${escape(row.parent_name||"-")}</td>
         <td>${escape(row.child_names||"-")}</td>
         <td>${escape(row.center_names||"-")}</td>
+        <td><span class="${signedIn30?"admin-login-recent-yes":"admin-login-recent-no"}">${signedIn30?"접속함":"미접속"}</span></td>
         <td><span class="admin-login-count ${Number(row.total_login_count||0)===0?"admin-login-zero":""}">${Number(row.total_login_count||0)}회</span></td>
-        <td><span class="admin-login-count ${Number(row.logins_30d||0)===0?"admin-login-zero":""}">${Number(row.logins_30d||0)}회</span></td>
         <td>
           <div class="admin-login-date">
             <b>${escape(formatAdminLoginDate(latest))}</b>
-            <span>${row.last_tracked_login_at?"v64 집계 포함":"기존 Supabase 로그인 기록"}</span>
+            <span>${row.last_tracked_login_at?"v66 이후 횟수 집계 중":"Supabase 최근 로그인 기록"}</span>
           </div>
         </td>`;
       body.appendChild(tr);
@@ -7027,11 +7030,15 @@
 
       adminParentLoginRows=data||[];
 
-      const trackedParents=adminParentLoginRows.filter(r=>Number(r.total_login_count||0)>0).length;
-      const active30=adminParentLoginRows.filter(r=>Number(r.logins_30d||0)>0).length;
+      const cutoff=Date.now()-(30*24*60*60*1000);
+      const active30=adminParentLoginRows.filter(r=>{
+        if(!r.auth_last_sign_in_at)return false;
+        const d=new Date(r.auth_last_sign_in_at);
+        return !Number.isNaN(d.getTime()) && d.getTime()>=cutoff;
+      }).length;
       const total=adminParentLoginRows.reduce((sum,r)=>sum+Number(r.total_login_count||0),0);
 
-      if($("adminParentLoginTrackedParents"))$("adminParentLoginTrackedParents").textContent=String(trackedParents);
+      if($("adminParentLoginParentTotal"))$("adminParentLoginParentTotal").textContent=String(adminParentLoginRows.length);
       if($("adminParentLogin30dParents"))$("adminParentLogin30dParents").textContent=String(active30);
       if($("adminParentLoginTotalCount"))$("adminParentLoginTotalCount").textContent=String(total);
 
@@ -7044,6 +7051,8 @@
       }
     }
   }
+
+  window.refreshAdminParentLoginStats=renderAdminParentLoginStats;
 
   async function renderAdminMembers(){
     const {data:profiles,error}=await db.from("profiles")
@@ -7348,7 +7357,6 @@
     syncProgramFilterFromTable("parentMemberTable","adminParentCenterFilter","adminParentProgramFilter");
     syncTimeFilterFromTable("parentMemberTable","adminParentCenterFilter","adminParentProgramFilter","adminParentTimeFilter");
     window.filterAdminParentMembers();
-    await renderAdminParentLoginStats();
     prepareResponsiveTables();
   }
 

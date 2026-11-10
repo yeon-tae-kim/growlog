@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Growlog">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest?v=65">
+<link rel="manifest" href="./manifest.webmanifest?v=66">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v39.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./growlog-icon-192-v39.png">
 <title>Growlog | 아이 성장 한줄</title>
@@ -6258,6 +6258,64 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+
+<style id="growlog-v66-login-tab-fix">
+.admin-login-page-head{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-start;
+  margin-bottom:12px;
+}
+.admin-login-page-head h2{margin:6px 0 4px}
+.admin-login-accuracy-note{
+  display:grid;
+  gap:5px;
+  margin:0 0 14px;
+  padding:12px 14px;
+  border:1px solid #dce7e1;
+  border-radius:14px;
+  background:#f7fbf9;
+  color:#596860;
+  font-size:11px;
+  line-height:1.5;
+}
+.admin-login-accuracy-note > b{
+  color:#2d4638;
+  font-size:12px;
+}
+.admin-login-recent-yes,
+.admin-login-recent-no{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:64px;
+  padding:5px 8px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:900;
+}
+.admin-login-recent-yes{
+  background:#eaf7ef;
+  color:#267247;
+  border:1px solid #ccebd8;
+}
+.admin-login-recent-no{
+  background:#f3f4f6;
+  color:#7a828c;
+  border:1px solid #e2e4e8;
+}
+#loginstats .admin-parent-login-section{margin-top:0}
+#loginstats .admin-parent-login-summary{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+@media(max-width:760px){
+  #loginstats .admin-parent-login-summary{
+    grid-template-columns:1fr!important;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -6973,7 +7031,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
   <div class="hero"><div><span class="badge">관리자</span><h1>Growlog 운영 대시보드</h1><p>회원 · 수업 · 비용 · 성장기록 · 학부모 문의 관리</p></div></div>
   <div class="grid three" style="margin-bottom:16px"><div class="stat"><b id="prodAdminTodayCount">0</b><span>오늘 수업</span></div><div class="stat"><b id="prodAdminTodayRate">0%</b><span>기록 완료율</span></div><div class="stat"><b id="prodAdminUnreadCount">0</b><span>미확인 문의</span></div></div>
   <div class="card">
-    <div class="mobile-hint">메뉴를 좌우로 밀어서 더 볼 수 있어요.</div><div class="tabs"><button class="tabbtn on" data-tab="classes">센터 관리</button><button class="tabbtn" data-tab="adminphotos">전체 수업 사진</button><button class="tabbtn" data-tab="recordcheck">강사 기록 점검</button><button class="tabbtn" data-tab="monthly">월간 기록 현황</button><button class="tabbtn" data-tab="members">회원 관리</button><button class="tabbtn" data-tab="multi">다중 수강</button><button class="tabbtn" data-tab="fees">추가 비용</button><button class="tabbtn" data-tab="surveys">설문 결과</button><button class="tabbtn" data-tab="feedback">학부모 문의</button></div>
+    <div class="mobile-hint">메뉴를 좌우로 밀어서 더 볼 수 있어요.</div><div class="tabs"><button class="tabbtn on" data-tab="classes">센터 관리</button><button class="tabbtn" data-tab="adminphotos">전체 수업 사진</button><button class="tabbtn" data-tab="recordcheck">강사 기록 점검</button><button class="tabbtn" data-tab="monthly">월간 기록 현황</button><button class="tabbtn" data-tab="members">회원 관리</button><button class="tabbtn" data-tab="loginstats">로그인 현황</button><button class="tabbtn" data-tab="multi">다중 수강</button><button class="tabbtn" data-tab="fees">추가 비용</button><button class="tabbtn" data-tab="surveys">설문 결과</button><button class="tabbtn" data-tab="feedback">학부모 문의</button></div>
 
     <div id="adminphotos" class="panel">
       <div class="ag-heading"><div><h2>전체 수업 사진·영상</h2><p class="muted">수업일별로 사진과 영상을 함께 보고, 사진만 또는 영상만 따로 모아볼 수 있어요.</p></div></div>
@@ -7351,42 +7409,6 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
       </div>
 
 
-      <div class="admin-member-section admin-parent-login-section">
-        <div class="admin-section-toolbar">
-          <div>
-            <h3>학부모 로그인 현황</h3>
-            <div class="muted">로그인 횟수는 v64 적용 이후부터 누적됩니다. 기존 계정의 마지막 로그인 시각은 Supabase 기록을 함께 표시합니다.</div>
-          </div>
-          <div class="admin-parent-login-search">
-            <label for="adminParentLoginSearch">검색</label>
-            <input id="adminParentLoginSearch" type="search" placeholder="이메일 · 학부모 · 아이 · 센터" oninput="filterAdminParentLoginStats(this.value)">
-          </div>
-        </div>
-
-        <div class="grid three admin-parent-login-summary">
-          <div class="stat"><b id="adminParentLoginTrackedParents">0</b><span>로그인 집계 부모</span></div>
-          <div class="stat"><b id="adminParentLogin30dParents">0</b><span>최근 30일 로그인</span></div>
-          <div class="stat"><b id="adminParentLoginTotalCount">0</b><span>누적 로그인 횟수</span></div>
-        </div>
-
-        <table id="adminParentLoginTable">
-          <thead>
-            <tr>
-              <th>로그인 아이디</th>
-              <th>학부모</th>
-              <th>아이</th>
-              <th>센터</th>
-              <th>누적 로그인</th>
-              <th>최근 30일</th>
-              <th>최근 로그인</th>
-            </tr>
-          </thead>
-          <tbody id="adminParentLoginBody">
-            <tr class="admin-empty-row"><td colspan="7">로그인 현황을 불러오는 중입니다.</td></tr>
-          </tbody>
-        </table>
-      </div>
-
       <div class="admin-member-section admin-teacher-create-section">
         <div class="admin-section-toolbar">
           <div>
@@ -7428,6 +7450,59 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
           <tbody id="teacherMemberBody"></tbody>
         </table>
       </div>
+    </div>
+
+
+    <div id="loginstats" class="panel">
+      <div class="admin-login-page-head">
+        <div>
+          <span class="badge">이용 현황</span>
+          <h2>학부모 로그인 현황</h2>
+          <p class="muted">학부모님들이 Growlog에 실제로 접속하고 있는지 아이디별로 확인합니다.</p>
+        </div>
+      </div>
+      <div class="admin-login-accuracy-note">
+        <b>집계 기준</b>
+        <span><strong>최근 30일 접속</strong>은 Supabase의 실제 마지막 로그인 시각으로 계산합니다.</span>
+        <span><strong>로그인 횟수</strong>는 v66 적용 이후 로그인 버튼으로 인증에 성공한 횟수부터 정확히 누적됩니다.</span>
+      </div>
+<div class="admin-member-section admin-parent-login-section">
+        <div class="admin-section-toolbar">
+          <div>
+            <h3>아이디별 접속 현황</h3>
+            <div class="muted">최근 30일 접속 여부는 Supabase 실제 로그인 시각으로 계산합니다. 정확한 로그인 횟수는 v66 적용 이후부터 누적됩니다.</div>
+          </div>
+          <div class="admin-parent-login-search">
+            <label for="adminParentLoginSearch">검색</label>
+            <input id="adminParentLoginSearch" type="search" placeholder="이메일 · 학부모 · 아이 · 센터" oninput="filterAdminParentLoginStats(this.value)">
+          </div>
+        </div>
+
+        <div class="grid three admin-parent-login-summary">
+          <div class="stat"><b id="adminParentLoginParentTotal">0</b><span>전체 학부모</span></div>
+          <div class="stat"><b id="adminParentLogin30dParents">0</b><span>최근 30일 접속</span></div>
+          <div class="stat"><b id="adminParentLoginTotalCount">0</b><span>v66 이후 로그인</span></div>
+        </div>
+
+        <table id="adminParentLoginTable">
+          <thead>
+            <tr>
+              <th>로그인 아이디</th>
+              <th>학부모</th>
+              <th>아이</th>
+              <th>센터</th>
+              <th>최근 30일 접속</th>
+              <th>v66 이후 로그인</th>
+              <th>최근 로그인</th>
+            </tr>
+          </thead>
+          <tbody id="adminParentLoginBody">
+            <tr class="admin-empty-row"><td colspan="7">로그인 현황을 불러오는 중입니다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      
     </div>
 
     <div id="fees" class="panel">
@@ -7596,6 +7671,7 @@ document.querySelectorAll(".tabbtn").forEach(b=>b.onclick=()=>{
   if(b.dataset.tab==="monthly") renderAdminMonthlyTracking();
   if(b.dataset.tab==="feedback" && window.refreshAdminInquiries) window.refreshAdminInquiries();
   if(b.dataset.tab==="surveys" && window.refreshAdminTrialSurveys) window.refreshAdminTrialSurveys();
+  if(b.dataset.tab==="loginstats" && window.refreshAdminParentLoginStats) window.refreshAdminParentLoginStats();
 });
 
 function showAuthPanel(mode){
@@ -9536,7 +9612,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=65"></script>
+<script src="./app.js?v=66"></script>
 <div id="growlogPwaInstallBar" role="region" aria-label="Growlog 앱 설치 안내">
   <img class="pwa-app-icon" src="./growlog-icon-192-v39.png" alt="">
   <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
