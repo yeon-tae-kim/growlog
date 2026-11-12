@@ -3118,6 +3118,57 @@
     return hit?hit[1].toLowerCase():(m.startsWith("video/")?"mp4":"jpg");
   }
 
+  function parentSafeBaseName(filename,fallback="growlog_photo"){
+    const raw=String(filename||fallback).replace(/\.[^.]+$/,'').trim();
+    return sanitizePhotoFilenamePart(raw||fallback);
+  }
+
+  async function convertParentImageToJpegFile(blob,filename){
+    const sourceType=String(blob?.type||"").toLowerCase();
+    if(!blob)throw new Error("사진 파일을 불러오지 못했습니다.");
+    const url=URL.createObjectURL(blob);
+    try{
+      const img=new Image();
+      img.decoding="async";
+      await new Promise((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(new Error("사진 변환 시간이 초과되었습니다.")),15000);
+        img.onload=()=>{clearTimeout(timer);resolve();};
+        img.onerror=()=>{clearTimeout(timer);reject(new Error("사진 형식을 읽지 못했습니다."));};
+        img.src=url;
+      });
+      const naturalWidth=Math.max(1,img.naturalWidth||img.width||1);
+      const naturalHeight=Math.max(1,img.naturalHeight||img.height||1);
+      const maxDim=2400;
+      const scale=Math.min(1,maxDim/Math.max(naturalWidth,naturalHeight));
+      const width=Math.max(1,Math.round(naturalWidth*scale));
+      const height=Math.max(1,Math.round(naturalHeight*scale));
+      const canvas=document.createElement("canvas");
+      canvas.width=width;canvas.height=height;
+      const ctx=canvas.getContext("2d",{alpha:false});
+      if(!ctx)throw new Error("사진 변환을 준비하지 못했습니다.");
+      ctx.fillStyle="#fff";ctx.fillRect(0,0,width,height);ctx.drawImage(img,0,0,width,height);
+      const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.92));
+      if(!jpeg)throw new Error("JPG 변환에 실패했습니다.");
+      const base=parentSafeBaseName(filename,"growlog_photo");
+      return new File([jpeg],`${base}.jpg`,{type:"image/jpeg",lastModified:Date.now()});
+    }catch(e){
+      if(sourceType==="image/jpeg" || /\.jpe?g$/i.test(String(filename||""))){
+        const base=parentSafeBaseName(filename,"growlog_photo");
+        return new File([blob],`${base}.jpg`,{type:"image/jpeg",lastModified:Date.now()});
+      }
+      throw e;
+    }finally{URL.revokeObjectURL(url);}
+  }
+
+  async function makeParentCompatibleFile(blob,filename,isVideo=false){
+    if(isVideo){
+      const ext=mediaFileExtension(blob?.type,filename);
+      const base=parentSafeBaseName(filename,"growlog_video");
+      return new File([blob],`${base}.${ext}`,{type:blob?.type||"video/mp4",lastModified:Date.now()});
+    }
+    return convertParentImageToJpegFile(blob,filename);
+  }
+
   function mediaPreviewHtml(item,url,alt,kindClass=""){
     const video=isVideoMedia(item);
     const safeUrl=String(url||"").replace(/"/g,"&quot;");
@@ -3294,20 +3345,22 @@
         blob=await res.blob();
       }
 
-      const ext=mediaFileExtension(blob.type,state.filename);
-      let filename=state.filename||`growlog_${isVideo?"video":"photo"}`;
-      if(!new RegExp(`\\.${ext}$`,"i").test(filename))filename+=`.`+ext;
-      const file=new File([blob],filename,{type:blob.type||(isVideo?"video/mp4":"image/jpeg")});
+      const file=await makeParentCompatibleFile(
+        blob,
+        state.filename||`growlog_${isVideo?"video":"photo"}`,
+        isVideo
+      );
+      const filename=file.name;
 
       if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
         await navigator.share({files:[file],title:isVideo?"Growlog 활동동영상":"Growlog 활동사진"});
         notify(isVideo
           ? "공유 메뉴에서 ‘비디오 저장’ 또는 사진 앱을 선택해주세요."
-          : "공유 메뉴에서 ‘사진에 저장’ 또는 사진 앱을 선택해주세요.");
+          : "JPG로 준비했어요. 공유 메뉴에서 ‘사진에 저장’ 또는 사진 앱을 선택해주세요.");
         return;
       }
 
-      const objectUrl=URL.createObjectURL(blob);
+      const objectUrl=URL.createObjectURL(file);
       const a=document.createElement("a");
       a.href=objectUrl;a.download=filename;a.rel="noopener";
       document.body.appendChild(a);a.click();a.remove();
@@ -3393,11 +3446,12 @@
         const res=await fetch(url);
         if(!res.ok)throw new Error("원본 자료를 불러오지 못했습니다.");
         const blob=await res.blob();
-        const ext=parentPhotoExtension(blob.type,item.storagePath);
         const child=sanitizePhotoFilenamePart(activeChild?.name||"아이");
         const date=sanitizePhotoFilenamePart(item.date||todayISO());
+        const video=isVideoMedia(item.storagePath) || String(blob.type||"").toLowerCase().startsWith("video/");
+        const ext=video?parentPhotoExtension(blob.type,item.storagePath):"jpg";
         const filename=`${child}_${date}_${String(i+1).padStart(2,"0")}.${ext}`;
-        files[i]=new File([blob],filename,{type:blob.type||"image/jpeg"});
+        files[i]=await makeParentCompatibleFile(blob,filename,video);
         done++;
         if(onProgress)onProgress(done,ordered.length);
       }
@@ -3473,11 +3527,22 @@
     const dialog=$("parentPhotoBatchSaveDialog");
     const title=$("parentPhotoBatchTitle"),text=$("parentPhotoBatchText"),shareBtn=$("parentPhotoBatchShareBtn");
     if(title)title.textContent=`자료 ${files.length}개 준비 완료`;
-    const canFileShare=!!(navigator.share&&navigator.canShare&&navigator.canShare({files}));
-    if(text)text.textContent=canFileShare
-      ? "아래 버튼을 누르면 휴대폰의 저장/공유 메뉴가 열립니다."
-      : "이 브라우저는 여러 파일 공유를 지원하지 않아 일반 다운로드로 저장합니다.";
-    if(shareBtn)shareBtn.textContent=canFileShare?"갤러리/기기에 저장하기":"파일 다운로드하기";
+    const photoCount=files.filter(file=>String(file.type||"").startsWith("image/")).length;
+    const videoCount=files.length-photoCount;
+    const photoFiles=files.filter(file=>String(file.type||"").startsWith("image/"));
+    const canFileShare=!!(photoFiles.length&&navigator.share&&navigator.canShare&&navigator.canShare({files:photoFiles}));
+    if(text){
+      if(photoCount && videoCount){
+        text.textContent=`사진 ${photoCount}장은 JPG로 저장 메뉴를 열고, 동영상 ${videoCount}개는 별도 파일로 내려받습니다.`;
+      }else if(photoCount){
+        text.textContent=canFileShare
+          ? `사진 ${photoCount}장을 휴대폰 호환 JPG로 준비했어요. 아래 버튼을 눌러 저장해주세요.`
+          : `사진 ${photoCount}장을 JPG 파일로 다운로드합니다.`;
+      }else{
+        text.textContent=`동영상 ${videoCount}개는 기기 호환 문제를 줄이기 위해 파일로 내려받습니다.`;
+      }
+    }
+    if(shareBtn)shareBtn.textContent=photoCount?"사진 저장하기":"동영상 다운로드하기";
     dialog?.classList.remove("hide");
   }
 
@@ -3500,14 +3565,28 @@
     const btn=$("parentPhotoBatchShareBtn");
     if(btn)btn.disabled=true;
     try{
-      if(navigator.share&&navigator.canShare&&navigator.canShare({files})){
-        await navigator.share({files,title:parentPreparedShareLabel||"Growlog 활동자료"});
-        notify("휴대폰 메뉴에서 ‘사진에 저장’·‘비디오 저장’ 또는 갤러리/사진 앱을 선택해주세요.");
-        closeParentPhotoBatchSaveDialog();
-        return;
+      const photoFiles=files.filter(file=>String(file.type||"").startsWith("image/"));
+      const videoFiles=files.filter(file=>!String(file.type||"").startsWith("image/"));
+
+      if(photoFiles.length){
+        if(navigator.share&&navigator.canShare&&navigator.canShare({files:photoFiles})){
+          await navigator.share({files:photoFiles,title:parentPreparedShareLabel||"Growlog 활동사진"});
+          notify("사진을 JPG로 준비했어요. 휴대폰 메뉴에서 ‘사진에 저장’ 또는 갤러리를 선택해주세요.");
+        }else{
+          await fallbackDownloadPhotoFiles(photoFiles);
+          notify("JPG 사진 다운로드를 시작했습니다.");
+        }
       }
-      await fallbackDownloadPhotoFiles(files);
-      notify("파일 다운로드를 시작했습니다. 휴대폰에서는 다운로드/사진 앱에서 확인할 수 있어요.");
+
+      if(videoFiles.length){
+        // 사진과 MOV/기타 동영상을 한 번에 공유하면 일부 모바일에서
+        // '지원되지 않는 형식' 오류가 발생할 수 있어 서로 분리합니다.
+        await fallbackDownloadPhotoFiles(videoFiles);
+        notify(photoFiles.length
+          ? "동영상은 사진과 분리해 파일 다운로드를 시작했습니다."
+          : "동영상 파일 다운로드를 시작했습니다.");
+      }
+
       closeParentPhotoBatchSaveDialog();
     }catch(e){
       if(e?.name!=="AbortError")notify("저장 메뉴를 열지 못했습니다. 다시 시도해주세요.");
