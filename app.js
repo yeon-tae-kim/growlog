@@ -470,6 +470,8 @@
     q(".mobile-nav")?.classList.add("hide");
     $("prodLogoutBtn")?.classList.add("hide");
     $("prodAccountBtn")?.classList.add("hide");
+    $("parentNotificationBtn")?.classList.add("hide");
+    stopParentNotifications();
     closeAccountSettings();
     setRoleClass(null);
     setTimeout(startGrowlogLandingSlides,0);
@@ -838,6 +840,7 @@
       q(".roles")?.classList.add("hide");
       q(".mobile-nav")?.classList.add("hide");
       await switchRoleProd("parent");
+      await startParentNotifications();
     }
     subscribeRealtime();
   }
@@ -862,6 +865,405 @@
     window.scrollTo({top:0,behavior:"smooth"});
   }
   window.switchRole = switchRoleProd;
+
+
+  // ---------- Parent notifications + Web Push (v80) ----------
+  const GROWLOG_VAPID_PUBLIC_KEY="BAgtvl5MZiJXmLM1_fqBwoNWGe4D8C2DMSVyEetItUcCfHiYrzI7Om482ECeGFfRFgvocYrrrMX1pUaFvmB5vfw";
+  const GROWLOG_PUSH_LATER_KEY="growlog-push-later-until-v80";
+  const GROWLOG_PUSH_ENABLED_KEY="growlog-push-enabled-v80";
+  const GROWLOG_PUSH_ASKED_KEY="growlog-push-asked-v80";
+  const GROWLOG_PUSH_LATER_MS=14*24*60*60*1000;
+  let parentNotifications=[];
+  let parentNotificationChannel=null;
+  let parentNotificationRefreshTimer=null;
+
+  function growlogUrlBase64ToUint8Array(base64String){
+    const padding="=".repeat((4-base64String.length%4)%4);
+    const base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");
+    const raw=atob(base64);
+    return Uint8Array.from([...raw].map(ch=>ch.charCodeAt(0)));
+  }
+
+  function growlogIsIOS(){
+    return /iphone|ipad|ipod/i.test(navigator.userAgent||"") ||
+      (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+  }
+
+  function growlogIsStandalone(){
+    return window.matchMedia?.("(display-mode: standalone)")?.matches ||
+      window.navigator.standalone===true;
+  }
+
+  function growlogPushSupported(){
+    return "serviceWorker" in navigator &&
+      "PushManager" in window &&
+      "Notification" in window;
+  }
+
+  function setAccountPushStatus(message,warn=false){
+    const box=$("accountPushStatus");
+    if(!box)return;
+    box.textContent=message||"";
+    box.classList.toggle("hide",!message);
+    box.classList.toggle("warn",!!warn);
+  }
+
+  async function refreshAccountPushStatus(){
+    const btn=$("accountPushBtn");
+    if(!btn || profile?.role!=="parent")return;
+    if(!growlogPushSupported()){
+      btn.textContent="이 기기에서는 푸시 알림을 지원하지 않아요";
+      btn.disabled=true;
+      setAccountPushStatus("Growlog 알림함은 계속 사용할 수 있어요.",true);
+      return;
+    }
+
+    if(growlogIsIOS() && !growlogIsStandalone()){
+      btn.textContent="📱 홈 화면 추가 후 알림 받기";
+      btn.disabled=false;
+      setAccountPushStatus("아이폰은 Growlog를 홈 화면에 추가한 뒤 푸시 알림을 받을 수 있어요.",true);
+      return;
+    }
+
+    const reg=await navigator.serviceWorker.ready.catch(()=>null);
+    const sub=reg ? await reg.pushManager.getSubscription().catch(()=>null) : null;
+    if(Notification.permission==="granted" && sub){
+      btn.textContent="✅ 수업기록 알림 받는 중";
+      btn.disabled=false;
+      setAccountPushStatus("사진·성장기록이 등록되면 이 기기로 알려드려요.");
+    }else if(Notification.permission==="denied"){
+      btn.textContent="🔕 브라우저에서 알림이 차단됨";
+      btn.disabled=false;
+      setAccountPushStatus("브라우저 또는 휴대폰 설정에서 Growlog 알림을 허용해주세요.",true);
+    }else{
+      btn.textContent="🔔 알림 받기 설정";
+      btn.disabled=false;
+      setAccountPushStatus("");
+    }
+  }
+
+  async function saveGrowlogPushSubscription(subscription){
+    if(!session?.user?.id || !subscription)return;
+    const json=subscription.toJSON();
+    const endpoint=String(json.endpoint||subscription.endpoint||"");
+    const p256dh=String(json.keys?.p256dh||"");
+    const auth=String(json.keys?.auth||"");
+    if(!endpoint||!p256dh||!auth)throw new Error("푸시 구독 정보를 만들지 못했습니다.");
+
+    const {error}=await db.from("push_subscriptions").upsert({
+      user_id:session.user.id,
+      endpoint,
+      p256dh,
+      auth,
+      user_agent:String(navigator.userAgent||"").slice(0,500),
+      active:true,
+      updated_at:new Date().toISOString()
+    },{onConflict:"user_id,endpoint"});
+    if(error)throw error;
+  }
+
+  window.enableGrowlogPushNotifications=async function(){
+    if(profile?.role!=="parent")return notify("학부모 계정에서 사용할 수 있습니다.");
+
+    if(!growlogPushSupported()){
+      $("growlogPushPrompt")?.classList.add("hide");
+      return notify("이 브라우저에서는 푸시 알림을 지원하지 않습니다. Growlog 알림함은 이용할 수 있어요.");
+    }
+
+    if(growlogIsIOS() && !growlogIsStandalone()){
+      $("growlogPushPrompt")?.classList.add("hide");
+      window.openGrowlogHomeInstall?.();
+      return notify("아이폰은 Growlog를 홈 화면에 추가한 뒤 알림을 켤 수 있어요.");
+    }
+
+    const button=$("growlogPushEnableBtn");
+    if(button){button.disabled=true;button.textContent="설정 중...";}
+
+    try{
+      const permission=await Notification.requestPermission();
+      try{localStorage.setItem(GROWLOG_PUSH_ASKED_KEY,"1");}catch(_){}
+
+      if(permission!=="granted"){
+        $("growlogPushPrompt")?.classList.add("hide");
+        await refreshAccountPushStatus();
+        return notify("알림이 허용되지 않았습니다. 나중에 내 계정에서 다시 설정할 수 있어요.");
+      }
+
+      const reg=await navigator.serviceWorker.ready;
+      let subscription=await reg.pushManager.getSubscription();
+      if(!subscription){
+        subscription=await reg.pushManager.subscribe({
+          userVisibleOnly:true,
+          applicationServerKey:growlogUrlBase64ToUint8Array(GROWLOG_VAPID_PUBLIC_KEY)
+        });
+      }
+      await saveGrowlogPushSubscription(subscription);
+      try{
+        localStorage.setItem(GROWLOG_PUSH_ENABLED_KEY,"1");
+        localStorage.removeItem(GROWLOG_PUSH_LATER_KEY);
+      }catch(_){}
+      $("growlogPushPrompt")?.classList.add("hide");
+      await refreshAccountPushStatus();
+      notify("좋아요! 이제 아이의 새 수업기록이 올라오면 알려드릴게요. 🔔");
+    }catch(e){
+      console.warn("push subscribe:",e);
+      notify("알림 설정에 실패했습니다. 내 계정에서 다시 시도해주세요.");
+    }finally{
+      if(button){button.disabled=false;button.textContent="알림 받기";}
+    }
+  };
+
+  window.laterGrowlogPushPrompt=function(){
+    try{localStorage.setItem(GROWLOG_PUSH_LATER_KEY,String(Date.now()+GROWLOG_PUSH_LATER_MS));}catch(_){}
+    $("growlogPushPrompt")?.classList.add("hide");
+  };
+
+  function shouldShowGrowlogPushPrompt(){
+    if(profile?.role!=="parent")return false;
+    if(!growlogPushSupported())return false;
+    if(Notification.permission!=="default")return false;
+    try{
+      if(Number(localStorage.getItem(GROWLOG_PUSH_LATER_KEY)||0)>Date.now())return false;
+      if(localStorage.getItem(GROWLOG_PUSH_ENABLED_KEY)==="1")return false;
+      if(localStorage.getItem("growlog-parent-record-viewed-v76")!=="1")return false;
+    }catch(_){}
+    return true;
+  }
+
+  function maybeShowGrowlogPushPrompt(){
+    if(!shouldShowGrowlogPushPrompt())return;
+    const box=$("growlogPushPrompt");
+    const text=$("growlogPushPromptText");
+    const btn=$("growlogPushEnableBtn");
+    if(!box||!text||!btn)return;
+
+    if(growlogIsIOS() && !growlogIsStandalone()){
+      text.textContent="아이폰은 Growlog를 홈 화면에 추가하면 사진·성장기록 알림을 받을 수 있어요.";
+      btn.textContent="홈 화면 추가";
+    }else{
+      text.textContent="수업사진과 성장기록이 등록되면 휴대폰으로 알려드려요.";
+      btn.textContent="알림 받기";
+    }
+    box.classList.remove("hide");
+  }
+
+  window.openGrowlogPushSettings=async function(){
+    closeAccountSettings();
+    if(growlogIsIOS() && !growlogIsStandalone()){
+      window.openGrowlogHomeInstall?.();
+      return;
+    }
+    await window.enableGrowlogPushNotifications();
+  };
+
+  function parentNotificationTime(value){
+    const d=new Date(value);
+    if(Number.isNaN(d.getTime()))return "";
+    const diff=Date.now()-d.getTime();
+    if(diff<60_000)return "방금";
+    if(diff<3_600_000)return `${Math.max(1,Math.floor(diff/60_000))}분 전`;
+    if(diff<86_400_000)return `${Math.max(1,Math.floor(diff/3_600_000))}시간 전`;
+    return new Intl.DateTimeFormat("ko-KR",{month:"numeric",day:"numeric"}).format(d);
+  }
+
+  function updateParentNotificationBadge(){
+    const btn=$("parentNotificationBtn");
+    const badge=$("parentNotificationBadge");
+    if(profile?.role!=="parent"){
+      btn?.classList.add("hide");
+      badge?.classList.add("hide");
+      return;
+    }
+    btn?.classList.remove("hide");
+    const unread=parentNotifications.filter(n=>!n.read_at).length;
+    if(badge){
+      badge.textContent=unread>99?"99+":String(unread);
+      badge.classList.toggle("hide",unread===0);
+    }
+    const summary=$("parentNotificationSummary");
+    if(summary)summary.textContent=unread?`읽지 않은 알림 ${unread}개`:"새 알림이 없습니다.";
+  }
+
+  function renderParentNotificationList(){
+    const list=$("parentNotificationList");
+    if(!list)return;
+    if(!parentNotifications.length){
+      list.innerHTML='<div class="parent-notification-empty">아직 도착한 알림이 없어요.<br>아이의 새 수업기록이 등록되면 이곳에 차곡차곡 모여요. 🌱</div>';
+      return;
+    }
+    list.innerHTML=parentNotifications.map(n=>`
+      <button class="parent-notification-item ${n.read_at?"":"is-unread"}"
+        type="button" onclick="openParentNotification('${escape(n.id)}')">
+        <span class="parent-notification-item-icon">${n.type==="lesson_record"?"📸":"🔔"}</span>
+        <span class="parent-notification-item-copy">
+          <b>${escape(n.title||"새 알림")}</b>
+          <p>${escape(n.body||"")}</p>
+        </span>
+        <span class="parent-notification-item-time">${escape(parentNotificationTime(n.created_at))}</span>
+      </button>
+    `).join("");
+  }
+
+  async function loadParentNotifications(){
+    if(!db || profile?.role!=="parent")return;
+    const {data,error}=await db.from("notifications")
+      .select("id,user_id,child_id,class_id,lesson_date,type,title,body,target,read_at,created_at")
+      .eq("user_id",profile.id)
+      .order("created_at",{ascending:false})
+      .limit(40);
+    if(error){
+      console.warn("notifications load:",error.message);
+      return;
+    }
+    parentNotifications=data||[];
+    updateParentNotificationBadge();
+    renderParentNotificationList();
+  }
+
+  window.toggleParentNotificationDrawer=async function(){
+    const drawer=$("parentNotificationDrawer");
+    if(!drawer)return;
+    if(drawer.classList.contains("hide")){
+      await loadParentNotifications();
+      drawer.classList.remove("hide");
+      drawer.setAttribute("aria-hidden","false");
+      document.body.style.overflow="hidden";
+    }else{
+      window.closeParentNotificationDrawer();
+    }
+  };
+
+  window.closeParentNotificationDrawer=function(){
+    const drawer=$("parentNotificationDrawer");
+    if(!drawer)return;
+    drawer.classList.add("hide");
+    drawer.setAttribute("aria-hidden","true");
+    document.body.style.overflow="";
+  };
+
+  async function focusParentNotificationTarget(notification){
+    if(!notification || profile?.role!=="parent")return;
+    if(notification.child_id && activeChild?.id!==notification.child_id){
+      const {data:child}=await db.from("children")
+        .select("id,name,birth_date,parent_id")
+        .eq("id",notification.child_id)
+        .maybeSingle();
+      if(child){
+        activeChild=child;
+        activeEnrollment=null;
+        activeClass=null;
+        await renderParentForChild();
+      }
+    }
+
+    if(notification.class_id && activeClass?.id!==notification.class_id){
+      const matching=parentActiveEnrollments.find(e=>e.class_id===notification.class_id);
+      if(matching)await window.changeParentActiveClass(notification.class_id);
+    }
+
+    setParentMainView("regular");
+    const target=notification.target ? q(notification.target) : $("parentTodayContent");
+    (target||$("parent"))?.scrollIntoView?.({behavior:"smooth",block:"start"});
+  }
+
+  window.openParentNotification=async function(id){
+    if(!id)return;
+    let notification=parentNotifications.find(n=>n.id===id)||null;
+    if(!notification){
+      const {data}=await db.from("notifications")
+        .select("id,user_id,child_id,class_id,lesson_date,type,title,body,target,read_at,created_at")
+        .eq("id",id).maybeSingle();
+      notification=data||null;
+    }
+    if(!notification)return;
+
+    if(!notification.read_at){
+      const now=new Date().toISOString();
+      const {error}=await db.from("notifications").update({read_at:now,updated_at:now}).eq("id",id);
+      if(!error){
+        notification.read_at=now;
+        const local=parentNotifications.find(n=>n.id===id);
+        if(local)local.read_at=now;
+      }
+    }
+    updateParentNotificationBadge();
+    renderParentNotificationList();
+    window.closeParentNotificationDrawer();
+    await focusParentNotificationTarget(notification);
+  };
+
+  window.markAllParentNotificationsRead=async function(){
+    if(profile?.role!=="parent")return;
+    const btn=$("parentNotificationReadAllBtn");
+    if(btn){btn.disabled=true;btn.textContent="처리 중...";}
+    try{
+      const {error}=await db.rpc("mark_all_notifications_read");
+      if(error)throw error;
+      await loadParentNotifications();
+    }catch(e){
+      notify("알림 읽음 처리 실패: "+(e?.message||e));
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent="모두 읽음";}
+    }
+  };
+
+  async function startParentNotifications(){
+    if(profile?.role!=="parent")return;
+    await loadParentNotifications();
+    await refreshAccountPushStatus().catch(()=>{});
+
+    if(parentNotificationChannel){
+      try{await db.removeChannel(parentNotificationChannel);}catch(_){}
+      parentNotificationChannel=null;
+    }
+    parentNotificationChannel=db.channel("parent-notifications-"+profile.id)
+      .on("postgres_changes",{
+        event:"*",
+        schema:"public",
+        table:"notifications",
+        filter:`user_id=eq.${profile.id}`
+      },()=>loadParentNotifications())
+      .subscribe();
+
+    clearInterval(parentNotificationRefreshTimer);
+    parentNotificationRefreshTimer=setInterval(()=>{
+      if(profile?.role==="parent" && !document.hidden)loadParentNotifications();
+    },60_000);
+
+    const pending=new URLSearchParams(location.search).get("notification");
+    if(pending){
+      setTimeout(()=>window.openParentNotification(pending),550);
+      try{
+        const u=new URL(location.href);
+        u.searchParams.delete("notification");
+        history.replaceState(null,"",u.pathname+u.search+u.hash);
+      }catch(_){}
+    }
+
+    setTimeout(maybeShowGrowlogPushPrompt,1600);
+  }
+
+  function stopParentNotifications(){
+    $("parentNotificationBtn")?.classList.add("hide");
+    $("parentNotificationBadge")?.classList.add("hide");
+    $("growlogPushPrompt")?.classList.add("hide");
+    window.closeParentNotificationDrawer?.();
+    clearInterval(parentNotificationRefreshTimer);
+    parentNotificationRefreshTimer=null;
+    if(parentNotificationChannel && db){
+      db.removeChannel(parentNotificationChannel).catch(()=>{});
+      parentNotificationChannel=null;
+    }
+    parentNotifications=[];
+  }
+
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.addEventListener("message",event=>{
+      if(event.data?.type==="GROWLOG_NOTIFICATION_CLICK" && event.data?.notification_id){
+        window.openParentNotification?.(String(event.data.notification_id));
+      }
+    });
+  }
 
   // ---------- Signup field validation ----------
   function formatGuardianPhoneDigits(digits){
@@ -1510,6 +1912,7 @@
   async function logout(){
     if (!db) return;
     await db.auth.signOut();
+    stopParentNotifications();
     session = null; profile = null; activeClass=null; activeChild=null; activeEnrollment=null;
     removeAdminPreviewUI();
     closeAccountSettings();
@@ -3038,6 +3441,7 @@
     if(profile?.role!=="parent")return;
     try{localStorage.setItem("growlog-parent-record-viewed-v76","1");}catch(e){}
     try{window.markGrowlogParentRecordViewed?.();}catch(e){}
+    setTimeout(()=>{try{maybeShowGrowlogPushPrompt();}catch(e){}},1200);
   }
 
   async function renderParentToday(){
@@ -5899,6 +6303,27 @@
       const {error}=await db.from("growth_records").upsert(payload,{onConflict:"class_id,child_id,lesson_date"});
       if(error) throw error;
       await db.from("attendance").upsert({class_id:activeClass.id,child_id:st.childId,lesson_date:activeLessonDate,status:"present"},{onConflict:"class_id,child_id,lesson_date"});
+
+      // v80: 저장 완료 시 학부모 알림함을 만들고, 푸시 허용 기기에는 백그라운드 알림을 보냅니다.
+      try{
+        const {data:notificationId,error:notificationError}=await db.rpc("create_parent_lesson_notification",{
+          p_child_id:st.childId,
+          p_class_id:activeClass.id,
+          p_lesson_date:activeLessonDate
+        });
+        if(notificationError)throw notificationError;
+        if(notificationId){
+          db.functions.invoke("send-web-push",{
+            body:{notification_id:notificationId}
+          }).then(({error})=>{
+            if(error)console.warn("push send:",error.message||error);
+          }).catch(e=>console.warn("push send:",e));
+        }
+      }catch(notificationError){
+        // 알림 실패가 강사의 성장기록 저장 자체를 막으면 안 됩니다.
+        console.warn("parent notification:",notificationError?.message||notificationError);
+      }
+
       st.complete=true;st.dirty=false;st.absent=false;
       window.updateStudentEditUI?.(currentTeacherStudent);
       window.updateLessonProgress?.();

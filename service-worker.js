@@ -1,8 +1,8 @@
-const GROWLOG_CACHE = "growlog-pwa-v79";
+const GROWLOG_CACHE = "growlog-pwa-v80";
 const PRECACHE = [
   "./",
   "./index.html",
-  "./app.js?v=79",
+  "./app.js?v=80",
   "./lesson-videos.css?v=46",
   "./manifest.webmanifest",
   "./growlog-icon-192-v39.png",
@@ -50,4 +50,56 @@ self.addEventListener("fetch", (event) => {
       return Response.error();
     })
   );
+});
+
+
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch (_) {
+    try {
+      payload = { body: event.data ? event.data.text() : "" };
+    } catch (_) {}
+  }
+
+  const title = payload.title || "Growlog 🌱";
+  const options = {
+    body: payload.body || "아이의 새로운 수업기록이 도착했어요.",
+    icon: payload.icon || "./growlog-icon-192-v39.png",
+    badge: payload.badge || "./growlog-icon-192-v39.png",
+    tag: payload.tag || "growlog-notification",
+    renotify: true,
+    data: payload.data || {}
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const data = event.notification.data || {};
+  const targetUrl = new URL(data.url || "./", self.location.origin).href;
+
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of windows) {
+      try {
+        const clientUrl = new URL(client.url);
+        if (clientUrl.origin === self.location.origin) {
+          await client.focus();
+          if (data.notification_id) {
+            client.postMessage({
+              type: "GROWLOG_NOTIFICATION_CLICK",
+              notification_id: data.notification_id
+            });
+          } else {
+            client.navigate(targetUrl);
+          }
+          return;
+        }
+      } catch (_) {}
+    }
+    await self.clients.openWindow(targetUrl);
+  })());
 });
