@@ -10,7 +10,7 @@
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Growlog" name="apple-mobile-web-app-title"/>
 <meta content="yes" name="mobile-web-app-capable"/>
-<link href="./manifest.webmanifest?v=80" rel="manifest"/>
+<link href="./manifest.webmanifest?v=81" rel="manifest"/>
 <link href="./apple-touch-icon-v39.png" rel="apple-touch-icon" sizes="180x180"/>
 <link href="./growlog-icon-192-v39.png" rel="icon" sizes="192x192" type="image/png"/>
 <title>Growlog | 아이 성장 한줄</title>
@@ -7568,6 +7568,12 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+
+<style id="growlog-v81-version-archive">
+.version-archive-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}.version-archive-head h2{margin:7px 0 4px}.version-archive-head p{margin:0;color:var(--muted);font-size:11px;line-height:1.55}.version-archive-current{padding:7px 10px;border-radius:999px;background:#eef5ff;color:#4569a8;font-size:10px;font-weight:900;white-space:nowrap}.version-archive-guide{display:grid;gap:4px;padding:12px 14px;border:1px solid #dfe7ef;border-radius:14px;background:#f8fbff;margin-bottom:12px}.version-archive-guide b{font-size:11px}.version-archive-guide span{font-size:10px;color:#6f7b8a;line-height:1.5}.version-archive-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 16px}.version-archive-summary>div{display:grid;gap:3px;padding:12px;border:1px solid #e4e9ee;border-radius:13px;background:#fff}.version-archive-summary b{font-size:16px}.version-archive-summary span{color:var(--muted);font-size:9.5px}.version-archive-list{display:grid;gap:8px}.version-archive-card{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:11px;align-items:center;padding:11px 12px;border:1px solid #e4e8ed;border-radius:14px;background:#fff}.version-archive-v{display:grid;place-items:center;min-height:38px;border-radius:11px;background:#eef4ff;color:#4569a8;font-size:13px;font-weight:950}.version-archive-copy{display:grid;gap:3px;min-width:0}.version-archive-copy b{font-size:11.5px}.version-archive-copy span{overflow:hidden;text-overflow:ellipsis;color:#89939f;font-size:9px;white-space:nowrap}.version-archive-action{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:6px 10px;border:1px solid #d8e0eb;border-radius:10px;background:#fff;color:#4d668d;font-size:9.5px;font-weight:900;text-decoration:none}.version-archive-muted{font-size:9px;color:#a0a8b1}.version-archive-old{margin-top:14px;padding:12px 14px;border:1px dashed #dfe4e9;border-radius:14px;background:#fafbfc}.version-archive-old summary{cursor:pointer;font-size:11px;font-weight:900}.version-archive-old p{font-size:10px;line-height:1.6}.version-archive-handoff{margin-top:14px;padding:14px;border-radius:14px;background:#fffaf1;border:1px solid #eee1ca}.version-archive-handoff h3{margin:0 0 8px;font-size:12px}.version-archive-handoff ol{margin:0;padding-left:20px;color:#6f6658;font-size:10px;line-height:1.65}
+@media(max-width:620px){.version-archive-head{display:grid}.version-archive-summary{grid-template-columns:1fr}.version-archive-card{grid-template-columns:50px minmax(0,1fr)}.version-archive-actions{grid-column:1/-1}.version-archive-action{width:100%}}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -8396,7 +8402,85 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="hero"><div><span class="badge">관리자</span><h1>Growlog 운영 대시보드</h1><p>회원 · 수업 · 비용 · 성장기록 · 학부모 문의 관리</p></div></div>
 <div class="grid three" style="margin-bottom:16px"><div class="stat"><b id="prodAdminTodayCount">0</b><span>오늘 수업</span></div><div class="stat"><b id="prodAdminTodayRate">0%</b><span>기록 완료율</span></div><div class="stat"><b id="prodAdminUnreadCount">0</b><span>미확인 문의</span></div></div>
 <div class="card">
-<div class="mobile-hint">메뉴를 좌우로 밀어서 더 볼 수 있어요.</div><div class="tabs"><button class="tabbtn on" data-tab="classes">센터 관리</button><button class="tabbtn" data-tab="adminphotos">전체 수업 사진</button><button class="tabbtn" data-tab="recordcheck">강사 기록 점검</button><button class="tabbtn" data-tab="monthly">월간 기록 현황</button><button class="tabbtn" data-tab="members">회원 관리</button><button class="tabbtn" data-tab="loginstats">로그인 현황</button><button class="tabbtn" data-tab="multi">다중 수강</button><button class="tabbtn" data-tab="fees">추가 비용</button><button class="tabbtn" data-tab="surveys">설문 결과</button><button class="tabbtn" data-tab="feedback">학부모 문의</button></div>
+<div class="mobile-hint">메뉴를 좌우로 밀어서 더 볼 수 있어요.</div><div class="tabs"><button class="tabbtn on" data-tab="classes">센터 관리</button><button class="tabbtn" data-tab="adminphotos">전체 수업 사진</button><button class="tabbtn" data-tab="recordcheck">강사 기록 점검</button><button class="tabbtn" data-tab="monthly">월간 기록 현황</button><button class="tabbtn" data-tab="members">회원 관리</button><button class="tabbtn" data-tab="loginstats">로그인 현황</button><button class="tabbtn" data-tab="multi">다중 수강</button><button class="tabbtn" data-tab="fees">추가 비용</button><button class="tabbtn" data-tab="surveys">설문 결과</button><button class="tabbtn" data-tab="versionarchive">버전 보관소</button><button class="tabbtn" data-tab="feedback">학부모 문의</button></div>
+
+<div class="panel" id="versionarchive">
+  <div class="version-archive-head">
+    <div><span class="badge">인수인계 · 백업</span><h2>Growlog 버전 보관소</h2><p>과거 버전의 변경내용을 확인하고, 최근 버전은 당시 첫 화면을 읽기 전용으로 다시 볼 수 있습니다.</p></div>
+    <span class="version-archive-current">현재 운영 기준 v81</span>
+  </div>
+  <div class="version-archive-guide">
+    <b>🔒 과거 화면은 읽기 전용입니다.</b>
+    <span>미리보기에서는 Supabase 로그인·저장·삭제 기능이 실행되지 않습니다. 실제 롤백은 별도 원본 ZIP 백업을 사용하세요.</span>
+  </div>
+  <div class="version-archive-summary">
+    <div><b>48</b><span>보관 원본</span></div>
+    <div><b>13</b><span>최근 버전</span></div>
+    <div><b>v68~v80</b><span>화면 미리보기</span></div>
+  </div>
+  <div class="version-archive-list"><article class="version-archive-card">
+      <div class="version-archive-v">v80</div>
+      <div class="version-archive-copy"><b>학부모 알림함·Web Push 준비</b><span>growlog_v80_notifications_push.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v80.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
+      <div class="version-archive-v">v79</div>
+      <div class="version-archive-copy"><b>학부모 사진저장 호환성 개선</b><span>growlog_v79_photo_save_compat.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v79.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
+      <div class="version-archive-v">v78</div>
+      <div class="version-archive-copy"><b>모바일 첫 화면 여백 제거</b><span>growlog_v78_mobile_hero_flush.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v78.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
+      <div class="version-archive-v">v77</div>
+      <div class="version-archive-copy"><b>모바일 첫 화면 사진 높이 복원</b><span>growlog_v77_mobile_hero_restore.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v77.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
+      <div class="version-archive-v">v76</div>
+      <div class="version-archive-copy"><b>홈화면 추가 개선·지도 바로가기</b><span>growlog_v76_pwa_map_jump.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v76.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
+      <div class="version-archive-v">v75</div>
+      <div class="version-archive-copy"><b>아이디·비밀번호 찾기</b><span>growlog_v75_account_recovery.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v75.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
+      <div class="version-archive-v">v74</div>
+      <div class="version-archive-copy"><b>사회성 연결 선택사항/없음</b><span>growlog_v74_social_growth_optional(1).zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v74.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
+      <div class="version-archive-v">v73</div>
+      <div class="version-archive-copy"><b>스토리보드게임 관찰유형 4·7 보강</b><span>growlog_v73_storyboard_enneagram47.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v73.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
+      <div class="version-archive-v">v72</div>
+      <div class="version-archive-copy"><b>첫 화면 사진 하단 틈 제거</b><span>growlog_v72_hero_no_gap.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v72.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
+      <div class="version-archive-v">v71</div>
+      <div class="version-archive-copy"><b>첫 화면 풀스크린 사진</b><span>growlog_v71_fullscreen_hero.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v71.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
+      <div class="version-archive-v">v70</div>
+      <div class="version-archive-copy"><b>첫 화면 전체폭 랜딩</b><span>growlog_v70_fullwidth_landing.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v70.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
+      <div class="version-archive-v">v69</div>
+      <div class="version-archive-copy"><b>지도 검색·신청 링크</b><span>growlog_v69_map_search_apply_links.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v69.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
+      <div class="version-archive-v">v68</div>
+      <div class="version-archive-copy"><b>공개 수업지도</b><span>growlog_v68_public_class_map.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v68.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article></div>
+  <details class="version-archive-old">
+    <summary>이전 개발 버전 원본 목록 보기</summary>
+    <p>v28, v29, v30, v31, v32, v33, v34, v35, v36, v37, v39, v40, v41, v46, v47, v48, v49, v50, v51, v52, v53, v54, v55, v56, v57, v58, v59, v60, v61, v62, v63, v64, v65, v66, v67</p>
+    <p class="muted">초기 버전은 전체 인수인계 백업 ZIP에 원본 파일로 보관했습니다. 기능명이 명확하지 않은 초기 버전은 임의로 설명을 만들지 않았습니다.</p>
+  </details>
+  <div class="version-archive-handoff">
+    <h3>다음 담당자가 꼭 알아야 할 것</h3>
+    <ol><li>실서비스 수정 전 최신 ZIP을 새 버전 번호로 복사합니다.</li><li>DB/Edge Function 변경은 코드 롤백과 별개이므로 삭제하지 말고 변경기록을 확인합니다.</li><li>과거 화면 확인은 이 보관소의 읽기 전용 미리보기를 사용하고, 운영 복구는 원본 ZIP으로 진행합니다.</li></ol>
+  </div>
+</div>
 <div class="panel" id="adminphotos">
 <div class="ag-heading"><div><h2>전체 수업 사진·영상</h2><p class="muted">수업일별로 사진과 영상을 함께 보고, 사진만 또는 영상만 따로 모아볼 수 있어요.</p></div></div>
 <div aria-label="수업 자료 종류" class="ag-media-tabs" role="tablist">
@@ -10924,7 +11008,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=80"></script>
+<script src="./app.js?v=81"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

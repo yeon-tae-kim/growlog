@@ -1,0 +1,386 @@
+[
+  {
+    "version": 28,
+    "file": "growlog_v28.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2118040,
+    "sha256": "d6444287eb95002dc26977ff3a283a15e22374138cd4716a9670a2e9fe9fa483",
+    "preview": false
+  },
+  {
+    "version": 29,
+    "file": "growlog_v29.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2118689,
+    "sha256": "5957f86ed728f6f61525c3af6cc96fc39fd3c80bebe399efab1cc74810d73dc4",
+    "preview": false
+  },
+  {
+    "version": 30,
+    "file": "growlog_v30.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2119916,
+    "sha256": "cc5c9d2a25d9801e1094fa7c9983cd577137ad7db3307374c12a276dde2ebfcc",
+    "preview": false
+  },
+  {
+    "version": 31,
+    "file": "growlog_v31.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2266509,
+    "sha256": "88c8456f637cddefc8b5ce5b19af75d9011c8261b5ae2acdb6969c3cd5cc0f74",
+    "preview": false
+  },
+  {
+    "version": 32,
+    "file": "growlog_v32.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2381024,
+    "sha256": "e35c76fb6dde18773ca3ae7c7410fe1f35e8aae6d904c22fec421e08d514732f",
+    "preview": false
+  },
+  {
+    "version": 33,
+    "file": "growlog_v33.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2427275,
+    "sha256": "5104e936072408c536a2634fcf499cf8f1d42dd7f0c3792232d84e9a164c7270",
+    "preview": false
+  },
+  {
+    "version": 34,
+    "file": "growlog_v34.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2432795,
+    "sha256": "f47754b1b59d07cd3df1ca061f89d819a5fa9b7e7bd11fdc7e17b4e83eb8d1ba",
+    "preview": false
+  },
+  {
+    "version": 35,
+    "file": "growlog_v35.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2433093,
+    "sha256": "bc038e2f3d0b0b55750a8f2006d98988593963c4d6beed1149db938e341b7bb2",
+    "preview": false
+  },
+  {
+    "version": 36,
+    "file": "growlog_v36.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2433362,
+    "sha256": "53f828191c6af969ab30af5917b316e1914cfc2e8d00a4951dc640a0d494a1b9",
+    "preview": false
+  },
+  {
+    "version": 37,
+    "file": "growlog_v37.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2436700,
+    "sha256": "75e0c7a4e9a3cbaf9f5df84ccb5b158b9addb8b7304352c4a8da76d1fc6ddddc",
+    "preview": false
+  },
+  {
+    "version": 39,
+    "file": "growlog_v39.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2833039,
+    "sha256": "63c6ff0783a455636f5c0ec49ada187d49daf4527bdf48db296fcfa104c324f9",
+    "preview": false
+  },
+  {
+    "version": 40,
+    "file": "growlog_v40.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2833092,
+    "sha256": "2e136607c1d16f60252328f90efc5d58d4d739c1153192e6c17f56240ceb12f2",
+    "preview": false
+  },
+  {
+    "version": 41,
+    "file": "growlog_v41.zip",
+    "title": "초기 Growlog 개발 버전",
+    "size": 2837764,
+    "sha256": "656e893f6d0f1116071f1cd5ff13a043a9cd0dc1a0e30269b877c8c7f51f9a9f",
+    "preview": false
+  },
+  {
+    "version": 46,
+    "file": "growlog_v46_recurring_lesson_videos.zip",
+    "title": "월별 수업영상 반복 구조",
+    "size": 2142524,
+    "sha256": "cf6a1560334fdf6dab39dcb6aacf105c4ed11eb6d1719c9e4fb85bde0d308d9e",
+    "preview": false
+  },
+  {
+    "version": 47,
+    "file": "growlog_v47_trial_experience.zip",
+    "title": "일일특강 체험 구조",
+    "size": 2147149,
+    "sha256": "894556993f8c7c0ba5189741c948565f78d113d8ddd6f742669d422442cd03fc",
+    "preview": false
+  },
+  {
+    "version": 48,
+    "file": "growlog_v48_single_trial_qr.zip",
+    "title": "일일특강 QR 단일화",
+    "size": 2148414,
+    "sha256": "4d8821ddea8db7b056c7aef356dcae97c9124f27538eb83103a46fb1cd103611",
+    "preview": false
+  },
+  {
+    "version": 49,
+    "file": "growlog_v49_conditional_trial_tab.zip",
+    "title": "일일특강 탭 조건부 노출",
+    "size": 2148878,
+    "sha256": "377ceb74c634098dfa01ffa98b82877d963e5e08fadfff94dc5fbf15d9e26742",
+    "preview": false
+  },
+  {
+    "version": 50,
+    "file": "growlog_v50_trial_center_admin.zip",
+    "title": "일일특강 센터 관리자 기능",
+    "size": 2150212,
+    "sha256": "8273c82ece773b17059dfcf336eab59da64c88314a63f4e140196a56cb148809",
+    "preview": false
+  },
+  {
+    "version": 51,
+    "file": "growlog_v51_trial_quick_register.zip",
+    "title": "일일특강 빠른 등록",
+    "size": 2150766,
+    "sha256": "df1fdd2feb203732390b37097364e234fa7620b6090cf9f2c3486818c893a380",
+    "preview": false
+  },
+  {
+    "version": 52,
+    "file": "growlog_v52_trial_minimal_register.zip",
+    "title": "일일특강 최소 회원가입",
+    "size": 2151110,
+    "sha256": "1bc6cc02bfd44c44edf7389356667e57f0c870d7f8fc67bd66803c9d7561ebcd",
+    "preview": false
+  },
+  {
+    "version": 53,
+    "file": "growlog_v53_regular_registration.zip",
+    "title": "정규수업 등록",
+    "size": 2152899,
+    "sha256": "efc4eb066cf8db5453376f4443ae442078a3bb3b3275b4ca9baf44de8015b5fa",
+    "preview": false
+  },
+  {
+    "version": 54,
+    "file": "growlog_v54_trial_tab_fix.zip",
+    "title": "일일특강 탭 수정",
+    "size": 2153430,
+    "sha256": "6d5c90af9a352a2a825a654d02d51d1910ef4952e813d186d27a0083020d6a1e",
+    "preview": false
+  },
+  {
+    "version": 55,
+    "file": "growlog_v55_trial_search.zip",
+    "title": "일일특강 검색",
+    "size": 2153901,
+    "sha256": "956f6c733476d0b4ccf3f934e0a706bf9e25aa7301eb02c0714690b68b76aa9e",
+    "preview": false
+  },
+  {
+    "version": 56,
+    "file": "growlog_v56_trial_optional_teacher.zip",
+    "title": "일일특강 강사 미지정",
+    "size": 2154118,
+    "sha256": "ca30bf23264e2692f2504736d62b16b515160ffe7b8daa644d181b462324a62e",
+    "preview": false
+  },
+  {
+    "version": 57,
+    "file": "growlog_v57_logo_fix.zip",
+    "title": "로고 수정",
+    "size": 2154360,
+    "sha256": "366ddfa84c19dfc08facce1b0e3523895dfee3d68bfb47a2fc6339d99ae638d1",
+    "preview": false
+  },
+  {
+    "version": 58,
+    "file": "growlog_v58_trial_edit_teacher_fix.zip",
+    "title": "일일특강 강사 수정",
+    "size": 2154747,
+    "sha256": "0d5f5594a6af92071bd484c11c735ba30fff897464e75597aa930d2e8455738e",
+    "preview": false
+  },
+  {
+    "version": 59,
+    "file": "growlog_v59_reselect_cancel.zip",
+    "title": "일일특강 재선택·취소",
+    "size": 2155607,
+    "sha256": "9f9901def6d6a58e49ff9c20a181eff92cad48913fbed1a2f128a7ef5e98c7a3",
+    "preview": false
+  },
+  {
+    "version": 60,
+    "file": "growlog_v60_trial_live_record_map.zip",
+    "title": "일일특강 실제 기록·성장지도",
+    "size": 2156134,
+    "sha256": "d9d02803eb4220057c356588ed75185c19cdb65f0c8a71e89c847a3df751f7b6",
+    "preview": false
+  },
+  {
+    "version": 61,
+    "file": "growlog_v61_survey_admin.zip",
+    "title": "설문 관리자/결과",
+    "size": 2160697,
+    "sha256": "860433710639a4a45cbf0368dd40592498d32f3a20b1468f66de954e611ca07e",
+    "preview": false
+  },
+  {
+    "version": 62,
+    "file": "growlog_v62_vote_cancel.zip",
+    "title": "설문 취소",
+    "size": 2161177,
+    "sha256": "718335c86ee44ceb72bd31b02489c89f073113906c4f863327fba137a5a1aa27",
+    "preview": false
+  },
+  {
+    "version": 63,
+    "file": "growlog_v63_teacher_trial_section.zip",
+    "title": "강사 일일특강 구분",
+    "size": 2162265,
+    "sha256": "0299f9b345504505ea92d0bbcf448bad91a275e5ae017cafa781bf51db02a267",
+    "preview": false
+  },
+  {
+    "version": 64,
+    "file": "growlog_v64_parent_login_stats.zip",
+    "title": "학부모 로그인 집계",
+    "size": 2163851,
+    "sha256": "b5e3acc7cd321016abd5b7b1177e2dffa7a19e139f0dce64a274475c7ead722d",
+    "preview": false
+  },
+  {
+    "version": 65,
+    "file": "growlog_v65_admin_media_gallery.zip",
+    "title": "관리자 사진·영상 갤러리",
+    "size": 2165201,
+    "sha256": "c8e01d9b6c95dbabdbc57666268bdacaafc2cb418b76d8c0b21608740bff23dc",
+    "preview": false
+  },
+  {
+    "version": 66,
+    "file": "growlog_v66_login_tab_fix.zip",
+    "title": "로그인 통계 탭 수정",
+    "size": 2165808,
+    "sha256": "dfd986866fa0bdddd4188e4aacaef36da5670901638c8590fd2caef2be028f7b",
+    "preview": false
+  },
+  {
+    "version": 67,
+    "file": "growlog_v67_upload_progress.zip",
+    "title": "강사 업로드 진행률",
+    "size": 2168102,
+    "sha256": "0cb4cd94f98c99412b58c550e3e9733a746d8efa831283209719be01eca75c12",
+    "preview": false
+  },
+  {
+    "version": 68,
+    "file": "growlog_v68_public_class_map.zip",
+    "title": "공개 수업지도",
+    "size": 2173944,
+    "sha256": "be87ff184a9f7e8228fc480e5e838649ec5585ff443a76eef83bf148b74bb2ce",
+    "preview": true
+  },
+  {
+    "version": 69,
+    "file": "growlog_v69_map_search_apply_links.zip",
+    "title": "지도 검색·신청 링크",
+    "size": 2175658,
+    "sha256": "dacf9c9b038567c50f4a7392efd00856212f797fc86203a55438134b8dadc3dd",
+    "preview": true
+  },
+  {
+    "version": 70,
+    "file": "growlog_v70_fullwidth_landing.zip",
+    "title": "첫 화면 전체폭 랜딩",
+    "size": 2175385,
+    "sha256": "42c59eda3fb073f331494edea4bf46c01fd221633e0e9bd506d4f39b4a2cbb86",
+    "preview": true
+  },
+  {
+    "version": 71,
+    "file": "growlog_v71_fullscreen_hero.zip",
+    "title": "첫 화면 풀스크린 사진",
+    "size": 2175699,
+    "sha256": "c7921e7abc10791395b993f738d6a5e2890b97b7c40487d02c7a484c58c9ac42",
+    "preview": true
+  },
+  {
+    "version": 72,
+    "file": "growlog_v72_hero_no_gap.zip",
+    "title": "첫 화면 사진 하단 틈 제거",
+    "size": 2175972,
+    "sha256": "a026cbaa9e174b00cff4e38efe183035153b19535814ad5bb928992e8d5009eb",
+    "preview": true
+  },
+  {
+    "version": 73,
+    "file": "growlog_v73_storyboard_enneagram47.zip",
+    "title": "스토리보드게임 관찰유형 4·7 보강",
+    "size": 2177918,
+    "sha256": "e7144a9a6d14500445cdadca189639637c6339bbeca9bc6872bb17211b682c73",
+    "preview": true
+  },
+  {
+    "version": 74,
+    "file": "growlog_v74_social_growth_optional(1).zip",
+    "title": "사회성 연결 선택사항/없음",
+    "size": 2180039,
+    "sha256": "8517174cafb07d6bb09a1f29395d5605ffdab11f2d7cfe0ba43607309f9b11f1",
+    "preview": true
+  },
+  {
+    "version": 75,
+    "file": "growlog_v75_account_recovery.zip",
+    "title": "아이디·비밀번호 찾기",
+    "size": 2182380,
+    "sha256": "8285ec5f2c83844f9b785678a51234c1caa0cba0455e22042a321f902dea50c2",
+    "preview": true
+  },
+  {
+    "version": 76,
+    "file": "growlog_v76_pwa_map_jump.zip",
+    "title": "홈화면 추가 개선·지도 바로가기",
+    "size": 2183132,
+    "sha256": "50a867c7bf8e37fe0c9d4938757f7f0d775d4b0e5dd3f9d6dd54c3012b83bc57",
+    "preview": true
+  },
+  {
+    "version": 77,
+    "file": "growlog_v77_mobile_hero_restore.zip",
+    "title": "모바일 첫 화면 사진 높이 복원",
+    "size": 2183267,
+    "sha256": "f6bca91abf662e86041002bcbe5fdda68ebd12588389015fd47aba0ab6388a5b",
+    "preview": true
+  },
+  {
+    "version": 78,
+    "file": "growlog_v78_mobile_hero_flush.zip",
+    "title": "모바일 첫 화면 여백 제거",
+    "size": 2183383,
+    "sha256": "f0dd9f5c4f8a154384dbe54ef86b5e550e16a9c9d7827de1be3218397aac7e4a",
+    "preview": true
+  },
+  {
+    "version": 79,
+    "file": "growlog_v79_photo_save_compat.zip",
+    "title": "학부모 사진저장 호환성 개선",
+    "size": 2184406,
+    "sha256": "503c0f872cf6a9857a6c069ee143b980886b5743cd95655e4b4d8cba5d58928c",
+    "preview": true
+  },
+  {
+    "version": 80,
+    "file": "growlog_v80_notifications_push.zip",
+    "title": "학부모 알림함·Web Push 준비",
+    "size": 2190182,
+    "sha256": "34d6bdf7472528c63ced8ead29a4b5502b04d3278e5de939a5daa87eb80a8ad1",
+    "preview": true
+  }
+]
