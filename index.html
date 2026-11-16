@@ -10,7 +10,7 @@
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Growlog" name="apple-mobile-web-app-title"/>
 <meta content="yes" name="mobile-web-app-capable"/>
-<link href="./manifest.webmanifest?v=83" rel="manifest"/>
+<link href="./manifest.webmanifest?v=84" rel="manifest"/>
 <link href="./apple-touch-icon-v39.png" rel="apple-touch-icon" sizes="180x180"/>
 <link href="./growlog-icon-192-v39.png" rel="icon" sizes="192x192" type="image/png"/>
 <title>Growlog | 아이 성장 한줄</title>
@@ -7575,126 +7575,128 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 </style>
 
 
-<style id="growlog-v82-roll-edu-cta">
+
+<style id="growlog-v84-cta-design">
 .landing-next-actions{
-  width:min(560px,100%);
-  margin:14px auto 0;
+  width:min(640px,100%);
+  margin:0 auto 30px;
   display:grid;
-  gap:9px;
+  justify-items:center;
+  gap:14px;
 }
-.landing-roll-edu-link,
-.landing-class-map-link{
-  width:100%;
-  min-height:72px;
+.landing-roll-edu-link{
+  width:min(560px,100%);
+  min-height:88px;
   display:flex;
   align-items:center;
   justify-content:center;
+  padding:18px 28px;
+  border-radius:999px;
+  border:0;
   text-decoration:none;
-  border-radius:17px;
-  font-family:inherit;
-  cursor:pointer;
-  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-}
-.landing-roll-edu-link{
-  min-height:88px;
-  flex-direction:column;
-  gap:3px;
-  padding:14px 18px;
-  border:1px solid #2d78df;
-  background:linear-gradient(135deg,#2875df,#4b8fe8);
+  background:linear-gradient(180deg,#2378ff 0%,#0d5ff2 100%);
+  box-shadow:0 14px 28px rgba(25, 95, 230, .22), inset 0 1px 0 rgba(255,255,255,.28);
+  transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
   color:#fff;
-  box-shadow:0 11px 26px rgba(42,112,211,.18);
 }
 .landing-roll-edu-link:hover,
 .landing-roll-edu-link:focus-visible{
   transform:translateY(-2px);
-  box-shadow:0 15px 32px rgba(42,112,211,.24);
+  box-shadow:0 18px 32px rgba(25, 95, 230, .28), inset 0 1px 0 rgba(255,255,255,.28);
+  filter:saturate(1.03);
 }
-.landing-action-eyebrow{
-  font-size:8.5px;
-  font-weight:900;
-  letter-spacing:.12em;
-  opacity:.76;
+.landing-roll-edu-link .landing-action-eyebrow,
+.landing-roll-edu-link small{
+  display:none !important;
 }
 .landing-roll-edu-link strong{
-  font-size:14px;
+  display:block;
+  margin:0;
+  color:#fff;
+  font-size:15px;
+  line-height:1.2;
   font-weight:950;
-  letter-spacing:-.025em;
-}
-.landing-roll-edu-link small{
-  margin-top:2px;
-  font-size:9.5px;
-  line-height:1.45;
-  opacity:.83;
+  letter-spacing:-.03em;
+  text-align:center;
 }
 .landing-class-map-link{
-  gap:10px;
-  padding:12px 16px;
-  border:1px solid #dbe4ef;
-  background:#fff;
-  color:#33445d;
-  box-shadow:0 7px 18px rgba(44,56,76,.055);
+  width:auto;
+  min-height:0;
+  padding:0;
+  gap:8px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  color:#1f67e8;
+  text-decoration:none;
+  cursor:pointer;
+  transition:transform .16s ease, opacity .16s ease;
 }
 .landing-class-map-link:hover,
 .landing-class-map-link:focus-visible{
   transform:translateY(-1px);
-  border-color:#bfcfe5;
-  box-shadow:0 10px 23px rgba(44,56,76,.08);
+  opacity:.92;
+  border:0;
+  box-shadow:none;
 }
 .landing-class-map-link > span:first-child{
-  display:grid;
-  place-items:center;
-  flex:0 0 36px;
-  width:36px;
-  height:36px;
-  border-radius:11px;
-  background:#f0f5fb;
-  font-size:16px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:auto;
+  height:auto;
+  flex:none;
+  background:transparent;
+  border-radius:0;
+  font-size:23px;
+  line-height:1;
 }
 .landing-class-map-link > span:last-child{
-  min-width:0;
-  display:grid;
-  gap:2px;
-  text-align:left;
-}
-.landing-class-map-link strong{
-  font-size:12px;
-  font-weight:950;
+  display:flex;
+  align-items:flex-end;
+  gap:0;
+  text-align:center;
 }
 .landing-class-map-link small{
-  color:#7d8795;
-  font-size:9.5px;
-  line-height:1.4;
+  display:none !important;
 }
-@media(max-width:620px){
-  .landing-next-actions{
-    margin-top:12px;
-    gap:8px;
-  }
-  .landing-roll-edu-link{
-    min-height:82px;
-    padding:13px 14px;
-  }
-  .landing-roll-edu-link strong{
-    font-size:13.5px;
-  }
-  .landing-roll-edu-link small{
-    font-size:9px;
-  }
-  .landing-class-map-link{
-    min-height:64px;
-  }
+.landing-class-map-link strong{
+  display:inline-block;
+  padding-bottom:5px;
+  color:#1f67e8;
+  font-size:13px;
+  line-height:1.2;
+  font-weight:950;
+  letter-spacing:-.02em;
+  border-bottom:3px solid #2f7bff;
 }
-</style>
-
-
-<style id="growlog-v83-cta-order">
-.split-landing-copy > .landing-next-actions{
-  margin:0 auto 26px;
+.split-landing-copy > .landing-next-actions + h1.growlog-main-title{
+  margin-top:0;
 }
 @media(max-width:760px){
   .split-landing-copy > .landing-next-actions{
-    margin:0 auto 22px;
+    margin:0 auto 24px;
+    gap:12px;
+  }
+  .landing-roll-edu-link{
+    width:min(92vw, 540px);
+    min-height:80px;
+    padding:16px 18px;
+  }
+  .landing-roll-edu-link strong{
+    font-size:14px;
+  }
+  .landing-class-map-link > span:first-child{
+    font-size:20px;
+  }
+  .landing-class-map-link strong{
+    font-size:12.5px;
+    border-bottom-width:2px;
+    padding-bottom:4px;
   }
 }
 </style>
@@ -8546,7 +8548,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="panel" id="versionarchive">
   <div class="version-archive-head">
     <div><span class="badge">인수인계 · 백업</span><h2>Growlog 버전 보관소</h2><p>과거 버전의 변경내용을 확인하고, 최근 버전은 당시 첫 화면을 읽기 전용으로 다시 볼 수 있습니다.</p></div>
-    <span class="version-archive-current">현재 운영 기준 v83</span>
+    <span class="version-archive-current">현재 운영 기준 v84</span>
   </div>
   <div class="version-archive-guide">
     <b>🔒 과거 화면은 읽기 전용입니다.</b>
@@ -8554,10 +8556,14 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
   </div>
   <div class="version-archive-summary">
     <div><b>48</b><span>보관 원본</span></div>
-    <div><b>15</b><span>최근 버전</span></div>
-    <div><b>v68~v82</b><span>화면 미리보기</span></div>
+    <div><b>16</b><span>최근 버전</span></div>
+    <div><b>v68~v83</b><span>화면 미리보기</span></div>
   </div>
   <div class="version-archive-list"><article class="version-archive-card">
+      <div class="version-archive-v">v83</div>
+      <div class="version-archive-copy"><b>첫 화면 CTA를 메인 메시지 위로 재배치</b><span>growlog_v83_cta_above_message.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v83.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
       <div class="version-archive-v">v82</div>
       <div class="version-archive-copy"><b>첫 화면 롤에듀 프로그램 CTA·지점 바로가기 추가</b><span>growlog_v82_roll_edu_cta.zip</span></div>
       <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v82.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
@@ -11155,7 +11161,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=83"></script>
+<script src="./app.js?v=84"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
