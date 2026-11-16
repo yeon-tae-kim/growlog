@@ -10,7 +10,7 @@
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Growlog" name="apple-mobile-web-app-title"/>
 <meta content="yes" name="mobile-web-app-capable"/>
-<link href="./manifest.webmanifest?v=82" rel="manifest"/>
+<link href="./manifest.webmanifest?v=83" rel="manifest"/>
 <link href="./apple-touch-icon-v39.png" rel="apple-touch-icon" sizes="180x180"/>
 <link href="./growlog-icon-192-v39.png" rel="icon" sizes="192x192" type="image/png"/>
 <title>Growlog | 아이 성장 한줄</title>
@@ -7687,6 +7687,18 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+
+<style id="growlog-v83-cta-order">
+.split-landing-copy > .landing-next-actions{
+  margin:0 auto 26px;
+}
+@media(max-width:760px){
+  .split-landing-copy > .landing-next-actions{
+    margin:0 auto 22px;
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -7819,6 +7831,17 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 </div>
 </div><div aria-label="Growlog 소개 및 문의" class="split-landing-copy-pane">
 <div class="split-landing-copy">
+<div aria-label="롤에듀 프로그램 및 수업 지점 바로가기" class="landing-next-actions">
+  <a class="landing-roll-edu-link" href="https://ralledu.co.kr/" rel="noopener" target="_blank">
+    <span class="landing-action-eyebrow">ROLL EDU PROGRAM</span>
+    <strong>롤에듀 수업 더 알아보기 →</strong>
+    <small>블럭동화 · 영어뮤지컬인형극 · 스토리보드게임 · 도예 등 프로그램 소개</small>
+  </a>
+  <button class="landing-class-map-link" onclick="scrollToGrowlogClassMap()" type="button">
+    <span aria-hidden="true">📍</span>
+    <span><strong>수업 지점·프로그램 보기 ↓</strong><small>가까운 운영 지점과 신청 가능한 수업 확인</small></span>
+  </button>
+</div>
 <h1 class="growlog-main-title split-landing-title">
 <span class="growlog-title-line growlog-title-line1">오늘의 한 줄이</span>
 <span class="growlog-title-line growlog-title-line2">아이의 <span class="title-blue">내일</span>을 키웁니다.</span>
@@ -7835,17 +7858,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 </div>
 </div>
 
-<div aria-label="롤에듀 프로그램 및 수업 지점 바로가기" class="landing-next-actions">
-  <a class="landing-roll-edu-link" href="https://ralledu.co.kr/" rel="noopener" target="_blank">
-    <span class="landing-action-eyebrow">ROLL EDU PROGRAM</span>
-    <strong>롤에듀 수업 더 알아보기 →</strong>
-    <small>블럭동화 · 영어뮤지컬인형극 · 스토리보드게임 · 도예 등 프로그램 소개</small>
-  </a>
-  <button class="landing-class-map-link" onclick="scrollToGrowlogClassMap()" type="button">
-    <span aria-hidden="true">📍</span>
-    <span><strong>수업 지점·프로그램 보기 ↓</strong><small>가까운 운영 지점과 신청 가능한 수업 확인</small></span>
-  </button>
-</div>
+
 
 </div>
 </div></div>
@@ -8533,7 +8546,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="panel" id="versionarchive">
   <div class="version-archive-head">
     <div><span class="badge">인수인계 · 백업</span><h2>Growlog 버전 보관소</h2><p>과거 버전의 변경내용을 확인하고, 최근 버전은 당시 첫 화면을 읽기 전용으로 다시 볼 수 있습니다.</p></div>
-    <span class="version-archive-current">현재 운영 기준 v82</span>
+    <span class="version-archive-current">현재 운영 기준 v83</span>
   </div>
   <div class="version-archive-guide">
     <b>🔒 과거 화면은 읽기 전용입니다.</b>
@@ -8541,10 +8554,14 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
   </div>
   <div class="version-archive-summary">
     <div><b>48</b><span>보관 원본</span></div>
-    <div><b>14</b><span>최근 버전</span></div>
-    <div><b>v68~v81</b><span>화면 미리보기</span></div>
+    <div><b>15</b><span>최근 버전</span></div>
+    <div><b>v68~v82</b><span>화면 미리보기</span></div>
   </div>
   <div class="version-archive-list"><article class="version-archive-card">
+      <div class="version-archive-v">v82</div>
+      <div class="version-archive-copy"><b>첫 화면 롤에듀 프로그램 CTA·지점 바로가기 추가</b><span>growlog_v82_roll_edu_cta.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v82.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
       <div class="version-archive-v">v81</div>
       <div class="version-archive-copy"><b>관리자 버전 보관소·인수인계 기록 추가</b><span>growlog_v81_version_archive.zip</span></div>
       <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v81.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
@@ -11138,7 +11155,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=82"></script>
+<script src="./app.js?v=83"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
