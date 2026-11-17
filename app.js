@@ -5206,7 +5206,14 @@
     teacherStudents.splice(0,teacherStudents.length,...list.map(c=>c.name));
 
     const noStudents=$("teacherNoStudentsNotice");
-    if(noStudents)noStudents.classList.toggle("hide",list.length>0);
+    if(noStudents){
+      noStudents.classList.toggle("hide",list.length>0);
+      if(!list.length){
+        noStudents.innerHTML=activeClass?.centers?.is_trial===true
+          ? '<b>아직 이 일일특강에 참여 등록된 아이가 없습니다.</b><br><span class="muted">괜찮아요. 전체 사진·동영상은 지금 먼저 올려둘 수 있어요. 부모님이 가입해 이 특강을 선택하면 아이별로 사진을 연결하면 됩니다.</span>'
+          : '<b>이 반에 등록된 아이가 아직 없습니다.</b><br><span class="muted">전체 사진·동영상은 먼저 올려둘 수 있어요. 부모님 가입 후 아이가 연결되면 사진을 아이별로 선택하면 됩니다.</span>';
+      }
+    }
 
     const studentCountBadge=$("lessonStudentCountBadge");
     if(studentCountBadge){
@@ -5556,16 +5563,32 @@
   window.renderChildPhotoPicker=renderChildPhotoPickerProd;
 
   async function getTeacherPhotoUploadDate(){
+    if(!activeClass)return null;
+
+    // v86: 일일특강은 학부모/참여 학생이 아직 0명이어도
+    // 반 전체 사진·동영상을 먼저 업로드할 수 있습니다.
+    // 일일특강은 별도의 class_sessions 행이 없을 수 있으므로
+    // 담당 특강 화면에서 잡힌 activeLessonDate(기본 오늘)를 그대로 사용합니다.
+    if(activeClass?.centers?.is_trial===true){
+      const trialDate=activeLessonDate || todayISO();
+      if(!trialDate || trialDate>todayISO())return null;
+      if(activeLessonDate!==trialDate){
+        activeLessonDate=trialDate;
+        setTeacherRecordDateUI();
+      }
+      return trialDate;
+    }
+
     const selectedDate=$("teacherLessonDateSelect")?.value || "";
     const date=selectedDate || activeLessonDate || "";
-    if(!date || !activeClass)return null;
+    if(!date)return null;
     if(date>todayISO())return null;
 
     let valid=teacherSessionCache.some(
       s=>s.session_date===date && s.status==="scheduled"
     );
 
-    // 화면에는 선택되어 있는데 캐시가 어긋난 경우 DB의 실제 수업일을 한 번 더 확인합니다.
+    // 정규수업은 실제 class_sessions 수업일을 기준으로 검증합니다.
     if(!valid){
       const {data,error}=await db.from("class_sessions")
         .select("id,session_date,status")
@@ -5839,7 +5862,9 @@
     }
     if($("teacherUploadProgressHint")){
       $("teacherUploadProgressHint").textContent=state.complete
-        ?"이제 아이별 사진·영상을 선택할 수 있어요."
+        ? (teacherStudents.length
+            ?"이제 아이별 사진·영상을 선택할 수 있어요."
+            :"전체 사진함에 저장됐어요. 부모님 가입 후 아이가 연결되면 아이별 사진을 선택할 수 있어요.")
         : state.error
           ?"저장된 자료는 유지됩니다. 오류 안내를 확인해주세요."
           :"완료 메시지가 뜰 때까지 이 화면을 유지해주세요.";

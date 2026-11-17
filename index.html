@@ -10,7 +10,7 @@
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Growlog" name="apple-mobile-web-app-title"/>
 <meta content="yes" name="mobile-web-app-capable"/>
-<link href="./manifest.webmanifest?v=85" rel="manifest"/>
+<link href="./manifest.webmanifest?v=86" rel="manifest"/>
 <link href="./apple-touch-icon-v39.png" rel="apple-touch-icon" sizes="180x180"/>
 <link href="./growlog-icon-192-v39.png" rel="icon" sizes="192x192" type="image/png"/>
 <title>Growlog | 아이 성장 한줄</title>
@@ -8422,7 +8422,8 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <button class="on" id="lessonTabPhotos" onclick="showLessonWork('photos',this)" type="button">전체 사진</button>
 </div>
 <div class="teacher-no-students-notice" id="teacherNoStudentsNotice">
-      이 반에 등록된 아이가 아직 없습니다.
+      <b>이 반에 등록된 아이가 아직 없습니다.</b><br/>
+      <span class="muted">전체 사진·동영상은 먼저 올려둘 수 있어요. 부모님 가입 후 아이가 연결되면 아이별로 선택하면 됩니다.</span>
     </div>
 <div class="lesson-progress">
 <span class="badge" id="lessonStudentCountBadge">0명 수강</span>
@@ -8431,9 +8432,9 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="lesson-work-panel on" id="lessonPhotosPanel">
 <div class="grid two">
 <div class="card">
-<h2>1. 전체 활동사진·동영상 올리기</h2>
+<h2>1. 전체 활동사진·동영상 먼저 올리기</h2>
 <input accept="image/*,video/*" id="bulk" multiple="" type="file"/>
-<p class="muted" style="font-size:12px">수업 사진·동영상은 합쳐서 한 번에 최대 30개까지 올릴 수 있어요. 선택하면 미리보기가 먼저 뜨고, 사진은 가볍게 최적화하고 동영상은 안정적으로 저장합니다. 업로드한 자료는 모든 아이 이름 탭에서 동일하게 확인하고 아이별로 선택할 수 있습니다.</p>
+<p class="muted" style="font-size:12px"><b>학부모님이 아직 가입하지 않았거나 참여 학생이 0명이어도 전체 사진·동영상은 먼저 올릴 수 있어요.</b> 수업 사진·동영상은 합쳐서 한 번에 최대 30개까지 업로드됩니다. 나중에 부모님이 가입해 아이가 연결되면, 이미 올려둔 자료에서 아이별 사진·동영상을 선택하면 됩니다.</p>
 <div aria-live="polite" class="teacher-upload-progress-panel hide" id="teacherUploadProgressPanel">
 <div class="teacher-upload-progress-head">
 <div>
@@ -8574,7 +8575,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="panel" id="versionarchive">
   <div class="version-archive-head">
     <div><span class="badge">인수인계 · 백업</span><h2>Growlog 버전 보관소</h2><p>과거 버전의 변경내용을 확인하고, 최근 버전은 당시 첫 화면을 읽기 전용으로 다시 볼 수 있습니다.</p></div>
-    <span class="version-archive-current">현재 운영 기준 v85</span>
+    <span class="version-archive-current">현재 운영 기준 v86</span>
   </div>
   <div class="version-archive-guide">
     <b>🔒 과거 화면은 읽기 전용입니다.</b>
@@ -8582,10 +8583,14 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
   </div>
   <div class="version-archive-summary">
     <div><b>48</b><span>보관 원본</span></div>
-    <div><b>17</b><span>최근 버전</span></div>
-    <div><b>v68~v84</b><span>화면 미리보기</span></div>
+    <div><b>18</b><span>최근 버전</span></div>
+    <div><b>v68~v85</b><span>화면 미리보기</span></div>
   </div>
   <div class="version-archive-list"><article class="version-archive-card">
+      <div class="version-archive-v">v85</div>
+      <div class="version-archive-copy"><b>롤에듀·수업지점 CTA를 회색 카드 밖으로 분리</b><span>growlog_v85_cta_outside_gray.zip</span></div>
+      <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v85.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
+    </article><article class="version-archive-card">
       <div class="version-archive-v">v84</div>
       <div class="version-archive-copy"><b>첫 화면 CTA를 선택안 9번 스타일로 정리</b><span>growlog_v84_cta_design_apply.zip</span></div>
       <div class="version-archive-actions"><a class="version-archive-action" href="./archive/previews/v84.html" target="_blank" rel="noopener">첫 화면 보기</a></div>
@@ -11191,7 +11196,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=85"></script>
+<script src="./app.js?v=86"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

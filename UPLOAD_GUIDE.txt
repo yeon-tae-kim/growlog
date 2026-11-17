@@ -1,0 +1,14 @@
+Growlog v86 GitHub 최소 업로드본
+
+GitHub에 아래 4개 파일만 덮어쓰기:
+- index.html
+- app.js
+- service-worker.js
+- lesson-videos.css
+
+변경사항:
+- 학부모 미가입/학생 0명이어도 전체 사진·동영상 선업로드 가능
+- 일일특강은 참여자 등록 전에도 오늘 날짜로 전체 사진 업로드 가능
+- 이후 부모 가입 시 기존 사진을 아이별로 연결
+
+기존 config.js, manifest, 아이콘 파일은 삭제하지 마세요.
