@@ -7728,7 +7728,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 </style>
 
 
-<style id="growlog-v87-relation-growth">
+<style id="growlog-v88-relation-growth">
 .relation-teacher-card{border:1px solid #dbeafe;background:linear-gradient(180deg,#fbfdff 0%,#f8fbff 100%)}
 .relation-teacher-card select{margin-top:6px}
 .relation-teacher-preview{margin-top:10px;padding:10px 12px;border-radius:12px;background:#eff6ff;font-size:12px;line-height:1.55;color:#334155}
@@ -7757,7 +7757,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
   .relation-axis{margin-left:126px}
   .relation-growth-head{flex-wrap:wrap}
   .relation-teacher-card .row.between{flex-direction:column}
-  #v87RelationAge{width:100%!important}
+  #v87RelationAgeLabel{width:auto;max-width:100%}
 }
 </style>
 
@@ -8547,9 +8547,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="row between" style="gap:10px;align-items:flex-start">
 <div><h3 style="margin:0 0 6px">🌱 관계 성장 관찰</h3>
 <p class="muted" style="font-size:12px;margin:0">오늘 실제로 보인 관계의 힘 한 가지만 선택해주세요. 해당 장면이 없었다면 ‘없음’을 선택해주세요.</p></div>
-<select id="v87RelationAge" onchange="v87RelationAgeChanged()" aria-label="관찰 연령 기준" style="width:auto;min-width:98px">
-<option value="5">5세반 기준</option><option value="6">6세반 기준</option><option value="7">7세반 기준</option>
-</select>
+<span class="badge gray" id="v87RelationAgeLabel" aria-label="관찰 연령 기준">연령 기준 자동 확인 중</span>
 </div>
 <label for="v87RelationSkill" style="margin-top:12px">오늘 관찰된 관계의 힘</label>
 <select id="v87RelationSkill" onchange="v87UpdateRelationUI()"><option value="__unset__">관찰된 힘을 선택해주세요</option><option value="none">없음 · 오늘은 특별히 관찰된 관계 장면 없음</option></select>
@@ -11243,7 +11241,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=87"></script>
+<script src="./app.js?v=88"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

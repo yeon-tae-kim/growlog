@@ -258,16 +258,24 @@
   }
 
   function v87TeacherAge(st){
+    // v88: 강사가 연령을 고르지 않습니다. 학부모가 입력한 아이 생년월일로 수업연도 기준 5·6·7세반을 자동 계산합니다.
     const inferred=relationClassAgeFromBirth(st?.birthDate,activeLessonDate);
-    return Number(st?.relationAge)||inferred||6;
+    if([5,6,7].includes(Number(inferred)))return Number(inferred);
+    // 과거 기록/생년월일 누락 데이터만 기존 저장값으로 보완합니다. 신규 입력에서 강사 선택은 제공하지 않습니다.
+    const legacy=Number(st?.relationAge);
+    return [5,6,7].includes(legacy)?legacy:6;
   }
   function v87RenderTeacher(st){
-    const ageSelect=document.getElementById("v87RelationAge");
+    const ageLabel=document.getElementById("v87RelationAgeLabel");
     const skillSelect=document.getElementById("v87RelationSkill");
     const stageSelect=document.getElementById("v87RelationStage");
-    if(!ageSelect||!skillSelect||!stageSelect)return;
+    if(!skillSelect||!stageSelect)return;
     const age=v87TeacherAge(st);
-    ageSelect.value=String(age);
+    const inferred=relationClassAgeFromBirth(st?.birthDate,activeLessonDate);
+    if(ageLabel){
+      ageLabel.textContent=inferred ? `${age}세반 기준 · 생년월일 자동` : `${age}세반 기준 · 기존 정보`;
+      ageLabel.title=inferred ? "학부모가 입력한 아이 생년월일을 기준으로 자동 설정됩니다." : "아이 생년월일이 없어 기존 기록 기준을 사용합니다.";
+    }
     v87PopulateSkills(age,st?.relationSkill||"__unset__");
     skillSelect.value=st?.relationSkill||"__unset__";
     stageSelect.value=String(st?.relationStage||1);
@@ -282,15 +290,15 @@
     if([...skillSelect.options].some(o=>o.value===selected))skillSelect.value=selected;
   }
   function v87UpdateRelationUI(markDirty=true){
-    const age=Number(document.getElementById("v87RelationAge")?.value||6);
+    const st=studentRecordState[currentTeacherStudent];
+    const age=v87TeacherAge(st);
     const skillSelect=document.getElementById("v87RelationSkill");
     const stageSelect=document.getElementById("v87RelationStage");
     const stageWrap=document.getElementById("v87RelationStageWrap");
     const preview=document.getElementById("v87RelationPreview");
-    const st=studentRecordState[currentTeacherStudent];
     if(!skillSelect||!stageSelect)return;
 
-    // 연령 기준을 바꾼 경우 해당 연령의 5가지 항목으로 다시 구성합니다.
+    // 생년월일로 자동 계산된 연령 기준의 5가지 항목으로 구성합니다.
     const currentOptionExists=[...skillSelect.options].some(o=>o.value===skillSelect.value);
     if(!currentOptionExists)v87PopulateSkills(age,"");
 
@@ -318,13 +326,6 @@
       if(markDirty && typeof markCurrentStudentDirty==="function")markCurrentStudentDirty();
     }
   }
-  window.v87RelationAgeChanged=function(){
-    const age=Number(document.getElementById("v87RelationAge")?.value||6);
-    const st=studentRecordState[currentTeacherStudent];
-    v87PopulateSkills(age,"__unset__");
-    if(st){st.relationSkill="__unset__";st.relationStage=0;st.relationNone=false;}
-    v87UpdateRelationUI(true);
-  };
   window.v87UpdateRelationUI=v87UpdateRelationUI;
 
   // v74 과거 화면 호환용. 새 기록은 v87 관계성장 UI를 사용합니다.
@@ -5555,7 +5556,7 @@
         expansionQuestions:Array.isArray(rec?.expansion_questions)?rec.expansion_questions:[],
         v74Hint:relationMeta.hint??"",
         v74Connection:relationMeta.connection||"",
-        relationAge:Number(relationMeta.relationAge)||relationClassAgeFromBirth(c.birth_date,activeLessonDate)||6,
+        relationAge:relationClassAgeFromBirth(c.birth_date,activeLessonDate)||Number(relationMeta.relationAge)||6,
         relationSkill:relationMeta.relationNone===true ? "none" : (relationMeta.relationSkill ? String(relationMeta.relationSkill) : "__unset__"),
         relationStage:Number(relationMeta.relationStage||0),
         relationNone:relationMeta.relationNone===true,
@@ -6532,9 +6533,10 @@
       const m=items[mi]||items[0]||{q:st.missionText||"",ex:st.expansionQuestions||[]};
       const relationChoice=$("v87RelationSkill")?.value||"__unset__";
       if(relationChoice==="__unset__") return notify("관계 성장 관찰에서 5가지 힘 또는 ‘없음’ 중 하나를 선택해주세요.");
+      const autoRelationAge=v87TeacherAge(st);
       const relationMeta=relationChoice==="none"
-        ? {relationAge:Number($("v87RelationAge")?.value||st.relationAge||6),relationSkill:"",relationStage:0,relationNone:true}
-        : {relationAge:Number($("v87RelationAge")?.value||st.relationAge||6),relationSkill:relationChoice,relationStage:Number($("v87RelationStage")?.value||1),relationNone:false};
+        ? {relationAge:autoRelationAge,relationSkill:"",relationStage:0,relationNone:true}
+        : {relationAge:autoRelationAge,relationSkill:relationChoice,relationStage:Number($("v87RelationStage")?.value||1),relationNone:false};
       const payload={
         class_id:activeClass.id,child_id:st.childId,lesson_date:activeLessonDate,
         teacher_id:activeTeacherProfile.id,area:selectedGrowthArea,
