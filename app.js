@@ -176,7 +176,8 @@
     }));
   }
 
-  // V74: 기존 DB 스키마를 변경하지 않고 관찰문에 선택적 성장 메타데이터 저장
+  // V87: 기존 growth_records 스키마는 그대로 두고 observation_text 메타데이터에 관계성장 기록을 함께 저장
+  // 과거 v74 메타데이터도 그대로 읽을 수 있도록 마커는 유지합니다.
   const V74_MARK="\\n[[GROWLOG_V74:";
   const V74_CASES=[
     ["친구의 놀이에 갑자기 끼어들었어요","함께 놀아도 되는지 먼저 물어보는 방법","친구와 함께 놀고 싶을 때 어떤 말을 하면 좋을까?"],
@@ -190,6 +191,59 @@
     ["친구의 실수에 웃거나 놀렸어요","상대의 기분을 생각하고 배려하는 방법","친구가 실수하면 어떤 말을 해주면 좋을까?"],
     ["친구가 원하지 않는 도움을 계속 주었어요","도움이 필요한지 먼저 물어보는 방법","친구를 돕기 전에 어떻게 물어볼까?"]
   ];
+
+  const RELATION_GROWTH_CONFIG={
+    5:{
+      theme:"손 대신 말로 표현하는 힘",
+      intro:"친구 곁에 머물며 손 대신 말을 꺼내는 힘",
+      skills:[
+        {key:"stay_together",label:"같은 판에 끝까지 머물기",parent:"친구들 곁에서 끝까지 함께 있기"},
+        {key:"ask_with_words",label:"말로 달라고 하기",parent:"필요한 것을 말로 부탁하기"},
+        {key:"wait_turn",label:"짧은 차례 기다리기",parent:"친구 차례가 끝날 때까지 기다리기"},
+        {key:"name_feeling",label:"속상함을 단어로 말하기",parent:"속상할 때 마음을 말로 표현하기"},
+        {key:"stop_signal",label:"선생님 신호에 멈추기",parent:"선생님 신호에 손을 멈추기"}
+      ]
+    },
+    6:{
+      theme:"처음 보는 친구와 어울리는 힘",
+      intro:"친구를 알아채고 순서와 역할을 말로 정하는 힘",
+      skills:[
+        {key:"notice_friend",label:"친구 곤란함 알아채기",parent:"친구가 곤란할 때 알아채기"},
+        {key:"start_talking",label:"먼저 말 걸기",parent:"처음 본 친구에게 먼저 말 걸기"},
+        {key:"set_turn_roles",label:"순서·역할 정하기",parent:"순서와 역할을 말로 정하기"},
+        {key:"words_before_hands",label:"손보다 말 먼저",parent:"갈등 때 손보다 말 먼저 하기"},
+        {key:"stop_on_no",label:"싫어 들으면 멈추기",parent:"친구가 ‘싫어’라고 하면 멈추기"}
+      ]
+    },
+    7:{
+      theme:"규칙을 지키며 함께 노는 힘",
+      intro:"규칙을 지키고 지고 나서도 다시 함께하는 힘",
+      skills:[
+        {key:"keep_rules",label:"불리해도 규칙 지키기",parent:"불리해져도 규칙 지키기"},
+        {key:"return_after_loss",label:"져도 다시 돌아오기",parent:"게임에서 져도 다음 판에 다시 함께하기"},
+        {key:"accept_opinion",label:"친구 의견 받아들이기",parent:"모둠에서 친구 의견 받아들이기"},
+        {key:"stay_team",label:"처음 본 친구와 한 팀",parent:"처음 본 친구와 한 팀으로 끝까지 하기"},
+        {key:"ask_or_help",label:"도움 청하기·돕기",parent:"막히면 도움을 청하거나 친구 돕기"}
+      ]
+    }
+  };
+  const RELATION_STAGE_LABELS={1:"도와주면 해요",2:"살짝 알려주면 해요",3:"스스로 해요"};
+  const RELATION_STAGE_SUPPORT={
+    1:"선생님이 말이나 방법을 구체적으로 알려주며 함께 연습했어요.",
+    2:"선생님이 짧은 한마디나 신호만 건네고 스스로 이어가도록 도왔어요.",
+    3:"선생님 도움 없이 스스로 해냈어요."
+  };
+
+  function relationClassAgeFromBirth(birthDate,lessonDate){
+    const birthYear=Number(String(birthDate||"").slice(0,4));
+    const lessonYear=Number(String(lessonDate||todayISO()).slice(0,4));
+    if(!birthYear||!lessonYear)return null;
+    const age=lessonYear-birthYear+1;
+    return [5,6,7].includes(age)?age:null;
+  }
+  function relationConfig(age){return RELATION_GROWTH_CONFIG[Number(age)]||RELATION_GROWTH_CONFIG[6];}
+  function relationSkill(age,key){return relationConfig(age).skills.find(x=>x.key===key)||null;}
+
   function v74Decode(raw){
     const str=String(raw||""), at=str.lastIndexOf(V74_MARK);
     if(at<0 || !str.endsWith("]]"))return {text:str,meta:{}};
@@ -198,43 +252,190 @@
   }
   function v74Encode(text,meta){
     const clean=v74Decode(text).text;
-    if(!meta?.hint && !meta?.connection)return clean;
+    const hasRelation=meta && (meta.relationAge || meta.relationSkill || Number(meta.relationStage)>0 || meta.relationNone===true);
+    if(!meta?.hint && !meta?.connection && !hasRelation)return clean;
     return clean+V74_MARK+JSON.stringify(meta)+"]]";
   }
-  function v74RenderTeacher(st){
-    const hint=document.getElementById("v74Hint"),connection=document.getElementById("v74Connection");
-    if(!hint||!connection)return;
-    hint.value=st?.v74Hint||"";
-    connection.value=st?.v74Connection||"";
-    v74UpdatePreview();
+
+  function v87TeacherAge(st){
+    const inferred=relationClassAgeFromBirth(st?.birthDate,activeLessonDate);
+    return Number(st?.relationAge)||inferred||6;
   }
-  function v74UpdatePreview(){
-    const hint=document.getElementById("v74Hint"),connection=document.getElementById("v74Connection");
-    const preview=document.getElementById("v74HintPreview");
-    if(preview){
-      const item=V74_CASES[Number(hint?.value)];
-      preview.textContent=hint?.value!=="" && item
-        ? "오늘의 성장 힌트: "+item[1]+"을 알려주거나 연습해 볼 수 있어요. 가정 질문: "+item[2]
-        : "선택하지 않으면 학부모에게 성장 힌트가 표시되지 않습니다.";
-    }
+  function v87RenderTeacher(st){
+    const ageSelect=document.getElementById("v87RelationAge");
+    const skillSelect=document.getElementById("v87RelationSkill");
+    const stageSelect=document.getElementById("v87RelationStage");
+    if(!ageSelect||!skillSelect||!stageSelect)return;
+    const age=v87TeacherAge(st);
+    ageSelect.value=String(age);
+    v87PopulateSkills(age,st?.relationSkill||"__unset__");
+    skillSelect.value=st?.relationSkill||"__unset__";
+    stageSelect.value=String(st?.relationStage||1);
+    v87UpdateRelationUI(false);
+  }
+  function v87PopulateSkills(age,selected=""){
+    const skillSelect=document.getElementById("v87RelationSkill");
+    if(!skillSelect)return;
+    const cfg=relationConfig(age);
+    skillSelect.innerHTML='<option value="__unset__">관찰된 힘을 선택해주세요</option><option value="none">없음 · 오늘은 특별히 관찰된 관계 장면 없음</option>'+
+      cfg.skills.map(x=>`<option value="${x.key}">${escape(x.parent)}</option>`).join("");
+    if([...skillSelect.options].some(o=>o.value===selected))skillSelect.value=selected;
+  }
+  function v87UpdateRelationUI(markDirty=true){
+    const age=Number(document.getElementById("v87RelationAge")?.value||6);
+    const skillSelect=document.getElementById("v87RelationSkill");
+    const stageSelect=document.getElementById("v87RelationStage");
+    const stageWrap=document.getElementById("v87RelationStageWrap");
+    const preview=document.getElementById("v87RelationPreview");
     const st=studentRecordState[currentTeacherStudent];
+    if(!skillSelect||!stageSelect)return;
+
+    // 연령 기준을 바꾼 경우 해당 연령의 5가지 항목으로 다시 구성합니다.
+    const currentOptionExists=[...skillSelect.options].some(o=>o.value===skillSelect.value);
+    if(!currentOptionExists)v87PopulateSkills(age,"");
+
+    const choice=skillSelect.value||"__unset__";
+    const isUnset=choice==="__unset__";
+    const isNone=choice==="none";
+    const skillKey=(!isUnset&&!isNone)?choice:"";
+    const stage=Math.min(3,Math.max(1,Number(stageSelect.value||1)));
+    if(stageWrap)stageWrap.hidden=!skillKey;
+    if(preview){
+      if(isUnset){
+        preview.innerHTML='<span class="muted">5가지 힘 중 오늘 관찰된 항목 1개 또는 ‘없음’을 선택해주세요.</span>';
+      }else if(isNone){
+        preview.innerHTML='<b>학부모 화면</b> · 오늘은 친구 관계에서 특별히 조정이 필요한 장면 없이 자연스럽게 수업을 이어갔어요.';
+      }else{
+        const item=relationSkill(age,skillKey);
+        preview.innerHTML=`<b>${escape(RELATION_STAGE_LABELS[stage])}</b> · ${escape(item?.parent||"")}<br><span class="muted">${escape(RELATION_STAGE_SUPPORT[stage])}</span>`;
+      }
+    }
     if(st&&!loadingStudentRecord){
-      st.v74Hint=hint?.value||"";
-      st.v74Connection=connection?.value||"";
-      if(typeof markCurrentStudentDirty==="function")markCurrentStudentDirty();
+      st.relationAge=age;
+      st.relationSkill=isNone?"none":isUnset?"__unset__":skillKey;
+      st.relationStage=skillKey?stage:0;
+      st.relationNone=isNone;
+      if(markDirty && typeof markCurrentStudentDirty==="function")markCurrentStudentDirty();
     }
   }
+  window.v87RelationAgeChanged=function(){
+    const age=Number(document.getElementById("v87RelationAge")?.value||6);
+    const st=studentRecordState[currentTeacherStudent];
+    v87PopulateSkills(age,"__unset__");
+    if(st){st.relationSkill="__unset__";st.relationStage=0;st.relationNone=false;}
+    v87UpdateRelationUI(true);
+  };
+  window.v87UpdateRelationUI=v87UpdateRelationUI;
+
+  // v74 과거 화면 호환용. 새 기록은 v87 관계성장 UI를 사용합니다.
+  function v74RenderTeacher(st){
+    v87RenderTeacher(st);
+  }
+  function v74UpdatePreview(){v87UpdateRelationUI(true);}
   window.v74UpdatePreview=v74UpdatePreview;
+
+  function renderParentRelationToday(meta){
+    const box=document.getElementById("parentV74Optional");
+    const legacyHint=document.getElementById("parentV74Hint");
+    const legacyConn=document.getElementById("parentV74Connection");
+    const relation=document.getElementById("parentRelationToday");
+    if(!box||!relation)return false;
+    const hasNewRelation=meta && (meta.relationAge || meta.relationSkill || meta.relationNone===true);
+    if(!hasNewRelation){
+      relation.hidden=true;
+      return false;
+    }
+    if(legacyHint)legacyHint.hidden=true;
+    if(legacyConn)legacyConn.hidden=true;
+    const age=Number(meta.relationAge)||relationClassAgeFromBirth(activeChild?.birth_date,todayISO())||6;
+    const cfg=relationConfig(age);
+    const skillKey=String(meta.relationSkill||"");
+    const stage=Number(meta.relationStage||0);
+    const title=document.getElementById("parentRelationTitle");
+    const stageBadge=document.getElementById("parentRelationStageBadge");
+    const copy=document.getElementById("parentRelationCopy");
+    const five=document.getElementById("parentRelationFiveSkills");
+    relation.hidden=false;
+    box.hidden=false;
+    if(!skillKey || meta.relationNone===true){
+      if(title)title.textContent="오늘은 자연스럽게 수업을 이어갔어요";
+      if(stageBadge)stageBadge.hidden=true;
+      if(copy)copy.innerHTML='오늘은 친구 관계에서 <b>특별히 조정이 필요한 장면 없이 자연스럽게 수업을 이어갔어요.</b>';
+      if(five){
+        five.hidden=false;
+        five.innerHTML=`<div class="relation-five-title">현재 이 시기에는 이런 5가지 관계의 힘을 함께 살펴보고 있어요.</div><div class="relation-five-chips">${cfg.skills.map(x=>`<span>${escape(x.label)}</span>`).join("")}</div><p class="muted relation-five-note">아이들은 수업마다 서로 다른 관계의 순간을 경험해요. 다음 수업에서도 자연스러운 활동 속에서 ${escape(shortName(activeChild?.name||"아이"))}의 모습을 계속 지켜볼게요.</p>`;
+      }
+      return true;
+    }
+    const item=relationSkill(age,skillKey);
+    if(title)title.textContent=item?.parent||"오늘의 관계 성장";
+    if(stageBadge){stageBadge.hidden=false;stageBadge.textContent=RELATION_STAGE_LABELS[stage]||"관찰 기록";}
+    if(copy)copy.textContent=RELATION_STAGE_SUPPORT[stage]||"오늘 수업에서 관계의 힘이 자연스럽게 관찰되었어요.";
+    if(five)five.hidden=true;
+    return true;
+  }
+
   function v74RenderParent(raw){
     const box=document.getElementById("parentV74Optional");
     if(!box)return;
     const meta=v74Decode(raw).meta||{};
+    if(renderParentRelationToday(meta))return;
     const item=meta.hint!==undefined&&meta.hint!==""?V74_CASES[Number(meta.hint)]:null;
     const hint=document.getElementById("parentV74Hint");
     const conn=document.getElementById("parentV74Connection");
+    const relation=document.getElementById("parentRelationToday");
+    if(relation)relation.hidden=true;
     if(hint){hint.hidden=!item;hint.textContent=item?"🌱 오늘의 성장 힌트 · "+item[1]+"을 연습해 볼 수 있어요.":"";}
     if(conn){conn.hidden=!meta.connection;conn.textContent=meta.connection?"🏠 가정에서 이어가기 · "+meta.connection:"";}
     box.hidden=!item&&!meta.connection;
+  }
+
+  async function renderParentRelationGrowthMap(){
+    const card=document.getElementById("parentRelationGrowthMapCard");
+    const bars=document.getElementById("parentRelationGrowthBars");
+    if(!card||!bars||!activeChild){if(card)card.hidden=true;return;}
+    const {data,error}=await db.from("growth_records")
+      .select("lesson_date,observation_text")
+      .eq("child_id",activeChild.id)
+      .order("lesson_date",{ascending:true});
+    if(error){console.warn("relation growth map:",error.message||error);card.hidden=true;return;}
+    const parsed=(data||[]).map(r=>({date:r.lesson_date,meta:v74Decode(r.observation_text).meta||{}}))
+      .filter(x=>x.meta.relationAge || x.meta.relationSkill || x.meta.relationNone===true);
+    const inferred=relationClassAgeFromBirth(activeChild.birth_date,todayISO());
+    const latestAge=[...parsed].reverse().map(x=>Number(x.meta.relationAge)).find(x=>[5,6,7].includes(x));
+    const age=latestAge||inferred||6;
+    const cfg=relationConfig(age);
+    const best=Object.fromEntries(cfg.skills.map(x=>[x.key,0]));
+    parsed.forEach(({meta})=>{
+      if(Number(meta.relationAge)!==age)return;
+      const key=String(meta.relationSkill||"");
+      const stage=Number(meta.relationStage||0);
+      if(Object.prototype.hasOwnProperty.call(best,key) && stage>=1 && stage<=3){
+        best[key]=Math.max(best[key],stage);
+      }
+    });
+    const hasAny=Object.values(best).some(v=>v>0);
+    const hasRelationRecord=parsed.some(x=>Number(x.meta.relationAge)===age);
+    if(!hasAny && !hasRelationRecord){card.hidden=true;return;}
+    card.hidden=false;
+    const name=shortName(activeChild.name);
+    const title=document.getElementById("parentRelationGrowthTitle");
+    const sub=document.getElementById("parentRelationGrowthSubtitle");
+    const ageBadge=document.getElementById("parentRelationGrowthAge");
+    if(title)title.textContent=`${name}의 관계 성장지도`;
+    if(sub)sub.textContent="실제로 관찰된 최고 단계를 표시합니다.";
+    if(ageBadge)ageBadge.textContent=`${age}세반 기준`;
+    bars.innerHTML=cfg.skills.map(item=>{
+      const value=best[item.key]||0;
+      const width=(value/4*100).toFixed(1);
+      const aria=value?`${item.label} ${value}단계 ${RELATION_STAGE_LABELS[value]}`:`${item.label} 아직 단계 기록 없음`;
+      return `<div class="relation-bar-row" aria-label="${escape(aria)}">
+        <div class="relation-bar-label">${escape(item.label)}</div>
+        <div class="relation-bar-track"><div class="relation-bar-fill" style="width:${width}%"></div></div>
+      </div>`;
+    }).join("");
+    const empty=document.getElementById("parentRelationGrowthEmpty");
+    if(empty){empty.hidden=hasAny;empty.textContent=hasAny?"":"아직 단계가 기록된 힘은 없어요. 실제 관찰이 쌓이면 막대가 채워져요.";}
   }
   function growthObservationText(program,behavior){
     const item=findBehaviorConfig(program,behavior);
@@ -4434,6 +4635,7 @@
     if($("parentGrowthMapTitle")) $("parentGrowthMapTitle").textContent=`🌈 ${shortName(activeChild.name)}의 전체 수업 누적 성장지도`;
     if($("parentGrowthMapTotal")) $("parentGrowthMapTotal").textContent=`${total}개 기록`;
     renderGrowthRadar(counts);
+    await renderParentRelationGrowthMap();
   }
 
   function wireParentInquiry(){
@@ -5229,12 +5431,15 @@
       const defaultBehavior=programBehaviorLabels(activeClass?.program,area)[0]||"";
       studentRecordState[c.name]={
         childId:c.id,
+        birthDate:c.birth_date||"",
         growthArea:area,
         behavior:defaultBehavior,
         mission:0,
         missionText:"",
         expansionQuestions:[],
         v74Hint:"",v74Connection:"",
+        relationAge:relationClassAgeFromBirth(c.birth_date,activeLessonDate)||6,
+        relationSkill:"__unset__",relationStage:0,relationNone:false,
         photos:new Set(),
         complete:false,
         dirty:false,
@@ -5339,15 +5544,21 @@
         || programBehaviorLabels(activeClass.program,cfg.areas[0])[0]
         || "";
 
+      const relationMeta=v74Decode(rec?.observation_text).meta||{};
       studentRecordState[c.name]={
         childId:c.id,
+        birthDate:c.birth_date||"",
         growthArea:recordArea,
         behavior:rec?.behavior||defaultBehavior,
         mission:0,
         missionText:rec?.mission||"",
         expansionQuestions:Array.isArray(rec?.expansion_questions)?rec.expansion_questions:[],
-        v74Hint:v74Decode(rec?.observation_text).meta.hint??"",
-        v74Connection:v74Decode(rec?.observation_text).meta.connection||"",
+        v74Hint:relationMeta.hint??"",
+        v74Connection:relationMeta.connection||"",
+        relationAge:Number(relationMeta.relationAge)||relationClassAgeFromBirth(c.birth_date,activeLessonDate)||6,
+        relationSkill:relationMeta.relationNone===true ? "none" : (relationMeta.relationSkill ? String(relationMeta.relationSkill) : "__unset__"),
+        relationStage:Number(relationMeta.relationStage||0),
+        relationNone:relationMeta.relationNone===true,
         photos:new Set(),
         complete:Boolean(rec||att?.status==="absent"),
         dirty:false,
@@ -6319,11 +6530,20 @@
       const mi=Number($("mission")?.value||0);
       const items=teacherMissionItemsForState(selectedGrowthArea,behavior,st);
       const m=items[mi]||items[0]||{q:st.missionText||"",ex:st.expansionQuestions||[]};
+      const relationChoice=$("v87RelationSkill")?.value||"__unset__";
+      if(relationChoice==="__unset__") return notify("관계 성장 관찰에서 5가지 힘 또는 ‘없음’ 중 하나를 선택해주세요.");
+      const relationMeta=relationChoice==="none"
+        ? {relationAge:Number($("v87RelationAge")?.value||st.relationAge||6),relationSkill:"",relationStage:0,relationNone:true}
+        : {relationAge:Number($("v87RelationAge")?.value||st.relationAge||6),relationSkill:relationChoice,relationStage:Number($("v87RelationStage")?.value||1),relationNone:false};
       const payload={
         class_id:activeClass.id,child_id:st.childId,lesson_date:activeLessonDate,
         teacher_id:activeTeacherProfile.id,area:selectedGrowthArea,
         behavior,mission:m?.q||"",expansion_questions:m?.ex||[],
-        observation_text:v74Encode(growthObservationText(activeClass.program,behavior),{hint:$("v74Hint")?.value||"",connection:$("v74Connection")?.value||""})
+        observation_text:v74Encode(growthObservationText(activeClass.program,behavior),{
+          hint:st.v74Hint||"",
+          connection:st.v74Connection||"",
+          ...relationMeta
+        })
       };
       const {error}=await db.from("growth_records").upsert(payload,{onConflict:"class_id,child_id,lesson_date"});
       if(error) throw error;

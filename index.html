@@ -7727,6 +7727,40 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+
+<style id="growlog-v87-relation-growth">
+.relation-teacher-card{border:1px solid #dbeafe;background:linear-gradient(180deg,#fbfdff 0%,#f8fbff 100%)}
+.relation-teacher-card select{margin-top:6px}
+.relation-teacher-preview{margin-top:10px;padding:10px 12px;border-radius:12px;background:#eff6ff;font-size:12px;line-height:1.55;color:#334155}
+.relation-today-card{margin:12px 0;padding:14px;border-radius:14px;background:#f0f7ff;border:1px solid #dbeafe}
+.relation-five-title{font-size:13px;font-weight:700;margin-bottom:8px;color:#334155}
+.relation-five-chips{display:flex;flex-wrap:wrap;gap:6px}
+.relation-five-chips span{display:inline-flex;padding:6px 9px;border-radius:999px;background:#fff;border:1px solid #dbeafe;font-size:12px;color:#334155}
+.relation-five-note{font-size:12px;line-height:1.55;margin:10px 0 0}
+.relation-growth-map-card{padding:20px}
+.relation-growth-head{align-items:flex-start;gap:12px;margin-bottom:18px}
+.relation-growth-chart{max-width:760px}
+.relation-bar-row{display:grid;grid-template-columns:minmax(138px,190px) 1fr;align-items:center;gap:14px;margin:13px 0}
+.relation-bar-label{text-align:right;font-size:14px;color:#4b5563;line-height:1.3}
+.relation-bar-track{height:40px;position:relative;border-left:1px solid #e5e7eb;background-image:linear-gradient(to right,transparent calc(25% - 1px),#eef2f7 calc(25% - 1px),#eef2f7 25%,transparent 25%,transparent calc(50% - 1px),#eef2f7 calc(50% - 1px),#eef2f7 50%,transparent 50%,transparent calc(75% - 1px),#eef2f7 calc(75% - 1px),#eef2f7 75%,transparent 75%,transparent calc(100% - 1px),#eef2f7 calc(100% - 1px));}
+.relation-bar-fill{height:100%;min-width:0;border-radius:8px;background:linear-gradient(180deg,#63a5f8 0%,#4f97f2 100%);transition:width .25s ease}
+.relation-axis{margin-left:204px;display:flex;justify-content:space-between;font-size:12px;color:#6b7280;margin-top:4px}
+.relation-axis span{text-align:left;transform:translateX(-2px)}
+.relation-axis span:last-child{text-align:right;transform:none}
+.relation-growth-foot{font-size:12px;margin:20px 0 0}
+.relation-growth-empty{font-size:12px;margin:12px 0 0}
+@media(max-width:720px){
+  .relation-growth-map-card{padding:16px 14px}
+  .relation-bar-row{grid-template-columns:116px 1fr;gap:10px;margin:11px 0}
+  .relation-bar-label{font-size:12px}
+  .relation-bar-track{height:34px}
+  .relation-axis{margin-left:126px}
+  .relation-growth-head{flex-wrap:wrap}
+  .relation-teacher-card .row.between{flex-direction:column}
+  #v87RelationAge{width:100%!important}
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -8260,7 +8294,13 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="row between"><h2>🌱 오늘 발견한 모습</h2><span class="badge" id="parentGrowthArea">-</span></div>
 <b id="parentBehaviorText">성장기록을 불러오고 있어요.</b>
 <p class="muted" id="parentBehaviorDesc">기록이 저장되면 이곳에 표시됩니다.</p>
-<div hidden="" id="parentV74Optional" style="margin:12px 0;padding:12px;border-radius:12px;background:#eff6ff">
+<div hidden="" id="parentV74Optional" class="relation-today-card">
+<div hidden="" id="parentRelationToday">
+<div class="row between" style="gap:8px;align-items:flex-start"><b>🌱 오늘의 관계 성장</b><span class="badge" hidden="" id="parentRelationStageBadge"></span></div>
+<h3 id="parentRelationTitle" style="margin:10px 0 6px">오늘의 관계 성장</h3>
+<p id="parentRelationCopy" style="margin:0;line-height:1.65"></p>
+<div hidden="" id="parentRelationFiveSkills" style="margin-top:10px"></div>
+</div>
 <p hidden="" id="parentV74Hint" style="margin:0 0 8px"></p>
 <p hidden="" id="parentV74Connection" style="margin:0"></p>
 </div>
@@ -8290,6 +8330,21 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="photos" id="parentActivityPhotos"><div class="photo-empty">활동사진을 불러오고 있어요.</div></div>
 <p class="muted" id="parentPhotoCaption" style="font-size:12px">연결된 아이의 사진만 보여집니다.</p>
 </div>
+</div>
+<div class="card relation-growth-map-card" hidden="" id="parentRelationGrowthMapCard" style="margin-top:16px">
+<div class="row between relation-growth-head">
+<div>
+<h2 id="parentRelationGrowthTitle">아이의 관계 성장지도</h2>
+<p class="muted" id="parentRelationGrowthSubtitle" style="margin:4px 0 0">실제로 관찰된 최고 단계를 표시합니다.</p>
+</div>
+<span class="badge gray" id="parentRelationGrowthAge">6세반 기준</span>
+</div>
+<div class="relation-growth-chart">
+<div id="parentRelationGrowthBars"></div>
+<div class="relation-axis"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span></div>
+</div>
+<p class="muted relation-growth-empty" hidden="" id="parentRelationGrowthEmpty"></p>
+<p class="muted relation-growth-foot">1 도와주면 해요 · 2 살짝 알려주면 해요 · 3 스스로 해요</p>
 </div>
 <div class="card growth-map-card" id="parentGrowthMapCard" style="margin-top:16px">
 <div class="row between growth-map-head">
@@ -8488,33 +8543,25 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <select id="mission" onchange="previewExpansion()"></select>
 </div>
 <div class="question" id="expansion"></div>
-<div class="card" style="margin-top:14px;padding:14px;border:1px solid #dbeafe">
-<h3 style="margin:0 0 8px">🌱 오늘의 성장 힌트 <small style="font-weight:400">(선택사항)</small></h3>
-<p class="muted" style="font-size:12px">실제로 지도할 상황을 발견한 날에만 선택해 주세요. 선택하지 않으면 학부모 화면에 나타나지 않습니다.</p>
-<select id="v74Hint" onchange="v74UpdatePreview()">
-<option value="">없음 · 오늘은 전달하지 않기</option>
-<option value="0">친구의 놀이에 갑자기 끼어듦</option>
-<option value="1">친구 물건을 허락 없이 사용함</option>
-<option value="2">친구의 거절에도 행동을 계속함</option>
-<option value="3">친구의 말을 기다리기 어려움</option>
-<option value="4">친구에게 너무 가까이 다가감</option>
-<option value="5">친구의 표정이나 말을 알아차리기 어려움</option>
-<option value="6">자신의 의견만 계속 주장함</option>
-<option value="7">차례를 기다리기 어려움</option>
-<option value="8">친구의 실수에 웃거나 놀림</option>
-<option value="9">친구가 원하지 않는 도움을 계속 줌</option>
+<div class="card relation-teacher-card" style="margin-top:14px;padding:14px">
+<div class="row between" style="gap:10px;align-items:flex-start">
+<div><h3 style="margin:0 0 6px">🌱 관계 성장 관찰</h3>
+<p class="muted" style="font-size:12px;margin:0">오늘 실제로 보인 관계의 힘 한 가지만 선택해주세요. 해당 장면이 없었다면 ‘없음’을 선택해주세요.</p></div>
+<select id="v87RelationAge" onchange="v87RelationAgeChanged()" aria-label="관찰 연령 기준" style="width:auto;min-width:98px">
+<option value="5">5세반 기준</option><option value="6">6세반 기준</option><option value="7">7세반 기준</option>
 </select>
-<p class="muted" id="v74HintPreview" style="font-size:12px;margin:8px 0 12px"></p>
-<label for="v74Connection">🏠 가정 연결 <small style="font-weight:400">(선택사항)</small></label>
-<p class="muted" style="font-size:12px">강사님이 상황에 따라 필요하지 않다고 판단하면 '없음'을 선택해 주세요.</p>
-<select id="v74Connection" onchange="v74UpdatePreview()">
-<option value="">없음 · 가정 연결 표시하지 않기</option>
-<option value="오늘 배운 내용을 아이와 이야기해 보세요.">오늘 배운 내용 이야기하기</option>
-<option value="친구의 마음을 물어보는 말을 함께 연습해 보세요.">친구의 마음 물어보기</option>
-<option value="먼저 허락을 구하는 말을 함께 연습해 보세요.">먼저 허락 구하기</option>
-<option value="친구의 거절을 존중하는 방법을 이야기해 보세요.">거절 존중하기</option>
-<option value="서로의 차례를 기다리는 놀이를 해보세요.">차례 기다리기</option>
+</div>
+<label for="v87RelationSkill" style="margin-top:12px">오늘 관찰된 관계의 힘</label>
+<select id="v87RelationSkill" onchange="v87UpdateRelationUI()"><option value="__unset__">관찰된 힘을 선택해주세요</option><option value="none">없음 · 오늘은 특별히 관찰된 관계 장면 없음</option></select>
+<div id="v87RelationStageWrap" style="margin-top:12px">
+<label for="v87RelationStage">오늘 확인된 단계</label>
+<select id="v87RelationStage" onchange="v87UpdateRelationUI()">
+<option value="1">1 · 도와주면 해요</option>
+<option value="2">2 · 살짝 알려주면 해요</option>
+<option value="3">3 · 스스로 해요</option>
 </select>
+</div>
+<div class="relation-teacher-preview" id="v87RelationPreview"></div>
 </div>
 <h3>오늘 사진 선택</h3>
 <p class="muted" style="font-size:12px;margin-top:-5px">전체 사진 탭에서 올린 사진·동영상 중 이 아이의 자료를 선택해주세요.</p>
@@ -11196,7 +11243,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=86"></script>
+<script src="./app.js?v=87"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
