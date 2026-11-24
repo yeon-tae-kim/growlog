@@ -8448,7 +8448,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <button class="on" id="teacherRecordTab" onclick="showTeacherPanel('records')" type="button">수업기록</button>
 <button id="teacherInquiryTab" onclick="showTeacherPanel('inquiries')" type="button">학부모 문의 <span class="badge warn" id="teacherUnreadCount" style="margin-left:4px">1</span></button>
 <button id="teacherParentInfoTab" onclick="showTeacherPanel('parentinfo')" type="button">학부모 정보</button>
-<button id="teacherMultiTab" onclick="showTeacherPanel('multi')" type="button">다중 수강</button>
+<button id="teacherMultiTab" onclick="showTeacherPanel('multi')" type="button">수강생 관리</button>
 </div>
 <div class="teacher-panel on" id="teacherRecordsPanel">
 <div class="teacher-class-select" id="teacherClassSelectView">
@@ -8674,9 +8674,9 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="teacher-panel" id="teacherMultiPanel">
 <div class="hero">
 <div>
-<span class="badge">다중 수강</span>
-<h1>내 반 수강생 · 학부모 정보</h1>
-<p>내 반의 수강생과 보호자 연락처를 확인하고, 필요한 경우 다른 반 수업을 추가로 연결할 수 있습니다.</p>
+<span class="badge">수강생 관리</span>
+<h1>내 반 수강생 관리</h1>
+<p>기존 수강생은 그대로 이어지고, 수강 중단한 아이만 해당 반에서 해제할 수 있어요. 중단 후 1년간 보관되며, 그동안 재수강이 없으면 아이 정보와 연결 기록이 자동 삭제됩니다.</p>
 </div>
 </div>
 <div id="teacherMultiContent">
@@ -8688,7 +8688,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="hero"><div><span class="badge">관리자</span><h1>Growlog 운영 대시보드</h1><p>회원 · 수업 · 비용 · 성장기록 · 학부모 문의 관리</p></div></div>
 <div class="grid three" style="margin-bottom:16px"><div class="stat"><b id="prodAdminTodayCount">0</b><span>오늘 수업</span></div><div class="stat"><b id="prodAdminTodayRate">0%</b><span>기록 완료율</span></div><div class="stat"><b id="prodAdminUnreadCount">0</b><span>미확인 문의</span></div></div>
 <div class="card">
-<div class="mobile-hint">메뉴를 좌우로 밀어서 더 볼 수 있어요.</div><div class="tabs"><button class="tabbtn on" data-tab="classes">센터 관리</button><button class="tabbtn" data-tab="adminphotos">전체 수업 사진</button><button class="tabbtn" data-tab="recordcheck">강사 기록 점검</button><button class="tabbtn" data-tab="monthly">월간 기록 현황</button><button class="tabbtn" data-tab="members">회원 관리</button><button class="tabbtn" data-tab="loginstats">로그인 현황</button><button class="tabbtn" data-tab="multi">다중 수강</button><button class="tabbtn" data-tab="fees">추가 비용</button><button class="tabbtn" data-tab="surveys">설문 결과</button><button class="tabbtn" data-tab="versionarchive">버전 보관소</button><button class="tabbtn" data-tab="feedback">학부모 문의</button></div>
+<div class="mobile-hint">메뉴를 좌우로 밀어서 더 볼 수 있어요.</div><div class="tabs"><button class="tabbtn on" data-tab="classes">센터 관리</button><button class="tabbtn" data-tab="adminphotos">전체 수업 사진</button><button class="tabbtn" data-tab="recordcheck">강사 기록 점검</button><button class="tabbtn" data-tab="monthly">월간 기록 현황</button><button class="tabbtn" data-tab="members">회원 관리</button><button class="tabbtn" data-tab="loginstats">로그인 현황</button><button class="tabbtn" data-tab="multi">수강생 관리</button><button class="tabbtn" data-tab="fees">추가 비용</button><button class="tabbtn" data-tab="surveys">설문 결과</button><button class="tabbtn" data-tab="versionarchive">버전 보관소</button><button class="tabbtn" data-tab="feedback">학부모 문의</button></div>
 
 <div class="panel" id="versionarchive">
   <div class="version-archive-head">
@@ -8824,6 +8824,8 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <button id="adminCenterTrialView" onclick="setAdminCenterType('trial')" type="button">🎈 일일특강 <span id="adminCenterTrialCount">0</span></button>
 </div>
 <div class="admin-center-trial-guide"><b>일일특강 센터</b>로 등록한 센터의 수업은 학부모 일일특강 선택 목록에 자동 표시됩니다.</div>
+<div class="admin-center-trial-guide" id="adminWinterRolloverGuide"><b>♻ 학기 자동 전환</b> · 정규반은 매일 00:05(KST)에 현재 월을 확인해 <b>3~5월 봄학기 · 6~8월 여름학기 · 9~11월 가을학기 · 12~2월 겨울학기</b>로 자동 맞춰집니다. 같은 반 ID·기존 아이·QR/링크·사진·성장기록은 유지되고, 종료일은 해당 학기 말까지 자동 연장됩니다.</div>
+<div class="admin-center-trial-guide"><b>🗂 수강중단 1년 보관</b> · 강사가 수강중단 처리한 아이는 현재 명단에서 즉시 빠지고 1년간 보관됩니다. 1년 동안 다른 반에 재등록되지 않은 아이만 자동 삭제됩니다.</div>
 <div aria-label="센터 관리 필터" class="admin-class-filter-grid">
 <div class="admin-filter-item"><label for="adminClassCenterFilter">센터</label><select id="adminClassCenterFilter" onchange="filterAdminClasses()"><option value="">전체 센터</option></select></div>
 <div class="admin-filter-item"><label for="adminClassTermFilter">학기</label><select id="adminClassTermFilter" onchange="filterAdminClasses()"><option value="">전체 학기</option></select></div>
@@ -8838,7 +8840,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <thead><tr><th>센터</th><th>학기</th><th>프로그램</th><th>요일/시간</th><th>강사</th><th>학생</th><th>수업 금액</th><th>상태</th></tr></thead>
 <tbody id="adminClassBody"></tbody>
 </table>
-<div class="admin-class-edit-note muted">수정할 반의 행을 누르면 아래에서 정보를 변경할 수 있습니다.</div>
+<div class="admin-class-edit-note muted">수정할 반의 행을 누르면 아래에서 정보를 변경할 수 있습니다. <b>강사·요일·시간·학기 정보를 바꿔도 기존 아이 명단과 성장기록은 그대로 유지됩니다.</b></div>
 <div class="admin-inline-form hide" id="adminClassEditForm">
 <div class="row between" style="margin-bottom:12px">
 <div>
@@ -8894,7 +8896,7 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <span><b>일일특강 센터</b><small>체크하면 센터명 · 프로그램 · 강사(선택)만 입력하면 됩니다.</small></span>
 </label>
 </div>
-<div class="auth-field trial-regular-only"><label for="newClassTerm">학기</label><input id="newClassTerm" placeholder="예: 가을학기"/></div>
+<div class="auth-field trial-regular-only"><label for="newClassTerm">학기</label><input id="newClassTerm" placeholder="예: 봄학기"/><div class="auth-help">현재 월 기준으로 자동 입력됩니다. 3~5월 봄 · 6~8월 여름 · 9~11월 가을 · 12~2월 겨울</div></div>
 <div class="auth-field"><label for="newClassProgram">프로그램</label><select id="newClassProgram">
 <option value="">프로그램 선택</option>
 <option value="블럭동화">블럭동화</option>
@@ -11314,7 +11316,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=90"></script>
+<script src="./app.js?v=92"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

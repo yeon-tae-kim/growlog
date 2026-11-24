@@ -7026,7 +7026,7 @@
       const table=document.createElement("table");
       table.className="teacher-roster-table";
       table.innerHTML=`<thead><tr>
-        <th>아이</th><th>보호자</th><th>휴대폰 번호</th><th>현재 수강</th><th>다른 반 추가</th>
+        <th>아이</th><th>보호자</th><th>휴대폰 번호</th><th>현재 수강</th><th>다른 반 추가</th><th>현재 반</th>
       </tr></thead><tbody></tbody>`;
 
       const body=q("tbody",table);
@@ -7044,19 +7044,23 @@
             <select class="teacher-multi-target">
               <option value="">추가할 다른 반 선택</option>
             </select>
-            <button class="btn small" type="button">추가</button>
-          </div></td>`;
+            <button class="btn small" type="button" data-action="add-class">추가</button>
+          </div></td>
+          <td><button class="btn danger small" type="button" data-action="stop-class">수강중단</button></td>`;
 
         const select=q(".teacher-multi-target",tr);
         available.forEach(c=>select.add(new Option(teacherMultiClassLabel(c),c.class_id)));
 
-        const btn=q("button",tr);
+        const btn=q('[data-action="add-class"]',tr);
         btn.disabled=!available.length;
         if(!available.length){
           select.innerHTML='<option value="">추가 가능한 다른 반이 없습니다</option>';
           select.disabled=true;
         }
         btn.onclick=()=>window.teacherAddClassToChild(row.child_id,row.source_class_id,select);
+
+        const stopBtn=q('[data-action="stop-class"]',tr);
+        stopBtn.onclick=()=>window.teacherStopClassForChild(row.child_id,row.source_class_id,row.child_name,first);
 
         body.appendChild(tr);
       });
@@ -7070,6 +7074,41 @@
 
   window.refreshTeacherMultiEnrollment=async function(){
     await loadTeacherMultiEnrollment();
+  };
+
+  window.teacherStopClassForChild=async function(childId,classId,childName,classInfo){
+    const label=[
+      classInfo?.center_name||"",
+      classInfo?.term||"",
+      classInfo?.program||"",
+      `${classInfo?.weekday||""} ${String(classInfo?.class_time||"").slice(0,5)}`.trim()
+    ].filter(Boolean).join(" · ");
+
+    if(!confirm(`${childName||"아이"}의 ${label||"현재 반"} 수강을 중단할까요?\n\n현재 명단에서는 바로 빠지고, 아이 정보와 연결 기록은 1년간 보관됩니다. 1년 동안 다른 반에 다시 등록되지 않으면 자동 삭제됩니다.`))return;
+
+    try{
+      const {error}=await db.rpc("teacher_stop_class_enrollment",{
+        p_child_id:childId,
+        p_class_id:classId
+      });
+      if(error)throw error;
+
+      teacherRosterCache.delete(classId);
+      teacherRosterPromiseCache.delete(classId);
+      notify(`${childName||"아이"}의 해당 반 수강을 중단했습니다. 1년간 보관 후 재수강이 없으면 자동 삭제됩니다.`);
+
+      await Promise.allSettled([
+        loadTeacherMultiEnrollment(),
+        loadTeacherParentInfo(),
+        loadTeacherClasses()
+      ]);
+
+      if(activeClass?.id===classId){
+        await loadTeacherStudentsForClass();
+      }
+    }catch(e){
+      notify("수강중단 처리 실패: "+(e?.message||e));
+    }
   };
 
   window.teacherAddClassToChild=async function(childId,sourceClassId,select){
@@ -7920,6 +7959,15 @@
     $("adminClassForm")?.classList.add("hide");
   };
 
+  function growlogDefaultRegularTerm(){
+    const iso=todayISO();
+    const month=Number(String(iso||"").slice(5,7));
+    if(month>=3 && month<=5)return "봄학기";
+    if(month>=6 && month<=8)return "여름학기";
+    if(month>=9 && month<=11)return "가을학기";
+    return "겨울학기";
+  }
+
   window.syncNewClassTrialCenterFromView=function(){
     const checkbox=$("newClassTrialCenter");
     if(checkbox)checkbox.checked=adminCenterTypeView==="trial";
@@ -7938,6 +7986,10 @@
         .forEach(id=>{const el=$(id);if(el)el.value="";});
     }else{
       if(term && term.value==="일일특강")term.value="";
+      if(term && !String(term.value||"").trim()){
+        const seasonal=growlogDefaultRegularTerm();
+        if(seasonal)term.value=seasonal;
+      }
       if(status)status.value="운영중";
     }
   };
@@ -8052,7 +8104,7 @@
     if($("adminClassEditHelp")){
       $("adminClassEditHelp").textContent=isTrial
         ?"일일특강은 센터 · 프로그램 · 강사만 수정하면 됩니다. 강사가 미정이면 비워둘 수 있어요."
-        :"정규수업은 요일·시간과 수업기간 등 전체 정보를 입력해주세요.";
+        :"정규수업은 요일·시간과 수업기간 등 전체 정보를 입력해주세요. 강사·요일·시간·학기를 수정해도 기존 수강생과 기록은 그대로 유지됩니다.";
     }
   }
 
@@ -8215,7 +8267,7 @@
             : "일일특강 정보를 수정했습니다. 강사는 미지정 상태입니다.")
         : (payload.status==="종료"
             ? "수업을 종료 처리했습니다. 해당 학부모 페이지에 수료 업적과 다음 수업 선택이 표시됩니다."
-            : "반 정보를 수정했습니다."));
+            : "반 정보를 수정했습니다. 기존 아이 명단·QR·성장기록은 그대로 유지됩니다."));
     }catch(e){
       notify("반 수정 실패: "+(e?.message||e));
     }
