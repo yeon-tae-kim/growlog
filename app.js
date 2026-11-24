@@ -2141,13 +2141,10 @@
     const box=$("accountChildNameFields");
     if(box) box.innerHTML='<div class="muted account-name-loading">아이 정보를 불러오는 중...</div>';
 
-    const {data,error}=await db.from("children")
-      .select("id,name,birth_date,parent_id")
-      .eq("parent_id",profile.id)
-      .order("created_at");
+    const {data,error}=await db.rpc("parent_children");
     if(error)throw error;
 
-    accountEditableChildren=data||[];
+    accountEditableChildren=(data||[]).sort((a,b)=>String(a.created_at||"").localeCompare(String(b.created_at||"")));
     if(!box)return;
     if(!accountEditableChildren.length){
       box.innerHTML='<div class="muted">연결된 아이가 없습니다.</div>';
@@ -2666,11 +2663,9 @@
 
   // ---------- Parent ----------
   async function getParentChildren(){
-    let query = db.from("children").select("id,name,birth_date,parent_id").order("created_at");
-    if (profile.role!=="admin") query = query.eq("parent_id",profile.id);
-    const {data,error}=await query;
+    const {data,error}=await db.rpc("parent_children");
     if(error) throw error;
-    return data||[];
+    return (data||[]).sort((a,b)=>String(a.created_at||"").localeCompare(String(b.created_at||"")));
   }
 
   async function loadParentDashboard(adminPreview=false){
@@ -8815,20 +8810,23 @@
     const parents=(profiles||[]).filter(p=>p.role==="parent");
     const teachers=(profiles||[]).filter(p=>p.role==="teacher");
 
-    const [childrenRes,enrRes,classRes,centerRes,teacherCenterRes]=await Promise.all([
+    const [childrenRes,guardianRes,enrRes,classRes,centerRes,teacherCenterRes]=await Promise.all([
       db.from("children").select("id,name,birth_date,parent_id"),
+      db.from("child_guardians").select("child_id,guardian_id"),
       db.from("enrollments").select("child_id,class_id,active,created_at,classes(id,term,program,weekday,class_time,status,start_date,end_date,centers(id,name))"),
       db.from("classes").select("id,term,program,weekday,class_time,status,teacher_id,start_date,end_date,centers(id,name)").order("created_at",{ascending:false}),
       db.from("centers").select("id,name").order("name"),
       db.from("teacher_centers").select("teacher_id,center_id,centers(id,name)")
     ]);
     if(childrenRes.error)throw childrenRes.error;
+    if(guardianRes.error)throw guardianRes.error;
     if(enrRes.error)throw enrRes.error;
     if(classRes.error)throw classRes.error;
     if(centerRes.error)throw centerRes.error;
     if(teacherCenterRes.error)throw teacherCenterRes.error;
 
     const children=childrenRes.data||[];
+    const guardianLinks=guardianRes.data||[];
     const enrs=enrRes.data||[];
     const classes=classRes.data||[];
     const centers=centerRes.data||[];
@@ -8918,7 +8916,10 @@
     // 학부모 회원은 아이 1명 × 수강반 1개를 한 행으로 표시합니다.
     const parentRows=[];
     for(const p of parents){
-      const ownChildren=children.filter(c=>c.parent_id===p.id);
+      const linkedChildIds=new Set(
+        guardianLinks.filter(g=>g.guardian_id===p.id).map(g=>g.child_id)
+      );
+      const ownChildren=children.filter(c=>linkedChildIds.has(c.id) || c.parent_id===p.id);
       let linked=false;
 
       for(const child of ownChildren){
