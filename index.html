@@ -7860,6 +7860,73 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+
+<style id="growlog-v97-roster-wrap-x">
+/* v97: 강사 아이 명단은 길어지면 다음 줄로 자연스럽게 배치 */
+#lessonStudentTabs.lesson-subtabs{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  align-items:center;
+  gap:8px 10px;
+  overflow-x:visible !important;
+  overflow-y:visible !important;
+  padding:3px 1px 10px;
+}
+#lessonStudentTabs .lesson-student-tab-group{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  flex:0 0 auto;
+  max-width:100%;
+}
+#lessonStudentTabs .student-name-tab{
+  max-width:calc(100vw - 110px);
+}
+#lessonStudentTabs .lesson-student-stop,
+.teacher-roster-stop-x{
+  width:24px !important;
+  min-width:24px !important;
+  height:24px !important;
+  min-height:24px !important;
+  padding:0 !important;
+  margin:0 !important;
+  display:inline-grid !important;
+  place-items:center;
+  flex:0 0 24px;
+  border:1px solid #dfe3e8 !important;
+  border-radius:50% !important;
+  background:#fff !important;
+  color:#858b94 !important;
+  font-size:16px !important;
+  font-weight:500 !important;
+  line-height:1 !important;
+  box-shadow:none !important;
+  cursor:pointer;
+}
+#lessonStudentTabs .lesson-student-stop:hover,
+#lessonStudentTabs .lesson-student-stop:focus-visible,
+.teacher-roster-stop-x:hover,
+.teacher-roster-stop-x:focus-visible{
+  background:#fff3f2 !important;
+  border-color:#e8bbb7 !important;
+  color:#b84f49 !important;
+  outline:none;
+}
+.teacher-roster-table .teacher-roster-stop-x{
+  margin-inline:auto !important;
+}
+@media(max-width:700px){
+  #lessonStudentTabs.lesson-subtabs{
+    flex-wrap:wrap !important;
+    overflow-x:visible !important;
+    gap:7px 8px;
+  }
+  #lessonStudentTabs .student-name-tab{
+    max-width:calc(100vw - 96px);
+  }
+}
+</style>
+
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -11396,7 +11463,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=96"></script>
+<script src="./app.js?v=97"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

@@ -5752,7 +5752,7 @@
         const stop=document.createElement("button");
         stop.type="button";
         stop.className="lesson-student-stop";
-        stop.textContent="수강중단";
+        stop.textContent="×";
         stop.setAttribute("aria-label",`${c._teacherLabel} 수강중단`);
         stop.title=`${c._teacherLabel} 수강중단`; 
         stop.onclick=async function(e){
@@ -7134,7 +7134,7 @@
             </select>
             <button class="btn small" type="button" data-action="add-class">추가</button>
           </div></td>
-          <td><button class="btn danger small" type="button" data-action="stop-class">수강중단</button></td>`;
+          <td><button class="teacher-roster-stop-x" type="button" data-action="stop-class" aria-label="수강중단" title="수강중단">×</button></td>`;
 
         const select=q(".teacher-multi-target",tr);
         available.forEach(c=>select.add(new Option(teacherMultiClassLabel(c),c.class_id)));

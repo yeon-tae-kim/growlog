@@ -1,14 +1,15 @@
-Growlog v96 GitHub 최소 업로드본
+Growlog v97 GitHub 최소 업로드본
 
-아래 4개 파일만 기존 GitHub 파일에 덮어써 주세요.
-- index.html
-- app.js
-- service-worker.js
-- lesson-videos.css
+GitHub 저장소의 아래 4개 파일만 기존 파일 위에 덮어써 주세요.
+1. index.html
+2. app.js
+3. service-worker.js
+4. lesson-videos.css
 
-config.js, manifest.webmanifest, 아이콘 파일은 삭제하거나 덮어쓰지 마세요.
+기존 config.js, manifest, 아이콘 파일 등은 삭제하지 마세요.
 
-v96 변경사항
-- 같은 반 동명이인에게만 이름 옆 생일(MM.DD) 자동 표시
-- 동명이인 아이별 성장기록/출결/사진 상태 내부 분리
-- 기존 수강중단 버튼 및 1년 보관 정책 유지
+v97 변경사항
+- 강사 화면의 수강중단 컨트롤을 전부 작은 × 버튼으로 통일
+- × 클릭 시 기존 확인 팝업 후 수강중단
+- 아이 명단이 화면 너비를 넘으면 다음 줄로 자동 줄바꿈
+- 동명이인 생일 표시 및 기존 자동학기/1년 보관 정책 유지
