@@ -1,4 +1,4 @@
-// Growlog v94 · 아이 이름 옆 작은 × 수강중단 + 확인 팝업
+// Growlog v95 · 아이 이름 옆 작은 수강중단 버튼 + 확인 팝업
 
 (() => {
   "use strict";
@@ -5693,7 +5693,7 @@
         const stop=document.createElement("button");
         stop.type="button";
         stop.className="lesson-student-stop";
-        stop.textContent="×";
+        stop.textContent="수강중단";
         stop.setAttribute("aria-label",`${c.name} 수강중단`);
         stop.title=`${c.name} 수강중단`; 
         stop.onclick=async function(e){

@@ -1,5 +1,5 @@
-Growlog v94 GitHub 최소 업로드본
+Growlog v95 GitHub 최소 업로드본
 
 index.html, app.js, service-worker.js, lesson-videos.css 를 기존 GitHub 루트 파일에 덮어써 주세요.
 
-주요 변경: 강사 아이 이름 옆 작은 × 수강중단 버튼 + 확인 팝업 / 관계 상세 3항목 선택사항 / PWA 캐시 v94
+주요 변경: 아이 이름과 간격을 둔 작은 ‘수강중단’ 보조 버튼 + 확인 팝업 유지 / 관계 상세 3항목 선택사항 유지 / PWA 캐시 v95
