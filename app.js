@@ -1,4 +1,4 @@
-// Growlog v93 · 수업 화면 수강중단 버튼 + 관계 상세기록 선택사항
+// Growlog v94 · 아이 이름 옆 작은 × 수강중단 + 확인 팝업
 
 (() => {
   "use strict";
@@ -5693,8 +5693,9 @@
         const stop=document.createElement("button");
         stop.type="button";
         stop.className="lesson-student-stop";
-        stop.textContent="수강중단";
-        stop.title=`${c.name} 학생을 현재 반 명단에서 제외`;
+        stop.textContent="×";
+        stop.setAttribute("aria-label",`${c.name} 수강중단`);
+        stop.title=`${c.name} 수강중단`; 
         stop.onclick=async function(e){
           e.preventDefault();
           e.stopPropagation();
@@ -7112,7 +7113,7 @@
       `${classInfo?.weekday||""} ${String(classInfo?.class_time||"").slice(0,5)}`.trim()
     ].filter(Boolean).join(" · ");
 
-    if(!confirm(`${childName||"아이"}의 ${label||"현재 반"} 수강을 중단할까요?\n\n현재 명단에서는 바로 빠지고, 아이 정보와 연결 기록은 1년간 보관됩니다. 1년 동안 다른 반에 다시 등록되지 않으면 자동 삭제됩니다.`))return;
+    if(!confirm(`정말 ${childName||"아이"}을(를) 이 반 명단에서 삭제할까요?\n\n확인하면 수강중단 처리되어 현재 명단에서 바로 빠집니다. 아이 정보와 연결 기록은 1년간 보관되며, 그동안 다른 반에 다시 등록되지 않으면 자동 삭제됩니다.`))return;
 
     try{
       const {error}=await db.rpc("teacher_stop_class_enrollment",{
