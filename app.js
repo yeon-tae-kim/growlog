@@ -472,7 +472,8 @@
     const box=document.getElementById("parentV74Optional");
     if(!box)return;
     const meta=v74Decode(raw).meta||{};
-    if(renderParentRelationToday(meta))return;
+    // v90: 관계 성장 리포트는 '오늘 발견한 모습' 안에 숨기지 않고,
+    // 관계 성장지도 바로 위의 독립 카드에서 항상 보여줍니다.
     const item=meta.hint!==undefined&&meta.hint!==""?V74_CASES[Number(meta.hint)]:null;
     const hint=document.getElementById("parentV74Hint");
     const conn=document.getElementById("parentV74Connection");
@@ -481,6 +482,124 @@
     if(hint){hint.hidden=!item;hint.textContent=item?"🌱 오늘의 성장 힌트 · "+item[1]+"을 연습해 볼 수 있어요.":"";}
     if(conn){conn.hidden=!meta.connection;conn.textContent=meta.connection?"🏠 가정에서 이어가기 · "+meta.connection:"";}
     box.hidden=!item&&!meta.connection;
+  }
+
+  function relationReportDateLabel(value){
+    const s=String(value||"");
+    const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return m?`${Number(m[2])}월 ${Number(m[3])}일 수업`:s;
+  }
+
+  async function renderParentRelationReport(){
+    const card=document.getElementById("parentRelationReportCard");
+    if(!card||!activeChild){if(card)card.hidden=true;return;}
+
+    const {data,error}=await db.from("growth_records")
+      .select("lesson_date,observation_text,class_id")
+      .eq("child_id",activeChild.id)
+      .order("lesson_date",{ascending:true});
+    if(error){
+      console.warn("relation report:",error.message||error);
+      card.hidden=true;
+      return;
+    }
+
+    const parsed=(data||[]).map(r=>({
+      date:r.lesson_date,
+      classId:r.class_id,
+      meta:v74Decode(r.observation_text).meta||{}
+    })).filter(x=>x.meta.relationAge || x.meta.relationSkill || x.meta.relationNone===true);
+
+    const inferred=relationClassAgeFromBirth(activeChild.birth_date,todayISO());
+    const currentClassRecords=activeClass?.id ? parsed.filter(x=>String(x.classId)===String(activeClass.id)) : [];
+    const ageSource=(currentClassRecords.length?currentClassRecords:parsed);
+    const latestAge=[...ageSource].reverse().map(x=>Number(x.meta.relationAge)).find(x=>[5,6,7].includes(x));
+    const age=latestAge||inferred;
+    if(![5,6,7].includes(Number(age))){
+      card.hidden=true;
+      return;
+    }
+
+    const cfg=relationConfig(age);
+    const name=shortName(activeChild.name);
+    card.hidden=false;
+
+    const title=document.getElementById("parentRelationReportTitle");
+    const lead=document.getElementById("parentRelationReportLead");
+    const ageBadge=document.getElementById("parentRelationReportAge");
+    const dateBadge=document.getElementById("parentRelationReportDate");
+    const ageIntro=document.getElementById("parentRelationReportAgeIntro");
+    const five=document.getElementById("parentRelationReportFiveSkills");
+    const skillTitle=document.getElementById("parentRelationReportSkill");
+    const stageBadge=document.getElementById("parentRelationReportStage");
+    const copy=document.getElementById("parentRelationReportCopy");
+    const detail=document.getElementById("parentRelationReportDetail");
+    const sceneEl=document.getElementById("parentRelationReportScene");
+    const responseEl=document.getElementById("parentRelationReportTeacherResponse");
+    const reactionEl=document.getElementById("parentRelationReportChildReaction");
+    const homeEl=document.getElementById("parentRelationReportHomeQuestion");
+
+    if(title)title.textContent=`${name}의 관계 성장`;
+    if(lead)lead.textContent="이 시기에 함께 키우는 관계의 힘과 최근 수업에서 실제로 관찰된 모습을 보여드려요.";
+    if(ageBadge)ageBadge.textContent=`${age}세반 기준`;
+    if(ageIntro)ageIntro.innerHTML=`<b>${age}세반 · ${escape(cfg.ageTitle||cfg.theme)}</b><p>${escape(cfg.intro||"")}</p>`;
+    if(five)five.innerHTML=cfg.skills.map(x=>`<span>${escape(x.label)}</span>`).join("");
+
+    // 현재 수강 중인 반의 기록을 우선하고, 없으면 같은 아이의 가장 최근 관계기록을 보여줍니다.
+    const eligible=(currentClassRecords.length?currentClassRecords:parsed)
+      .filter(x=>Number(x.meta.relationAge)===Number(age));
+    const latest=[...eligible].reverse()[0]||null;
+
+    if(!latest){
+      if(dateBadge)dateBadge.hidden=true;
+      if(stageBadge)stageBadge.hidden=true;
+      if(skillTitle)skillTitle.textContent="관계 관찰 기록을 기다리고 있어요.";
+      if(copy)copy.innerHTML='아직 선생님의 관계 관찰 기록이 없어요.<br><span class="muted">수업에서 실제 관계 장면이 관찰되면 선생님의 대응과 아이의 반응이 이곳에 이어집니다.</span>';
+      if(detail)detail.hidden=true;
+      return;
+    }
+
+    if(dateBadge){
+      dateBadge.hidden=false;
+      dateBadge.textContent=relationReportDateLabel(latest.date);
+    }
+
+    const meta=latest.meta||{};
+    const skillKey=String(meta.relationSkill||"");
+    if(meta.relationNone===true || !skillKey){
+      if(stageBadge)stageBadge.hidden=true;
+      if(skillTitle)skillTitle.textContent="오늘은 자연스럽게 수업을 이어갔어요";
+      if(copy)copy.innerHTML='오늘은 친구 관계에서 <b>특별히 조정이 필요한 장면 없이 자연스럽게 수업을 이어갔어요.</b><br><span class="muted">현재 이 시기에는 위 다섯 가지 관계의 힘을 함께 살펴보고 있어요.</span>';
+      if(detail)detail.hidden=true;
+      return;
+    }
+
+    const item=relationSkill(age,skillKey);
+    const stage=Math.min(3,Math.max(1,Number(meta.relationStage||1)));
+    if(skillTitle)skillTitle.textContent=item?.parent||"오늘의 관계 성장";
+    if(stageBadge){
+      stageBadge.hidden=false;
+      stageBadge.textContent=RELATION_STAGE_LABELS[stage]||"관찰 기록";
+    }
+    if(copy)copy.textContent=RELATION_STAGE_SUPPORT[stage]||"수업에서 관계의 힘이 자연스럽게 관찰되었어요.";
+
+    const scene=String(meta.relationScene||"").trim();
+    const teacherResponse=String(meta.relationTeacherResponse||"").trim();
+    const childReaction=String(meta.relationChildReaction||"").trim();
+    const hasDetail=!!(scene||teacherResponse||childReaction);
+
+    // v89 이전 관계기록에는 단계만 있고 실제 장면·교사 대응·아이 반응이 없을 수 있습니다.
+    // 기록되지 않은 교사 대응을 자동 문장으로 꾸며 부모에게 실제 대응처럼 보여주지 않습니다.
+    if(!hasDetail && copy){
+      copy.innerHTML=`${escape(RELATION_STAGE_SUPPORT[stage]||"수업에서 관계의 힘이 자연스럽게 관찰되었어요.")}<br><span class="muted">이전 기록은 단계만 저장되어 있어요. 다음 관계 관찰부터 실제 장면·선생님의 대응·아이의 반응이 함께 표시됩니다.</span>`;
+    }
+    if(detail){
+      detail.hidden=!hasDetail;
+      if(sceneEl){sceneEl.closest(".relation-detail-item").hidden=!scene;sceneEl.textContent=scene;}
+      if(responseEl){responseEl.closest(".relation-detail-item").hidden=!teacherResponse;responseEl.textContent=teacherResponse;}
+      if(reactionEl){reactionEl.closest(".relation-detail-item").hidden=!childReaction;reactionEl.textContent=childReaction;}
+      if(homeEl){homeEl.closest(".relation-detail-item").hidden=false;homeEl.textContent=relationHomeQuestion(skillKey);}
+    }
   }
 
   async function renderParentRelationGrowthMap(){
@@ -4728,6 +4847,7 @@
     if($("parentGrowthMapTitle")) $("parentGrowthMapTitle").textContent=`🌈 ${shortName(activeChild.name)}의 전체 수업 누적 성장지도`;
     if($("parentGrowthMapTotal")) $("parentGrowthMapTotal").textContent=`${total}개 기록`;
     renderGrowthRadar(counts);
+    await renderParentRelationReport();
     await renderParentRelationGrowthMap();
   }
 

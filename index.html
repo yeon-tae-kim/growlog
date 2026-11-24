@@ -7748,6 +7748,15 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 .relation-teacher-fields{margin-top:12px;padding-top:12px;border-top:1px dashed #cbd5e1}
 .relation-teacher-fields textarea{width:100%;min-height:58px;resize:vertical}
 .relation-teacher-help{font-size:11px;line-height:1.5;color:#64748b;margin:5px 0 0}
+.relation-report-card{padding:20px}
+.relation-report-age-intro{background:#f8fbff}
+.relation-report-skills{margin-top:12px}
+.relation-report-latest{padding:14px;border-radius:14px;background:#f7fbff;border:1px solid #dbeafe}
+.relation-report-latest .relation-detail-item{background:#fff}
+@media(max-width:700px){
+  .relation-report-card{padding:16px 14px}
+  .relation-report-head{align-items:flex-start}
+}
 .relation-growth-map-card{padding:20px}
 .relation-growth-head{align-items:flex-start;gap:12px;margin-bottom:18px}
 .relation-growth-chart{max-width:760px}
@@ -8346,6 +8355,44 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 </div>
 <div class="photos" id="parentActivityPhotos"><div class="photo-empty">활동사진을 불러오고 있어요.</div></div>
 <p class="muted" id="parentPhotoCaption" style="font-size:12px">연결된 아이의 사진만 보여집니다.</p>
+</div>
+</div>
+<div class="card relation-report-card" hidden="" id="parentRelationReportCard" style="margin-top:16px">
+<div class="row between relation-report-head" style="gap:10px;align-items:flex-start">
+<div>
+<span class="badge">🌱 관계 성장 리포트</span>
+<h2 id="parentRelationReportTitle" style="margin:8px 0 4px">아이의 관계 성장</h2>
+<p class="muted" id="parentRelationReportLead" style="margin:0">이 시기에 함께 키우는 관계의 힘과 최근 수업 장면을 보여드려요.</p>
+</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+<span class="badge gray" id="parentRelationReportAge">6세반 기준</span>
+<span class="badge gray" hidden="" id="parentRelationReportDate"></span>
+</div>
+</div>
+
+<div class="relation-age-intro relation-report-age-intro" id="parentRelationReportAgeIntro" style="margin-top:14px"></div>
+
+<div class="relation-report-skills">
+<div class="relation-five-title">이 시기에 함께 키우는 5가지 관계의 힘</div>
+<div class="relation-five-chips" id="parentRelationReportFiveSkills"></div>
+</div>
+
+<div class="relation-report-latest" id="parentRelationReportLatest" style="margin-top:16px">
+<div class="row between" style="gap:8px;align-items:flex-start">
+<div>
+<span class="muted" style="font-size:12px;font-weight:700">가장 최근 관찰</span>
+<h3 id="parentRelationReportSkill" style="margin:4px 0 6px">관계 관찰 기록을 기다리고 있어요.</h3>
+</div>
+<span class="badge" hidden="" id="parentRelationReportStage"></span>
+</div>
+<p id="parentRelationReportCopy" style="margin:0;line-height:1.7"></p>
+
+<div class="relation-detail" hidden="" id="parentRelationReportDetail">
+<div class="relation-detail-item"><b>관찰된 장면</b><p id="parentRelationReportScene"></p></div>
+<div class="relation-detail-item"><b>선생님의 대응</b><p id="parentRelationReportTeacherResponse"></p></div>
+<div class="relation-detail-item"><b>아이의 반응</b><p id="parentRelationReportChildReaction"></p></div>
+<div class="relation-detail-item relation-home"><b>🏠 집에서 이어가기</b><p id="parentRelationReportHomeQuestion"></p></div>
+</div>
 </div>
 </div>
 <div class="card relation-growth-map-card" hidden="" id="parentRelationGrowthMapCard" style="margin-top:16px">
@@ -11267,7 +11314,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=88"></script>
+<script src="./app.js?v=90"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
