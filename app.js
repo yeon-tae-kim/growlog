@@ -1,3 +1,4 @@
+// Growlog v93 · 수업 화면 수강중단 버튼 + 관계 상세기록 선택사항
 
 (() => {
   "use strict";
@@ -377,14 +378,18 @@
         st.relationSuggestionKey="";
       }
       const suggestionKey=`${skillKey}:${stage}`;
-      if(responseInput && (!st.relationTeacherResponse || st.relationSuggestionKey!==suggestionKey)){
-        st.relationTeacherResponse=relationTeacherSuggestion(skillKey,stage);
-        st.relationSuggestionKey=suggestionKey;
-        responseInput.value=st.relationTeacherResponse;
-      }
+      st.relationSuggestionKey=suggestionKey;
       if(sceneInput && document.activeElement!==sceneInput)sceneInput.value=st.relationScene||"";
       if(reactionInput && document.activeElement!==reactionInput)reactionInput.value=st.relationChildReaction||"";
-      if(responseInput && document.activeElement!==responseInput)responseInput.value=st.relationTeacherResponse||relationTeacherSuggestion(skillKey,stage);
+      if(responseInput && document.activeElement!==responseInput){
+        responseInput.value=st.relationTeacherResponse||"";
+        responseInput.placeholder="선택사항 · 예: "+relationTeacherSuggestion(skillKey,stage);
+      }
+      const responseHelp=document.getElementById("v93RelationResponseSuggestion");
+      if(responseHelp){
+        const example=relationTeacherSuggestion(skillKey,stage);
+        responseHelp.innerHTML=`<b>대응 예시</b> · ${escape(example)}<br><span class="muted">실제로 비슷하게 대응했을 때만 적어주세요. 적지 않아도 저장할 수 있어요.</span>`;
+      }
     }
     if(st&&!loadingStudentRecord){
       st.relationAge=age;
@@ -459,11 +464,11 @@
     const teacherResponse=String(meta.relationTeacherResponse||"").trim();
     const childReaction=String(meta.relationChildReaction||"").trim();
     if(detail){
-      detail.hidden=!(scene||teacherResponse||childReaction);
+      detail.hidden=false;
       if(sceneEl){sceneEl.closest(".relation-detail-item").hidden=!scene;sceneEl.textContent=scene;}
       if(responseEl){responseEl.closest(".relation-detail-item").hidden=!teacherResponse;responseEl.textContent=teacherResponse;}
       if(reactionEl){reactionEl.closest(".relation-detail-item").hidden=!childReaction;reactionEl.textContent=childReaction;}
-      if(homeEl){homeEl.textContent=relationHomeQuestion(skillKey);}
+      if(homeEl){homeEl.closest(".relation-detail-item").hidden=false;homeEl.textContent=relationHomeQuestion(skillKey);}
     }
     return true;
   }
@@ -554,7 +559,7 @@
       if(dateBadge)dateBadge.hidden=true;
       if(stageBadge)stageBadge.hidden=true;
       if(skillTitle)skillTitle.textContent="관계 관찰 기록을 기다리고 있어요.";
-      if(copy)copy.innerHTML='아직 선생님의 관계 관찰 기록이 없어요.<br><span class="muted">수업에서 실제 관계 장면이 관찰되면 선생님의 대응과 아이의 반응이 이곳에 이어집니다.</span>';
+      if(copy)copy.innerHTML='아직 선생님의 관계 관찰 기록이 없어요.<br><span class="muted">수업에서 관계의 힘이 관찰되면 단계가 기록되고, 선생님이 추가 내용을 남긴 경우 장면·대응·아이의 반응도 함께 표시됩니다.</span>';
       if(detail)detail.hidden=true;
       return;
     }
@@ -591,10 +596,10 @@
     // v89 이전 관계기록에는 단계만 있고 실제 장면·교사 대응·아이 반응이 없을 수 있습니다.
     // 기록되지 않은 교사 대응을 자동 문장으로 꾸며 부모에게 실제 대응처럼 보여주지 않습니다.
     if(!hasDetail && copy){
-      copy.innerHTML=`${escape(RELATION_STAGE_SUPPORT[stage]||"수업에서 관계의 힘이 자연스럽게 관찰되었어요.")}<br><span class="muted">이전 기록은 단계만 저장되어 있어요. 다음 관계 관찰부터 실제 장면·선생님의 대응·아이의 반응이 함께 표시됩니다.</span>`;
+      copy.innerHTML=`${escape(RELATION_STAGE_SUPPORT[stage]||"수업에서 관계의 힘이 자연스럽게 관찰되었어요.")}<br><span class="muted">이번 수업은 관계 성장 단계만 기록했어요. 선생님이 추가로 남긴 장면이 있을 때 상세 내용이 함께 표시됩니다.</span>`;
     }
     if(detail){
-      detail.hidden=!hasDetail;
+      detail.hidden=false;
       if(sceneEl){sceneEl.closest(".relation-detail-item").hidden=!scene;sceneEl.textContent=scene;}
       if(responseEl){responseEl.closest(".relation-detail-item").hidden=!teacherResponse;responseEl.textContent=teacherResponse;}
       if(reactionEl){reactionEl.closest(".relation-detail-item").hidden=!childReaction;reactionEl.textContent=childReaction;}
@@ -5669,8 +5674,12 @@
       tabs.innerHTML='<button id="lessonTabPhotos" class="on" type="button">전체 사진</button>';
       q("#lessonTabPhotos",tabs).onclick=function(){ window.showLessonWork("photos",this); };
       list.forEach(c=>{
+        const group=document.createElement("div");
+        group.className="lesson-student-tab-group";
+
         const b=document.createElement("button");
         b.type="button";
+        b.className="student-name-tab";
         b.dataset.student=c.name;
         b.textContent=c.name;
         b.disabled=!activeLessonDate;
@@ -5680,7 +5689,28 @@
           window.showLessonWork("student",this,c.name);
         };
         if(selected===c.name)b.classList.add("on");
-        tabs.appendChild(b);
+
+        const stop=document.createElement("button");
+        stop.type="button";
+        stop.className="lesson-student-stop";
+        stop.textContent="수강중단";
+        stop.title=`${c.name} 학생을 현재 반 명단에서 제외`;
+        stop.onclick=async function(e){
+          e.preventDefault();
+          e.stopPropagation();
+          const info={
+            center_name:activeClass?.centers?.name||"",
+            term:activeClass?.term||"",
+            program:activeClass?.program||"",
+            weekday:activeClass?.weekday||"",
+            class_time:activeClass?.class_time||""
+          };
+          await window.teacherStopClassForChild(c.id,activeClass?.id,c.name,info);
+        };
+
+        group.appendChild(b);
+        group.appendChild(stop);
+        tabs.appendChild(group);
       });
     }
 
@@ -6757,10 +6787,8 @@
       }else{
         const relationStage=Number($("v87RelationStage")?.value||1);
         const relationScene=($("v89RelationScene")?.value||"").trim();
-        const relationTeacherResponse=($("v89RelationTeacherResponse")?.value||"").trim()||relationTeacherSuggestion(relationChoice,relationStage);
+        const relationTeacherResponse=($("v89RelationTeacherResponse")?.value||"").trim();
         const relationChildReaction=($("v89RelationChildReaction")?.value||"").trim();
-        if(!relationScene) return notify("관계 성장 관찰의 ‘오늘의 장면’을 한 줄 적어주세요.");
-        if(!relationChildReaction) return notify("관계 성장 관찰의 ‘아이의 반응’을 한 줄 적어주세요.");
         relationMeta={relationAge:autoRelationAge,relationSkill:relationChoice,relationStage,relationNone:false,relationScene,relationTeacherResponse,relationChildReaction};
       }
       const payload={

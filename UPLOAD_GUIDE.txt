@@ -1,19 +1,5 @@
-Growlog v92 GitHub 최소 업로드본
+Growlog v93 GitHub 최소 업로드본
 
-아래 파일을 기존 GitHub Pages 저장소의 같은 파일에 덮어써 주세요.
-- index.html
-- app.js
-- service-worker.js
-- lesson-videos.css
+index.html, app.js, service-worker.js, lesson-videos.css 를 기존 GitHub 루트 파일에 덮어써 주세요.
 
-Supabase 쪽 v92 자동화(계절학기 자동 전환, 수강중단 1년 보관/자동삭제)는 이미 운영 DB에 적용되어 있습니다.
-
-핵심 동작
-- 3~5월: 봄학기
-- 6~8월: 여름학기
-- 9~11월: 가을학기
-- 12~2월: 겨울학기
-- 정규반은 같은 반 ID를 유지하므로 기존 수강생·QR/링크·성장기록 연결 유지
-- 수강중단 아이는 1년 보관 후, 다른 반 재수강이 없을 때만 자동 삭제
-
-배포 후 브라우저가 이전 파일을 캐시하고 있으면 새로고침 또는 앱 재실행을 한 번 해주세요.
+주요 변경: 강사 아이 이름 옆 수강중단 버튼 / 관계 상세 3항목 선택사항 / PWA 캐시 v93
