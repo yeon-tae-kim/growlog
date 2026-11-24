@@ -195,7 +195,8 @@
   const RELATION_GROWTH_CONFIG={
     5:{
       theme:"손 대신 말로 표현하는 힘",
-      intro:"친구 곁에 머물며 손 대신 말을 꺼내는 힘",
+      ageTitle:"‘내 것’이 중요한 시기",
+      intro:"이 시기 아이들에게는 ‘내 것’이 아주 중요해요. 그래서 친구 곁에 머물고, 손 대신 말을 꺼내는 연습을 해요.",
       skills:[
         {key:"stay_together",label:"같은 판에 끝까지 머물기",parent:"친구들 곁에서 끝까지 함께 있기"},
         {key:"ask_with_words",label:"말로 달라고 하기",parent:"필요한 것을 말로 부탁하기"},
@@ -206,7 +207,8 @@
     },
     6:{
       theme:"처음 보는 친구와 어울리는 힘",
-      intro:"친구를 알아채고 순서와 역할을 말로 정하는 힘",
+      ageTitle:"친구가 ‘보이기’ 시작하는 시기",
+      intro:"이 시기 아이들은 친구가 나와 다르게 생각할 수 있다는 걸 알아가기 시작해요. 그래서 처음 보는 친구에게 다가가고, 순서와 역할을 말로 정하는 연습을 해요.",
       skills:[
         {key:"notice_friend",label:"친구 곤란함 알아채기",parent:"친구가 곤란할 때 알아채기"},
         {key:"start_talking",label:"먼저 말 걸기",parent:"처음 본 친구에게 먼저 말 걸기"},
@@ -217,7 +219,8 @@
     },
     7:{
       theme:"규칙을 지키며 함께 노는 힘",
-      intro:"규칙을 지키고 지고 나서도 다시 함께하는 힘",
+      ageTitle:"규칙과 승부를 배우는 시기",
+      intro:"이 시기 아이들은 규칙 있는 놀이를 좋아하고 승부의 감정도 크게 경험해요. 그래서 규칙을 지키고, 져도 다시 함께하며, 친구 생각을 받아들이는 연습을 해요.",
       skills:[
         {key:"keep_rules",label:"불리해도 규칙 지키기",parent:"불리해져도 규칙 지키기"},
         {key:"return_after_loss",label:"져도 다시 돌아오기",parent:"게임에서 져도 다음 판에 다시 함께하기"},
@@ -233,6 +236,42 @@
     2:"선생님이 짧은 한마디나 신호만 건네고 스스로 이어가도록 도왔어요.",
     3:"선생님 도움 없이 스스로 해냈어요."
   };
+  const RELATION_TEACHER_SUGGESTIONS={
+    stay_together:{1:"‘같이 끝내자’고 말하며 자리를 다시 안내했어요.",2:"자리 쪽을 가리키는 짧은 신호만 주었어요.",3:"별도 도움 없이 끝까지 함께하는 모습을 지켜봤어요."},
+    ask_with_words:{1:"‘빌려줘라고 말해볼까?’ 하고 말로 부탁하는 방법을 알려줬어요.",2:"‘뭐라고 하지?’ 한마디만 건넸어요.",3:"별도 도움 없이 스스로 말로 부탁하는 모습을 지켜봤어요."},
+    wait_turn:{1:"‘지금은 친구 차례야, 다음이 네 차례야’라고 순서를 알려줬어요.",2:"손바닥 신호로 잠깐 기다리도록 알려줬어요.",3:"별도 도움 없이 친구 차례를 기다리는 모습을 지켜봤어요."},
+    name_feeling:{1:"‘속상해라고 말해도 돼’라고 감정 단어를 알려줬어요.",2:"‘어떤 마음이야?’라고 짧게 물어봤어요.",3:"별도 도움 없이 마음을 말로 표현하는 모습을 지켜봤어요."},
+    stop_signal:{1:"곁에서 ‘멈춰’라고 다시 한 번 구체적으로 알려줬어요.",2:"‘멈춰’ 한마디 신호만 건넸어요.",3:"별도 도움 없이 신호를 듣고 멈추는 모습을 지켜봤어요."},
+    notice_friend:{1:"‘친구는 지금 어떨까?’라고 물어보며 친구 쪽을 살펴보게 했어요.",2:"친구 쪽으로 눈짓만 해줬어요.",3:"별도 도움 없이 친구의 어려움을 알아채는 모습을 지켜봤어요."},
+    start_talking:{1:"‘같이 할래? 하고 말해볼까?’라고 먼저 말을 거는 방법을 알려줬어요.",2:"‘옆 친구한테 뭐라고 해볼까?’라고 짧게 힌트를 줬어요.",3:"별도 도움 없이 먼저 말을 거는 모습을 지켜봤어요."},
+    set_turn_roles:{1:"‘내가 먼저, 다음은 너처럼 정해볼까?’라고 순서 정하는 말을 알려줬어요.",2:"‘어떻게 정할까?’라고 짧게 물어봤어요.",3:"별도 도움 없이 순서와 역할을 말로 정하는 모습을 지켜봤어요."},
+    words_before_hands:{1:"‘손 놓고 말로 해볼까?’라고 말로 해결하는 방법을 알려줬어요.",2:"‘말로!’ 한마디만 건넸어요.",3:"별도 도움 없이 손보다 말을 먼저 쓰는 모습을 지켜봤어요."},
+    stop_on_no:{1:"‘친구가 싫다고 했어. 멈춰볼까?’라고 구체적으로 알려줬어요.",2:"‘친구 말 들었지?’라고 짧게 알려줬어요.",3:"별도 도움 없이 친구의 거절을 듣고 멈추는 모습을 지켜봤어요."},
+    keep_rules:{1:"‘규칙대로 해야 모두 재미있어’라고 규칙의 이유를 다시 알려줬어요.",2:"규칙 카드를 가리키는 짧은 신호만 줬어요.",3:"별도 도움 없이 불리한 상황에서도 규칙을 지키는 모습을 지켜봤어요."},
+    return_after_loss:{1:"‘다음 판엔 어떤 작전을 써볼까?’라고 말하며 다시 참여할 수 있게 도왔어요.",2:"‘다음 판 시작한다!’라고 짧게 불러줬어요.",3:"별도 도움 없이 스스로 다음 판에 돌아오는 모습을 지켜봤어요."},
+    accept_opinion:{1:"‘친구 생각도 들어볼까?’라고 다른 의견을 들을 수 있게 도왔어요.",2:"‘둘 다 넣을 방법은?’이라고 짧게 물어봤어요.",3:"별도 도움 없이 친구 의견을 받아들이는 모습을 지켜봤어요."},
+    stay_team:{1:"팀 이름이나 역할을 함께 정하며 처음 만난 친구와 시작하도록 도왔어요.",2:"‘우리 팀 파이팅!’ 정도의 짧은 격려만 건넸어요.",3:"별도 도움 없이 처음 만난 친구와 끝까지 함께하는 모습을 지켜봤어요."},
+    ask_or_help:{1:"‘도와줘라고 말해도 돼’라고 도움을 요청하는 방법을 알려줬어요.",2:"‘누구한테 물어볼까?’라고 짧게 힌트를 줬어요.",3:"별도 도움 없이 도움을 청하거나 친구를 돕는 모습을 지켜봤어요."}
+  };
+  const RELATION_HOME_QUESTIONS={
+    stay_together:"친구들과 함께 끝까지 해보려면 어떻게 하면 좋을까?",
+    ask_with_words:"필요한 것이 있으면 어떤 말로 부탁할까?",
+    wait_turn:"친구 차례일 때 우리는 어떻게 기다리면 좋을까?",
+    name_feeling:"속상할 때 어떤 말로 내 마음을 알려줄 수 있을까?",
+    stop_signal:"선생님이 ‘멈춰’라고 하면 어떻게 하면 좋을까?",
+    notice_friend:"친구가 어려워 보이면 우리는 어떻게 해줄 수 있을까?",
+    start_talking:"처음 만난 친구에게 어떤 말을 먼저 건네볼까?",
+    set_turn_roles:"친구와 순서를 어떻게 정하면 좋을까?",
+    words_before_hands:"친구와 같은 것을 원할 때 손보다 어떤 말을 먼저 하면 좋을까?",
+    stop_on_no:"친구가 ‘싫어’라고 하면 어떻게 하면 좋을까?",
+    keep_rules:"내가 지고 있어도 왜 규칙을 지켜야 할까?",
+    return_after_loss:"게임에서 졌을 때 다음 판에 다시 함께하려면 어떻게 하면 좋을까?",
+    accept_opinion:"친구 생각과 내 생각이 다르면 어떻게 정하면 좋을까?",
+    stay_team:"처음 만난 친구와 한 팀이 되면 어떻게 함께하면 좋을까?",
+    ask_or_help:"어려울 때 도움을 어떻게 부탁하고, 친구가 어려워하면 어떻게 도울까?"
+  };
+  function relationTeacherSuggestion(key,stage){return RELATION_TEACHER_SUGGESTIONS[key]?.[Number(stage)]||RELATION_STAGE_SUPPORT[Number(stage)]||"";}
+  function relationHomeQuestion(key){return RELATION_HOME_QUESTIONS[key]||"오늘 친구와 함께했던 모습을 집에서도 이야기해 보세요.";}
 
   function relationClassAgeFromBirth(birthDate,lessonDate){
     const birthYear=Number(String(birthDate||"").slice(0,4));
@@ -279,6 +318,12 @@
     v87PopulateSkills(age,st?.relationSkill||"__unset__");
     skillSelect.value=st?.relationSkill||"__unset__";
     stageSelect.value=String(st?.relationStage||1);
+    const sceneInput=document.getElementById("v89RelationScene");
+    const responseInput=document.getElementById("v89RelationTeacherResponse");
+    const reactionInput=document.getElementById("v89RelationChildReaction");
+    if(sceneInput)sceneInput.value=st?.relationScene||"";
+    if(responseInput)responseInput.value=st?.relationTeacherResponse||"";
+    if(reactionInput)reactionInput.value=st?.relationChildReaction||"";
     v87UpdateRelationUI(false);
   }
   function v87PopulateSkills(age,selected=""){
@@ -306,6 +351,7 @@
     const isUnset=choice==="__unset__";
     const isNone=choice==="none";
     const skillKey=(!isUnset&&!isNone)?choice:"";
+    const previousSkill=st?.relationSkill||"__unset__";
     const stage=Math.min(3,Math.max(1,Number(stageSelect.value||1)));
     if(stageWrap)stageWrap.hidden=!skillKey;
     if(preview){
@@ -318,6 +364,28 @@
         preview.innerHTML=`<b>${escape(RELATION_STAGE_LABELS[stage])}</b> · ${escape(item?.parent||"")}<br><span class="muted">${escape(RELATION_STAGE_SUPPORT[stage])}</span>`;
       }
     }
+    const detailWrap=document.getElementById("v89RelationDetailWrap");
+    const sceneInput=document.getElementById("v89RelationScene");
+    const responseInput=document.getElementById("v89RelationTeacherResponse");
+    const reactionInput=document.getElementById("v89RelationChildReaction");
+    if(detailWrap)detailWrap.hidden=!skillKey;
+    if(st&&skillKey){
+      if(markDirty && previousSkill!==skillKey){
+        st.relationScene="";
+        st.relationChildReaction="";
+        st.relationTeacherResponse="";
+        st.relationSuggestionKey="";
+      }
+      const suggestionKey=`${skillKey}:${stage}`;
+      if(responseInput && (!st.relationTeacherResponse || st.relationSuggestionKey!==suggestionKey)){
+        st.relationTeacherResponse=relationTeacherSuggestion(skillKey,stage);
+        st.relationSuggestionKey=suggestionKey;
+        responseInput.value=st.relationTeacherResponse;
+      }
+      if(sceneInput && document.activeElement!==sceneInput)sceneInput.value=st.relationScene||"";
+      if(reactionInput && document.activeElement!==reactionInput)reactionInput.value=st.relationChildReaction||"";
+      if(responseInput && document.activeElement!==responseInput)responseInput.value=st.relationTeacherResponse||relationTeacherSuggestion(skillKey,stage);
+    }
     if(st&&!loadingStudentRecord){
       st.relationAge=age;
       st.relationSkill=isNone?"none":isUnset?"__unset__":skillKey;
@@ -326,6 +394,15 @@
       if(markDirty && typeof markCurrentStudentDirty==="function")markCurrentStudentDirty();
     }
   }
+  function v89CaptureRelationDetail(){
+    const st=studentRecordState[currentTeacherStudent];
+    if(!st)return;
+    st.relationScene=(document.getElementById("v89RelationScene")?.value||"").trim();
+    st.relationTeacherResponse=(document.getElementById("v89RelationTeacherResponse")?.value||"").trim();
+    st.relationChildReaction=(document.getElementById("v89RelationChildReaction")?.value||"").trim();
+    if(typeof markCurrentStudentDirty==="function")markCurrentStudentDirty();
+  }
+  window.v89CaptureRelationDetail=v89CaptureRelationDetail;
   window.v87UpdateRelationUI=v87UpdateRelationUI;
 
   // v74 과거 화면 호환용. 새 기록은 v87 관계성장 UI를 사용합니다.
@@ -356,23 +433,38 @@
     const stageBadge=document.getElementById("parentRelationStageBadge");
     const copy=document.getElementById("parentRelationCopy");
     const five=document.getElementById("parentRelationFiveSkills");
+    const detail=document.getElementById("parentRelationDetail");
+    const sceneEl=document.getElementById("parentRelationScene");
+    const responseEl=document.getElementById("parentRelationTeacherResponse");
+    const reactionEl=document.getElementById("parentRelationChildReaction");
+    const homeEl=document.getElementById("parentRelationHomeQuestion");
     relation.hidden=false;
     box.hidden=false;
+    if(five){
+      five.hidden=false;
+      five.innerHTML=`<div class="relation-age-intro"><b>${age}세반 · ${escape(cfg.ageTitle||cfg.theme)}</b><p>${escape(cfg.intro||"")}</p></div><div class="relation-five-title">이 시기에 함께 키우는 5가지 관계의 힘</div><div class="relation-five-chips">${cfg.skills.map(x=>`<span>${escape(x.label)}</span>`).join("")}</div>`;
+    }
     if(!skillKey || meta.relationNone===true){
       if(title)title.textContent="오늘은 자연스럽게 수업을 이어갔어요";
       if(stageBadge)stageBadge.hidden=true;
-      if(copy)copy.innerHTML='오늘은 친구 관계에서 <b>특별히 조정이 필요한 장면 없이 자연스럽게 수업을 이어갔어요.</b>';
-      if(five){
-        five.hidden=false;
-        five.innerHTML=`<div class="relation-five-title">현재 이 시기에는 이런 5가지 관계의 힘을 함께 살펴보고 있어요.</div><div class="relation-five-chips">${cfg.skills.map(x=>`<span>${escape(x.label)}</span>`).join("")}</div><p class="muted relation-five-note">아이들은 수업마다 서로 다른 관계의 순간을 경험해요. 다음 수업에서도 자연스러운 활동 속에서 ${escape(shortName(activeChild?.name||"아이"))}의 모습을 계속 지켜볼게요.</p>`;
-      }
+      if(copy)copy.innerHTML='오늘은 친구 관계에서 <b>특별히 조정이 필요한 장면 없이 자연스럽게 수업을 이어갔어요.</b><br><span class="muted">아이들은 수업마다 서로 다른 관계의 순간을 경험해요. 다음 수업에서도 자연스러운 활동 속에서 계속 살펴볼게요.</span>';
+      if(detail)detail.hidden=true;
       return true;
     }
     const item=relationSkill(age,skillKey);
     if(title)title.textContent=item?.parent||"오늘의 관계 성장";
     if(stageBadge){stageBadge.hidden=false;stageBadge.textContent=RELATION_STAGE_LABELS[stage]||"관찰 기록";}
     if(copy)copy.textContent=RELATION_STAGE_SUPPORT[stage]||"오늘 수업에서 관계의 힘이 자연스럽게 관찰되었어요.";
-    if(five)five.hidden=true;
+    const scene=String(meta.relationScene||"").trim();
+    const teacherResponse=String(meta.relationTeacherResponse||"").trim();
+    const childReaction=String(meta.relationChildReaction||"").trim();
+    if(detail){
+      detail.hidden=!(scene||teacherResponse||childReaction);
+      if(sceneEl){sceneEl.closest(".relation-detail-item").hidden=!scene;sceneEl.textContent=scene;}
+      if(responseEl){responseEl.closest(".relation-detail-item").hidden=!teacherResponse;responseEl.textContent=teacherResponse;}
+      if(reactionEl){reactionEl.closest(".relation-detail-item").hidden=!childReaction;reactionEl.textContent=childReaction;}
+      if(homeEl){homeEl.textContent=relationHomeQuestion(skillKey);}
+    }
     return true;
   }
 
@@ -5441,6 +5533,7 @@
         v74Hint:"",v74Connection:"",
         relationAge:relationClassAgeFromBirth(c.birth_date,activeLessonDate)||6,
         relationSkill:"__unset__",relationStage:0,relationNone:false,
+        relationScene:"",relationTeacherResponse:"",relationChildReaction:"",relationSuggestionKey:"",
         photos:new Set(),
         complete:false,
         dirty:false,
@@ -5560,6 +5653,10 @@
         relationSkill:relationMeta.relationNone===true ? "none" : (relationMeta.relationSkill ? String(relationMeta.relationSkill) : "__unset__"),
         relationStage:Number(relationMeta.relationStage||0),
         relationNone:relationMeta.relationNone===true,
+        relationScene:String(relationMeta.relationScene||""),
+        relationTeacherResponse:String(relationMeta.relationTeacherResponse||""),
+        relationChildReaction:String(relationMeta.relationChildReaction||""),
+        relationSuggestionKey:relationMeta.relationSkill&&relationMeta.relationStage ? `${relationMeta.relationSkill}:${Number(relationMeta.relationStage)}` : "",
         photos:new Set(),
         complete:Boolean(rec||att?.status==="absent"),
         dirty:false,
@@ -6534,9 +6631,18 @@
       const relationChoice=$("v87RelationSkill")?.value||"__unset__";
       if(relationChoice==="__unset__") return notify("관계 성장 관찰에서 5가지 힘 또는 ‘없음’ 중 하나를 선택해주세요.");
       const autoRelationAge=v87TeacherAge(st);
-      const relationMeta=relationChoice==="none"
-        ? {relationAge:autoRelationAge,relationSkill:"",relationStage:0,relationNone:true}
-        : {relationAge:autoRelationAge,relationSkill:relationChoice,relationStage:Number($("v87RelationStage")?.value||1),relationNone:false};
+      let relationMeta;
+      if(relationChoice==="none"){
+        relationMeta={relationAge:autoRelationAge,relationSkill:"",relationStage:0,relationNone:true,relationScene:"",relationTeacherResponse:"",relationChildReaction:""};
+      }else{
+        const relationStage=Number($("v87RelationStage")?.value||1);
+        const relationScene=($("v89RelationScene")?.value||"").trim();
+        const relationTeacherResponse=($("v89RelationTeacherResponse")?.value||"").trim()||relationTeacherSuggestion(relationChoice,relationStage);
+        const relationChildReaction=($("v89RelationChildReaction")?.value||"").trim();
+        if(!relationScene) return notify("관계 성장 관찰의 ‘오늘의 장면’을 한 줄 적어주세요.");
+        if(!relationChildReaction) return notify("관계 성장 관찰의 ‘아이의 반응’을 한 줄 적어주세요.");
+        relationMeta={relationAge:autoRelationAge,relationSkill:relationChoice,relationStage,relationNone:false,relationScene,relationTeacherResponse,relationChildReaction};
+      }
       const payload={
         class_id:activeClass.id,child_id:st.childId,lesson_date:activeLessonDate,
         teacher_id:activeTeacherProfile.id,area:selectedGrowthArea,

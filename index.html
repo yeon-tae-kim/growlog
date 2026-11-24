@@ -7737,6 +7737,17 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 .relation-five-chips{display:flex;flex-wrap:wrap;gap:6px}
 .relation-five-chips span{display:inline-flex;padding:6px 9px;border-radius:999px;background:#fff;border:1px solid #dbeafe;font-size:12px;color:#334155}
 .relation-five-note{font-size:12px;line-height:1.55;margin:10px 0 0}
+.relation-age-intro{padding:12px 13px;border-radius:12px;background:#fff;border:1px solid #dbeafe;margin-bottom:10px}
+.relation-age-intro b{font-size:13px;color:#1e3a5f}
+.relation-age-intro p{font-size:12px;line-height:1.6;color:#64748b;margin:6px 0 0}
+.relation-detail{display:grid;gap:8px;margin-top:12px}
+.relation-detail-item{padding:10px 12px;border-radius:12px;background:#fff;border:1px solid #e5e7eb}
+.relation-detail-item b{display:block;font-size:12px;color:#475569;margin-bottom:4px}
+.relation-detail-item p{margin:0;line-height:1.6;font-size:13px;color:#1f2937}
+.relation-home{background:#fffaf0;border-color:#fde7b0}
+.relation-teacher-fields{margin-top:12px;padding-top:12px;border-top:1px dashed #cbd5e1}
+.relation-teacher-fields textarea{width:100%;min-height:58px;resize:vertical}
+.relation-teacher-help{font-size:11px;line-height:1.5;color:#64748b;margin:5px 0 0}
 .relation-growth-map-card{padding:20px}
 .relation-growth-head{align-items:flex-start;gap:12px;margin-bottom:18px}
 .relation-growth-chart{max-width:760px}
@@ -8300,6 +8311,12 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <h3 id="parentRelationTitle" style="margin:10px 0 6px">오늘의 관계 성장</h3>
 <p id="parentRelationCopy" style="margin:0;line-height:1.65"></p>
 <div hidden="" id="parentRelationFiveSkills" style="margin-top:10px"></div>
+<div class="relation-detail" hidden="" id="parentRelationDetail">
+<div class="relation-detail-item"><b>오늘의 장면</b><p id="parentRelationScene"></p></div>
+<div class="relation-detail-item"><b>선생님의 대응</b><p id="parentRelationTeacherResponse"></p></div>
+<div class="relation-detail-item"><b>아이의 반응</b><p id="parentRelationChildReaction"></p></div>
+<div class="relation-detail-item relation-home"><b>🏠 집에서 이어가기</b><p id="parentRelationHomeQuestion"></p></div>
+</div>
 </div>
 <p hidden="" id="parentV74Hint" style="margin:0 0 8px"></p>
 <p hidden="" id="parentV74Connection" style="margin:0"></p>
@@ -8560,6 +8577,15 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 </select>
 </div>
 <div class="relation-teacher-preview" id="v87RelationPreview"></div>
+<div class="relation-teacher-fields" hidden="" id="v89RelationDetailWrap">
+<label for="v89RelationScene">오늘의 실제 장면</label>
+<textarea id="v89RelationScene" oninput="v89CaptureRelationDetail()" placeholder="예: 친구가 사용하던 블록에 손을 뻗었어요."></textarea>
+<label for="v89RelationTeacherResponse" style="margin-top:10px">선생님의 대응</label>
+<textarea id="v89RelationTeacherResponse" oninput="v89CaptureRelationDetail()" placeholder="선택한 힘과 단계에 맞는 대응 문장이 자동으로 제안됩니다."></textarea>
+<p class="relation-teacher-help">자동 제안된 문장은 실제 수업에서 한 말·행동과 다르면 짧게 수정해주세요.</p>
+<label for="v89RelationChildReaction" style="margin-top:10px">아이의 반응</label>
+<textarea id="v89RelationChildReaction" oninput="v89CaptureRelationDetail()" placeholder="예: 손을 멈추고 다른 블록을 찾아봤어요."></textarea>
+</div>
 </div>
 <h3>오늘 사진 선택</h3>
 <p class="muted" style="font-size:12px;margin-top:-5px">전체 사진 탭에서 올린 사진·동영상 중 이 아이의 자료를 선택해주세요.</p>
