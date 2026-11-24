@@ -1,5 +1,14 @@
-Growlog v95 GitHub 최소 업로드본
+Growlog v96 GitHub 최소 업로드본
 
-index.html, app.js, service-worker.js, lesson-videos.css 를 기존 GitHub 루트 파일에 덮어써 주세요.
+아래 4개 파일만 기존 GitHub 파일에 덮어써 주세요.
+- index.html
+- app.js
+- service-worker.js
+- lesson-videos.css
 
-주요 변경: 아이 이름과 간격을 둔 작은 ‘수강중단’ 보조 버튼 + 확인 팝업 유지 / 관계 상세 3항목 선택사항 유지 / PWA 캐시 v95
+config.js, manifest.webmanifest, 아이콘 파일은 삭제하거나 덮어쓰지 마세요.
+
+v96 변경사항
+- 같은 반 동명이인에게만 이름 옆 생일(MM.DD) 자동 표시
+- 동명이인 아이별 성장기록/출결/사진 상태 내부 분리
+- 기존 수강중단 버튼 및 1년 보관 정책 유지

@@ -1,4 +1,4 @@
-// Growlog v95 · 아이 이름 옆 작은 수강중단 버튼 + 확인 팝업
+// Growlog v96 · 같은 반 동명이인 생일 표시 + 내부 기록 분리
 
 (() => {
   "use strict";
@@ -5621,9 +5621,51 @@
     }
   }
 
+
+  function teacherRosterBirthLabel(birthDate){
+    const raw=String(birthDate||"").trim();
+    const m=raw.match(/^\d{4}-(\d{2})-(\d{2})$/);
+    return m ? `${m[1]}.${m[2]}` : "";
+  }
+
+  function decorateTeacherRoster(children){
+    const list=Array.isArray(children)?children:[];
+    const nameCounts=new Map();
+    list.forEach(c=>{
+      const name=String(c?.name||"").trim();
+      nameCounts.set(name,(nameCounts.get(name)||0)+1);
+    });
+
+    const baseCounts=new Map();
+    list.forEach(c=>{
+      const name=String(c?.name||"").trim();
+      const duplicate=(nameCounts.get(name)||0)>1;
+      const birth=teacherRosterBirthLabel(c?.birth_date);
+      const baseLabel=duplicate
+        ? `${name}${birth ? ` · ${birth}` : " · 생일정보 없음"}`
+        : name;
+      c._teacherDuplicateName=duplicate;
+      c._teacherBirthLabel=birth;
+      c._teacherBaseLabel=baseLabel;
+      baseCounts.set(baseLabel,(baseCounts.get(baseLabel)||0)+1);
+    });
+
+    const seen=new Map();
+    list.forEach(c=>{
+      const base=c._teacherBaseLabel||String(c?.name||"").trim();
+      const total=baseCounts.get(base)||1;
+      const order=(seen.get(base)||0)+1;
+      seen.set(base,order);
+      // 같은 이름+같은 생일까지 겹치는 드문 경우에도 내부 키가 충돌하지 않도록 번호까지 붙입니다.
+      c._teacherLabel=total>1 ? `${base} · ${order}` : base;
+      c._teacherKey=c._teacherLabel;
+    });
+    return list;
+  }
+
   function renderTeacherStudentNamesFast(children,{loadingRecords=false}={}){
-    const list=children||[];
-    teacherStudents.splice(0,teacherStudents.length,...list.map(c=>c.name));
+    const list=decorateTeacherRoster(children||[]);
+    teacherStudents.splice(0,teacherStudents.length,...list.map(c=>c._teacherKey));
 
     const noStudents=$("teacherNoStudentsNotice");
     if(noStudents){
@@ -5644,10 +5686,10 @@
 
     const cfg=growthProgramConfig(activeClass?.program);
     list.forEach(c=>{
-      if(studentRecordState[c.name])return;
+      if(studentRecordState[c._teacherKey])return;
       const area=cfg.areas[0]||"";
       const defaultBehavior=programBehaviorLabels(activeClass?.program,area)[0]||"";
-      studentRecordState[c.name]={
+      studentRecordState[c._teacherKey]={
         childId:c.id,
         birthDate:c.birth_date||"",
         growthArea:area,
@@ -5680,22 +5722,39 @@
         const b=document.createElement("button");
         b.type="button";
         b.className="student-name-tab";
-        b.dataset.student=c.name;
-        b.textContent=c.name;
+        b.dataset.student=c._teacherKey;
+        b.textContent="";
+        const nameSpan=document.createElement("span");
+        nameSpan.className="student-tab-name";
+        nameSpan.textContent=c.name;
+        b.appendChild(nameSpan);
+        if(c._teacherDuplicateName){
+          const birthSpan=document.createElement("span");
+          birthSpan.className="student-duplicate-birth";
+          birthSpan.textContent=c._teacherBirthLabel || "생일정보 없음";
+          b.appendChild(birthSpan);
+          const labelExtra=(c._teacherLabel||"").replace(c._teacherBaseLabel||"","");
+          if(labelExtra.trim()){
+            const orderSpan=document.createElement("span");
+            orderSpan.className="student-duplicate-order";
+            orderSpan.textContent=labelExtra.trim().replace(/^·\s*/,"");
+            b.appendChild(orderSpan);
+          }
+        }
         b.disabled=!activeLessonDate;
-        if(studentRecordState[c.name]?.complete)b.classList.add("done");
+        if(studentRecordState[c._teacherKey]?.complete)b.classList.add("done");
         b.onclick=function(){
           if(!activeLessonDate)return notify("수업 날짜를 불러오고 있어요. 잠시만 기다려주세요.");
-          window.showLessonWork("student",this,c.name);
+          window.showLessonWork("student",this,c._teacherKey);
         };
-        if(selected===c.name)b.classList.add("on");
+        if(selected===c._teacherKey)b.classList.add("on");
 
         const stop=document.createElement("button");
         stop.type="button";
         stop.className="lesson-student-stop";
         stop.textContent="수강중단";
-        stop.setAttribute("aria-label",`${c.name} 수강중단`);
-        stop.title=`${c.name} 수강중단`; 
+        stop.setAttribute("aria-label",`${c._teacherLabel} 수강중단`);
+        stop.title=`${c._teacherLabel} 수강중단`; 
         stop.onclick=async function(e){
           e.preventDefault();
           e.stopPropagation();
@@ -5706,7 +5765,7 @@
             weekday:activeClass?.weekday||"",
             class_time:activeClass?.class_time||""
           };
-          await window.teacherStopClassForChild(c.id,activeClass?.id,c.name,info);
+          await window.teacherStopClassForChild(c.id,activeClass?.id,c._teacherLabel,info);
         };
 
         group.appendChild(b);
@@ -5715,8 +5774,8 @@
       });
     }
 
-    if(!currentTeacherStudent || !list.some(c=>c.name===currentTeacherStudent)){
-      currentTeacherStudent=list[0]?.name||"";
+    if(!currentTeacherStudent || !list.some(c=>c._teacherKey===currentTeacherStudent)){
+      currentTeacherStudent=list[0]?._teacherKey||"";
     }
     window.updateLessonProgress?.();
   }
@@ -5754,7 +5813,7 @@
       if(badge)badge.textContent="수강생 불러오는 중...";
     }
 
-    const children=await fetchTeacherRoster(requestedClassId);
+    const children=decorateTeacherRoster(await fetchTeacherRoster(requestedClassId));
     if(activeClass?.id!==requestedClassId || activeLessonDate!==requestedDate)return;
 
     // 기록/출석 요청 전에 이름 탭을 먼저 그려서 체감 대기시간을 줄입니다.
@@ -5790,7 +5849,7 @@
         || "";
 
       const relationMeta=v74Decode(rec?.observation_text).meta||{};
-      studentRecordState[c.name]={
+      studentRecordState[c._teacherKey]={
         childId:c.id,
         birthDate:c.birth_date||"",
         growthArea:recordArea,

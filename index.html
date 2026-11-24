@@ -425,6 +425,29 @@ details[open] summary::after{content:"−"}
 }
 .lesson-student-tab-group .student-name-tab{
   border-radius:13px;
+  display:inline-flex;
+  align-items:center;
+  gap:0;
+}
+.lesson-student-tab-group .student-tab-name{
+  display:inline-block;
+}
+.lesson-student-tab-group .student-duplicate-birth{
+  display:inline-block;
+  margin-left:7px;
+  padding-left:7px;
+  border-left:1px solid currentColor;
+  opacity:.72;
+  font-size:10px;
+  font-weight:800;
+  line-height:1;
+}
+.lesson-student-tab-group .student-duplicate-order{
+  display:inline-block;
+  margin-left:3px;
+  opacity:.62;
+  font-size:9px;
+  font-weight:800;
 }
 .lesson-subtabs .lesson-student-stop{
   width:auto !important;
@@ -11373,7 +11396,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=93"></script>
+<script src="./app.js?v=96"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>
