@@ -7927,6 +7927,19 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 }
 </style>
 
+<style>
+/* ===== Growlog v99: next-term pre-registration ===== */
+.admin-next-term-box{margin-top:16px;padding:16px;border:1px solid #dbe8df;border-radius:16px;background:#f7fbf8}
+.admin-next-term-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.admin-next-term-head b{font-size:15px;color:#31503f}
+.admin-next-term-head .badge{white-space:nowrap}
+.admin-next-term-summary{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid #e5ece7;font-size:12px;line-height:1.6;color:#5f6f65}
+.admin-next-term-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.admin-next-term-grid .auth-field{min-width:0}
+.admin-next-term-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+@media(max-width:900px){.admin-next-term-grid{grid-template-columns:1fr 1fr}.admin-next-term-grid .auth-field:last-child{grid-column:1/-1}}
+@media(max-width:560px){.admin-next-term-grid{grid-template-columns:1fr}.admin-next-term-grid .auth-field:last-child{grid-column:auto}.admin-next-term-head{flex-direction:column}.admin-next-term-actions .btn{width:100%}}
+</style>
 </head>
 <body class="prod-auth-pending">
 <header class="top">
@@ -9023,6 +9036,28 @@ body.teacher-trial-work #activeTeacherRecordDateBadge{
 <div class="auth-field trial-edit-regular-only"><label for="editClassStudents">학생 수</label><input id="editClassStudents" inputmode="numeric" min="0" type="number"/></div>
 <div class="auth-field trial-edit-regular-only"><label for="editClassAmount">수업 금액</label><input id="editClassAmount" inputmode="numeric" placeholder="예: 168000"/><div class="auth-help">원 단위로 입력해주세요.</div></div>
 <div class="auth-field trial-edit-regular-only"><label for="editClassStatus">상태</label><select id="editClassStatus"><option>운영중</option><option>예정</option><option>종료</option></select></div>
+</div>
+<div class="admin-next-term-box trial-edit-regular-only" id="adminNextTermBox">
+  <div class="admin-next-term-head">
+    <div>
+      <b>📅 다음 학기 미리 등록</b>
+      <div class="muted" style="font-size:12px;margin-top:4px">현재 반은 그대로 두고, 다음 학기의 강사·요일·시간을 미리 별도 등록합니다.</div>
+    </div>
+    <span class="badge gray">현재 학기 영향 없음</span>
+  </div>
+  <div class="admin-next-term-summary" id="adminNextTermSummary">현재 반을 기준으로 다음 학기 정보를 준비합니다.</div>
+  <div class="admin-next-term-grid">
+    <div class="auth-field"><label for="nextClassTerm">다음 학기</label><input id="nextClassTerm" placeholder="예: 겨울학기"/></div>
+    <div class="auth-field"><label for="nextClassTime">요일/시간</label><input id="nextClassTime" placeholder="예: 화 16:00"/></div>
+    <div class="auth-field"><label for="nextClassTeacher">강사 <span class="muted">(선택)</span></label><input id="nextClassTeacher" list="adminTeacherNameOptions" placeholder="미정이면 비워두세요"/></div>
+    <div class="auth-field"><label for="nextClassStartDate">시작일</label><input id="nextClassStartDate" type="date"/></div>
+    <div class="auth-field"><label for="nextClassEndDate">종료일</label><input id="nextClassEndDate" type="date"/></div>
+  </div>
+  <div class="auth-help" style="margin-top:10px">저장하면 현재 반을 수정하지 않고 같은 센터·프로그램의 <b>다음 학기 예정 반</b>이 새로 등록됩니다. 학생 수와 수업 금액은 현재 반 값을 그대로 가져옵니다.</div>
+  <div class="admin-next-term-actions">
+    <button class="btn ghost" onclick="resetAdminNextTermForm()" type="button">자동값 다시 불러오기</button>
+    <button class="btn" onclick="saveAdminNextTermClass()" type="button">다음 학기 저장</button>
+  </div>
 </div>
 <div class="admin-inline-form-actions">
 <button class="btn danger" onclick="deleteAdminClass()" type="button">반 삭제</button>
@@ -11463,7 +11498,7 @@ renderTeacherUploadPreview();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script src="./app.js?v=98"></script>
+<script src="./app.js?v=99"></script>
 <div aria-label="Growlog 앱 설치 안내" id="growlogPwaInstallBar" role="region">
 <img alt="" class="pwa-app-icon" src="./growlog-icon-192-v39.png"/>
 <div class="pwa-copy"><b>Growlog를 앱처럼 사용해보세요</b><span>홈 화면에서 한 번에 바로 들어올 수 있어요.</span></div>

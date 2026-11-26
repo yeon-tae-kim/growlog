@@ -8167,6 +8167,93 @@
     window.filterAdminClasses();
   }
 
+  function growlogNextTermDefaults(c){
+    const term=String(c?.term||"").trim();
+    const order={"봄학기":"여름학기","여름학기":"가을학기","가을학기":"겨울학기","겨울학기":"봄학기"};
+    const nextTerm=order[term]||"";
+    let start="",end="";
+    const baseEnd=String(c?.end_date||"");
+    if(/^\d{4}-\d{2}-\d{2}$/.test(baseEnd)){
+      const d=new Date(baseEnd+"T00:00:00");
+      d.setDate(d.getDate()+1);
+      start=[d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
+    }
+    if(start){
+      const y=Number(start.slice(0,4));
+      const m=Number(start.slice(5,7));
+      if(nextTerm==="봄학기")end=`${y}-05-31`;
+      else if(nextTerm==="여름학기")end=`${y}-08-31`;
+      else if(nextTerm==="가을학기")end=`${y}-11-30`;
+      else if(nextTerm==="겨울학기")end=`${m===12?y+1:y}-02-${new Date(m===12?y+1:y,2,0).getDate()}`;
+    }
+    return {term:nextTerm,time:`${c?.weekday||""} ${String(c?.class_time||"").slice(0,5)}`.trim(),start,end};
+  }
+
+  window.resetAdminNextTermForm=function(){
+    const c=adminClassRows.find(x=>x.id===adminEditingClassId);
+    if(!c || c.centers?.is_trial)return;
+    const d=growlogNextTermDefaults(c);
+    if($("nextClassTerm"))$("nextClassTerm").value=d.term;
+    if($("nextClassTime"))$("nextClassTime").value=d.time;
+    if($("nextClassTeacher"))$("nextClassTeacher").value="";
+    if($("nextClassStartDate"))$("nextClassStartDate").value=d.start;
+    if($("nextClassEndDate"))$("nextClassEndDate").value=d.end;
+    if($("adminNextTermSummary"))$("adminNextTermSummary").innerHTML=`<b>${escape(c.centers?.name||"")} · ${escape(c.program||"")}</b><br>현재 ${escape(c.term||"")} 정보는 그대로 유지됩니다. 다음 학기만 별도 예정 반으로 저장됩니다.`;
+  };
+
+  window.saveAdminNextTermClass=async function(){
+    if(!adminEditingClassId)return notify("기준이 될 현재 반을 먼저 선택해주세요.");
+    const current=adminClassRows.find(x=>x.id===adminEditingClassId);
+    if(!current || current.centers?.is_trial)return notify("정규수업에서만 다음 학기를 미리 등록할 수 있습니다.");
+    try{
+      const term=String($("nextClassTerm")?.value||"").trim();
+      const rawTime=String($("nextClassTime")?.value||"").trim();
+      const teacherName=String($("nextClassTeacher")?.value||"").trim();
+      const startDate=$("nextClassStartDate")?.value||null;
+      const endDate=$("nextClassEndDate")?.value||null;
+      if(!term)return notify("다음 학기를 입력해주세요.");
+      if(term===String(current.term||"").trim())return notify("현재 학기와 다른 다음 학기를 입력해주세요.");
+      if(!rawTime)return notify("다음 학기 요일/시간을 입력해주세요.");
+      if(!startDate||!endDate)return notify("다음 학기 시작일과 종료일을 입력해주세요.");
+      if(endDate<startDate)return notify("종료일은 시작일보다 빠를 수 없습니다.");
+      if(current.end_date && startDate<=current.end_date)return notify("다음 학기 시작일은 현재 학기 종료일 이후로 입력해주세요.");
+      const time=splitClassTime(rawTime);
+      const teacher=teacherName ? await resolveTeacherByName(teacherName) : null;
+
+      const {data:duplicates,error:dupErr}=await db.from("classes")
+        .select("id,term,weekday,class_time,start_date,end_date,teacher_id")
+        .eq("center_id",current.centers?.id)
+        .eq("program",current.program)
+        .eq("term",term)
+        .eq("weekday",time.weekday)
+        .eq("class_time",time.class_time)
+        .eq("start_date",startDate);
+      if(dupErr)throw dupErr;
+      if((duplicates||[]).length){
+        return notify("같은 센터·프로그램·학기·요일/시간의 예정 반이 이미 있습니다. 센터 관리 목록에서 해당 반을 수정해주세요.");
+      }
+
+      const payload={
+        center_id:current.centers?.id,
+        term,
+        program:current.program,
+        ...time,
+        start_date:startDate,
+        end_date:endDate,
+        teacher_id:teacher?.id||null,
+        student_capacity:Number(current.student_capacity||0),
+        class_amount:Number(current.class_amount||0),
+        status:"예정"
+      };
+      const {error}=await db.from("classes").insert(payload);
+      if(error)throw error;
+      await loadAdminDashboard();
+      notify(`${term} 예정 반을 미리 등록했습니다. 현재 ${current.term||"학기"} 반에는 영향이 없습니다.`);
+    }catch(e){
+      notify("다음 학기 등록 실패: "+(e?.message||e));
+    }
+  };
+
   function openAdminClassEditProd(c){
     adminEditingClassId=c.id;
     $("editClassCenter").value=c.centers?.name||"";
@@ -8183,6 +8270,7 @@
     $("adminClassEditForm")?.classList.remove("hide");
 
     const isTrial=!!c.centers?.is_trial;
+    if(!isTrial) window.resetAdminNextTermForm();
     document.body.classList.toggle("admin-trial-editing",isTrial);
     if($("adminClassEditHelp")){
       $("adminClassEditHelp").textContent=isTrial
